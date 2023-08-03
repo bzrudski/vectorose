@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "anisotropy_rose"
+version = "0.0.1"
+authors = [
+    { name="Joseph Deering", email="joseph.deering@mcgill.ca" },
+    { name="Benjamin Rudski", email="benjamin.rudski@mail.mcgill.ca" },
+]
+description = "Construct 2D and 3D rose diagrams of anisotropy vector fields."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "numpy>=1.19.5",
+    "matplotlib>=3.3.4"
+]
