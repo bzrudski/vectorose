@@ -98,7 +98,8 @@ def compute_vector_orientation_angles(vectors: np.ndarray, use_degrees: bool = F
 
     * :math:`\\phi` - The angle of tilt with respect to the positive :math:`z`-axis. A vector with :math:`\\phi=0`
       will be oriented parallel to the :math:`z`-axis, while a vector with :math:`\\phi=\\pi/2` will be oriented
-      parallel to the :math:`(x,y)`-plane.
+      parallel to the :math:`(x,y)`-plane. A vector with :math:`\\phi=\\pi` will be oriented parallel to the
+      negative :math:`z`-axis.
 
     * :math:`\\theta` - The orientation in the :math:`(x,y)`-plane with respect to the *positive* :math:`y`-axis. A
       vector with :math:`\\theta=0` will be parallel to the *positive* :math:`y`-axis, while a vector with
@@ -113,7 +114,7 @@ def compute_vector_orientation_angles(vectors: np.ndarray, use_degrees: bool = F
         \\theta_i = \\textup{arctan} ( \\frac{x_i}{y_i} )
 
     The unit for the angles is **radians** unless ``use_degrees`` is set to ``True``. The angles are modified to be
-    in the range of :math:`-\\pi / 2` to :math:`\\pi / 2` for :math:`\\phi` and 0 to :math:`\\pi` for
+    in the range of :math:`0` to :math:`\\pi` for :math:`\\phi` and 0 to :math:`\\pi` for
     :math:`\\theta`. The first column in the returned array corresponds to :math:`\\phi` and the second to
     :math:`\\theta`.
 
@@ -158,20 +159,21 @@ def create_binned_orientation(vector_orientations: np.ndarray, vector_magnitudes
     the in-plane and 3D magnitudes, the output is two 2D histograms (stacked one on top of the other), which contain
     magnitude-weighted frequencies.
 
-    The input angles must be in the range :math:`-\\pi/2 \\leq \\phi < \\pi / 2` and :math:`0 \\leq \\theta < \\pi`
-    in radians, or :math:`-90 \\leq \\phi < 90` and :math:`0 \\leq \\theta < 180` in degrees. There **cannot** be
+    The input angles must be in the range :math:`0 \\leq \\phi < \\pi` and :math:`0 \\leq \\theta < \\pi`
+    in radians, or :math:`0 \\leq \\phi < 180` and :math:`0 \\leq \\theta < 180` in degrees. There **cannot** be
     any other orientations included, as these will be overwritten.
 
     Once the bins are assigned, a mirroring step is performed to fill in the missing angles. The mirroring is as
     follows for the case where the magnitudes are provided:
 
-    * In the 3D magnitude-weighted histogram, the values for the second half of the :math:`\\phi` bins are assigned
-      the values of the first half of the :math:`\\phi` bins for all :math:`\\theta`.
-    * In the in-plane magnitude-weighted histogram, the values for the :math:`\\theta` bins going from 180 to 360 d
+    * In the 3D magnitude-weighted histogram, no mirroring occurs, as :math:`\\phi` only extends from 0 to 180
+      degrees. The values are copied to the second half of the bins to allow simpler visualisation. However,
+      these values must **not** be used in a 3D visualisation.
+    * In the in-plane magnitude-weighted histogram, the values for the :math:`\\theta` bins going from 180 to 360
       degrees are assigned the same values as the bins from 0 to 180 degrees.
 
-    In the case of count-weighted histograms... **TBA**. Probably first change the :math:`\\phi` to be in the range
-    :math:`0\\leq \\phi < \\pi`.
+    In the case of count-weighted histograms, a simple mirroring approach is used that copies the counts for the
+    first half of the theta bins to the second half. No :math:`\\phi`-mirroring is necessary.
 
     :param vector_orientations: 2D NumPy array containing ``n`` rows, one for each vector, and 2 columns,
                                 corresponding to the angles :math:`\phi,\theta`.
