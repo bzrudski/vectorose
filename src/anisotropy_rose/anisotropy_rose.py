@@ -425,9 +425,24 @@ def produce_histogram_plots(binned_data: np.ndarray, bins: np.ndarray, sphere_ra
 
     # Get the data to plot on the sphere
     if binned_data.ndim == 3:
-        sphere_intensity_data = binned_data[half_number_of_bins:, :, MagnitudeType.THREE_DIMENSIONAL]
+        # This first array corresponds to the mirrored angles on the back of the sphere
+        sphere_intensity_data_first_half: np.ndarray = binned_data[:half_number_of_bins, :half_number_of_bins,
+                                                                   MagnitudeType.THREE_DIMENSIONAL]
+
+        # This second array corresponds to the values on the front half of the sphere
+        sphere_intensity_data_second_half: np.ndarray = binned_data[half_number_of_bins:, half_number_of_bins:,
+                                                                    MagnitudeType.THREE_DIMENSIONAL]
+
     else:
-        sphere_intensity_data = binned_data[half_number_of_bins:, :]
+        sphere_intensity_data_first_half: np.ndarray = binned_data[:half_number_of_bins, :half_number_of_bins]
+
+        # This second array corresponds to the values on the front half of the sphere
+        sphere_intensity_data_second_half: np.ndarray = binned_data[half_number_of_bins:, half_number_of_bins:]
+
+    # Combine the two arrays together
+    sphere_intensity_data_first_half: np.ndarray = np.flip(sphere_intensity_data_first_half, axis=0)
+    sphere_intensity_data = np.concatenate([sphere_intensity_data_first_half, sphere_intensity_data_second_half],
+                                           axis=-1)
 
     # Get the cartesian coordinates of the sphere
     sphere_cartesian_coordinates = convert_spherical_to_cartesian_coordinates(angular_coordinates=sphere_angles,
@@ -489,12 +504,12 @@ def produce_histogram_plots(binned_data: np.ndarray, bins: np.ndarray, sphere_ra
     # Construct the 3D plot
     plt.figure(figsize=(10, 3.5))
     ax: mpl_toolkits.mplot3d.axes3d.Axes3D = plt.subplot(131, projection="3d")
-    ax.set_proj_type('persp')
+    ax.set_proj_type('ortho')
     ax.plot_surface(sphere_x, sphere_y, sphere_z, rstride=1, cstride=1, facecolors=sphere_face_colours, alpha=1,
                     linewidth=1)
     ax.set_xlim(-2.2, 2.2)
     ax.set_ylim(-2.2, 2.2)
-    ax.set_zlim(-2.2, 2.2)
+    ax.set_zlim(-1.75, 1.75)
     ax.set_title("Vector Intensity Distribution", fontweight="bold", fontsize=14)
 
     # Hide the 3D axis
