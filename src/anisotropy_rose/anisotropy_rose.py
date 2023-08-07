@@ -470,6 +470,9 @@ def produce_histogram_plots(binned_data: np.ndarray, bins: np.ndarray, sphere_ra
 
     # Now, let's also make the axis labels for the 3D plot. We'll have them at a distance of radius * 1.5
     phi_label_positions = np.arange(0, np.pi + 1e-2, np.pi / 6)
+
+    # Remove pi/2 (overlap between both rings)
+    phi_label_positions = phi_label_positions[phi_label_positions != np.pi / 2]
     number_of_phi_labels = len(phi_label_positions)
     theta_position_for_phi_labels = np.ones(number_of_phi_labels) * np.pi / 2
 
@@ -478,7 +481,7 @@ def produce_histogram_plots(binned_data: np.ndarray, bins: np.ndarray, sphere_ra
     spherical_coordinates_of_phi_labels[:, AngularIndex.THETA] = theta_position_for_phi_labels
 
     phi_label_positions_cartesian = convert_spherical_to_cartesian_coordinates(
-        angular_coordinates=spherical_coordinates_of_phi_labels, radius=1.5*sphere_radius
+        angular_coordinates=spherical_coordinates_of_phi_labels, radius=1.6*sphere_radius
     )
 
     phi_label_angles_degrees = np.degrees(phi_label_positions)
@@ -493,7 +496,7 @@ def produce_histogram_plots(binned_data: np.ndarray, bins: np.ndarray, sphere_ra
     spherical_coordinates_of_theta_labels[:, AngularIndex.PHI] = phi_position_for_theta_labels
 
     theta_label_positions_cartesian = convert_spherical_to_cartesian_coordinates(
-        angular_coordinates=spherical_coordinates_of_theta_labels, radius=1.5 * sphere_radius
+        angular_coordinates=spherical_coordinates_of_theta_labels, radius=1.6 * sphere_radius
     )
 
     theta_label_angles_degrees = np.degrees(theta_label_positions)
@@ -515,14 +518,20 @@ def produce_histogram_plots(binned_data: np.ndarray, bins: np.ndarray, sphere_ra
     surface = ax.plot_surface(sphere_x, sphere_y, sphere_z, rstride=1, cstride=1, facecolors=sphere_face_colours,
                              alpha=1)
     surface.set_edgecolor("white")
-    surface.set_linewidth(1)
+    surface.set_linewidth(0.25)
     ax.set_xlim(-2.2, 2.2)
     ax.set_ylim(-2.2, 2.2)
     ax.set_zlim(-1.75, 1.75)
     ax.set_title("Vector Intensity Distribution", fontweight="bold", fontsize=14)
 
     # Hide the 3D axis
-    ax.set_axis_off()
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_zticks([])
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_zlabel("z")
+    # ax.set_axis_off()
 
     # Add the plane for the spherical axes
     # phi_axis = CirclePolygon((0, 0), radius=1.4 * sphere_radius, fill=False, linewidth=0.5, linestyle="--")
@@ -533,7 +542,7 @@ def produce_histogram_plots(binned_data: np.ndarray, bins: np.ndarray, sphere_ra
 
     # ax.add_patch(phi_axis)
     # ax.add_patch(theta_axis)
-    phi_axis_positions = np.linspace(0, 2*np.pi)
+    phi_axis_positions = np.linspace(0, np.pi)
     phi_position_theta = np.ones_like(phi_axis_positions) * np.pi/2
 
     phi_axis_polar_positions = np.stack([phi_axis_positions, phi_position_theta], axis=-1)
@@ -549,15 +558,16 @@ def produce_histogram_plots(binned_data: np.ndarray, bins: np.ndarray, sphere_ra
 
     ax.plot(phi_axis_cartesian[:, 0],
             phi_axis_cartesian[:, 1],
-            phi_axis_cartesian[:, 2], "k--",
+            phi_axis_cartesian[:, 2], "k:",
             linewidth=0.5)
     ax.plot(theta_axis_cartesian[:, 0],
             theta_axis_cartesian[:, 1],
-            theta_axis_cartesian[:, 2], "k--",
+            theta_axis_cartesian[:, 2], "k:",
             linewidth=0.5)
 
     # Add the spherical axis labels
-    ax.text3D(0, 0, 1.75 * sphere_radius, r"$\mathbf{\phi}$", usetex=True, fontsize='x-large')
+    ax.text3D(0, 0, 1.2 * sphere_radius, r"$\phi$", fontsize='large', clip_on=True, alpha=0.5,
+              ha="center")
 
     for i in range(number_of_phi_labels):
         phi_in_degrees = phi_label_angles_degrees[i]
@@ -567,9 +577,10 @@ def produce_histogram_plots(binned_data: np.ndarray, bins: np.ndarray, sphere_ra
         label_y = label_position[1]
         label_z = label_position[2]
 
-        ax.text3D(label_x, label_y, label_z, phi_label_text, ha="center", alpha=0.5)
+        ax.text3D(label_x, label_y, label_z, phi_label_text, ha="center", alpha=0.5, clip_on=True)
 
-    ax.text3D(0, 1.75 * sphere_radius,  0, r"$\mathbf{\theta}$", usetex=True, fontsize='x-large')
+    ax.text3D(0, 1.2 * sphere_radius,  0, r"$\theta$", fontsize='large', clip_on=True, alpha=0.5,
+              ha="center")
     for i in range(number_of_theta_labels):
         theta_in_degrees = theta_label_angles_degrees[i]
         theta_label_text = f"{theta_in_degrees:.01f}\u00b0"
@@ -578,7 +589,7 @@ def produce_histogram_plots(binned_data: np.ndarray, bins: np.ndarray, sphere_ra
         label_y = label_position[1]
         label_z = label_position[2]
 
-        ax.text3D(label_x, label_y, label_z, theta_label_text, ha="center", alpha=0.5)
+        ax.text3D(label_x, label_y, label_z, theta_label_text, ha="center", alpha=0.5, clip_on=True)
 
     # Construct the theta polar plot
     ax2 = plt.subplot(132, projection="polar")
@@ -601,7 +612,7 @@ def produce_histogram_plots(binned_data: np.ndarray, bins: np.ndarray, sphere_ra
     ax3.bar(phi_bins, phi_histogram, align='edge', width=phi_bin_width, color="blue")
 
     # Show the plots
-    plt.subplots_adjust(wspace=0.5)
+    plt.subplots_adjust(left=0.05, right=0.95, wspace=0.25)
     plt.show()
 
 
