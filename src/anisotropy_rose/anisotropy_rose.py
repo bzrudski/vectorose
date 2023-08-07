@@ -12,9 +12,11 @@ import enum
 from typing import Optional, Tuple
 
 import mpl_toolkits.mplot3d.axes3d
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
+from matplotlib.patches import CirclePolygon
+from mpl_toolkits.mplot3d import art3d
 
 class MagnitudeType(enum.IntEnum):
     """
@@ -416,9 +418,14 @@ def produce_histogram_plots(binned_data: np.ndarray, bins: np.ndarray, sphere_ra
     # In terms of the number of bins, we want there to be half as many bins in phi as in theta (I think...),
     # since the phi bins only actually cover half the sphere while the theta bins go all the way around.
 
+    # In the mgrid, we are defining where the bin **dividers** go, not where the bins are! So, recall that we need to
+    # have one more divider than the number of bins.
+    number_of_phi_dividers = half_number_of_bins + 1
+    number_of_theta_dividers = number_of_bins + 1
+
     sphere_phi, sphere_theta = np.mgrid[
-        0: np.pi: half_number_of_bins * 1j,
-        -np.pi: np.pi: number_of_bins * 1j
+        0: np.pi: number_of_phi_dividers * 1j,
+        -np.pi: np.pi: number_of_theta_dividers * 1j
     ]
 
     sphere_angles = np.stack([sphere_phi, sphere_theta], axis=-1)
@@ -505,8 +512,10 @@ def produce_histogram_plots(binned_data: np.ndarray, bins: np.ndarray, sphere_ra
     plt.figure(figsize=(10, 3.5))
     ax: mpl_toolkits.mplot3d.axes3d.Axes3D = plt.subplot(131, projection="3d")
     ax.set_proj_type('ortho')
-    ax.plot_surface(sphere_x, sphere_y, sphere_z, rstride=1, cstride=1, facecolors=sphere_face_colours, alpha=1,
-                    linewidth=1)
+    surface = ax.plot_surface(sphere_x, sphere_y, sphere_z, rstride=1, cstride=1, facecolors=sphere_face_colours,
+                             alpha=1)
+    surface.set_edgecolor("white")
+    surface.set_linewidth(1)
     ax.set_xlim(-2.2, 2.2)
     ax.set_ylim(-2.2, 2.2)
     ax.set_zlim(-1.75, 1.75)
@@ -515,7 +524,41 @@ def produce_histogram_plots(binned_data: np.ndarray, bins: np.ndarray, sphere_ra
     # Hide the 3D axis
     ax.set_axis_off()
 
+    # Add the plane for the spherical axes
+    # phi_axis = CirclePolygon((0, 0), radius=1.4 * sphere_radius, fill=False, linewidth=0.5, linestyle="--")
+    # theta_axis = CirclePolygon((0, 0), radius=1.4 * sphere_radius, fill=False, linewidth=0.5, linestyle="--")
+    #
+    # art3d.patch_2d_to_3d(phi_axis, z=0, zdir="y")
+    # art3d.patch_2d_to_3d(theta_axis, z=0, zdir="z")
+
+    # ax.add_patch(phi_axis)
+    # ax.add_patch(theta_axis)
+    phi_axis_positions = np.linspace(0, 2*np.pi)
+    phi_position_theta = np.ones_like(phi_axis_positions) * np.pi/2
+
+    phi_axis_polar_positions = np.stack([phi_axis_positions, phi_position_theta], axis=-1)
+
+    phi_axis_cartesian = convert_spherical_to_cartesian_coordinates(phi_axis_polar_positions,
+                                                                    radius=1.4 * sphere_radius)
+
+    theta_axis_positions = np.linspace(0, 2*np.pi)
+    theta_axis_polar_positions = np.stack([phi_position_theta, theta_axis_positions], axis=-1)
+
+    theta_axis_cartesian = convert_spherical_to_cartesian_coordinates(theta_axis_polar_positions,
+                                                                      radius=1.4 * sphere_radius)
+
+    ax.plot(phi_axis_cartesian[:, 0],
+            phi_axis_cartesian[:, 1],
+            phi_axis_cartesian[:, 2], "k--",
+            linewidth=0.5)
+    ax.plot(theta_axis_cartesian[:, 0],
+            theta_axis_cartesian[:, 1],
+            theta_axis_cartesian[:, 2], "k--",
+            linewidth=0.5)
+
     # Add the spherical axis labels
+    ax.text3D(0, 0, 1.75 * sphere_radius, r"$\mathbf{\phi}$", usetex=True, fontsize='x-large')
+
     for i in range(number_of_phi_labels):
         phi_in_degrees = phi_label_angles_degrees[i]
         phi_label_text = f"{phi_in_degrees:.01f}\u00b0"
@@ -524,8 +567,9 @@ def produce_histogram_plots(binned_data: np.ndarray, bins: np.ndarray, sphere_ra
         label_y = label_position[1]
         label_z = label_position[2]
 
-        ax.text3D(label_x, label_y, label_z, phi_label_text)
-        
+        ax.text3D(label_x, label_y, label_z, phi_label_text, ha="center", alpha=0.5)
+
+    ax.text3D(0, 1.75 * sphere_radius,  0, r"$\mathbf{\theta}$", usetex=True, fontsize='x-large')
     for i in range(number_of_theta_labels):
         theta_in_degrees = theta_label_angles_degrees[i]
         theta_label_text = f"{theta_in_degrees:.01f}\u00b0"
@@ -534,7 +578,7 @@ def produce_histogram_plots(binned_data: np.ndarray, bins: np.ndarray, sphere_ra
         label_y = label_position[1]
         label_z = label_position[2]
 
-        ax.text3D(label_x, label_y, label_z, theta_label_text)
+        ax.text3D(label_x, label_y, label_z, theta_label_text, ha="center", alpha=0.5)
 
     # Construct the theta polar plot
     ax2 = plt.subplot(132, projection="polar")
