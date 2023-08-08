@@ -15,8 +15,6 @@ import mpl_toolkits.mplot3d.axes3d
 import matplotlib.pyplot as plt
 import numpy as np
 
-from matplotlib.patches import CirclePolygon
-from mpl_toolkits.mplot3d import art3d
 
 class MagnitudeType(enum.IntEnum):
     """
