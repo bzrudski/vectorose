@@ -514,7 +514,7 @@ def produce_histogram_plots(binned_data: np.ndarray, bins: np.ndarray, sphere_ra
     ax: mpl_toolkits.mplot3d.axes3d.Axes3D = plt.subplot(131, projection="3d")
     ax.set_proj_type('ortho')
     surface = ax.plot_surface(sphere_x, sphere_y, sphere_z, rstride=1, cstride=1, facecolors=sphere_face_colours,
-                             alpha=1)
+                              alpha=1)
     surface.set_edgecolor("white")
     surface.set_linewidth(0.25)
     ax.set_xlim(-2.2, 2.2)
