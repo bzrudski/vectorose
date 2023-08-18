@@ -80,7 +80,9 @@ def remove_zero_vectors(vectors: np.ndarray) -> np.ndarray:
     return non_zero_vectors
 
 
-def convert_spherical_to_cartesian_coordinates(angular_coordinates: np.ndarray, radius: float = 1) -> np.ndarray:
+def convert_spherical_to_cartesian_coordinates(
+    angular_coordinates: np.ndarray, radius: float = 1
+) -> np.ndarray:
     """
     Convert spherical coordinates to cartesian coordinates.
 
@@ -133,7 +135,9 @@ def convert_spherical_to_cartesian_coordinates(angular_coordinates: np.ndarray, 
     return cartesian_coordinates
 
 
-def compute_vector_orientation_angles(vectors: np.ndarray, use_degrees: bool = False) -> np.ndarray:
+def compute_vector_orientation_angles(
+    vectors: np.ndarray, use_degrees: bool = False
+) -> np.ndarray:
     """
     Compute the vector orientation angles phi and theta.
 
@@ -243,8 +247,12 @@ def compute_vector_magnitudes(vectors: np.ndarray) -> np.ndarray:
     return magnitudes_array
 
 
-def create_binned_orientation(vector_orientations: np.ndarray, vector_magnitudes: Optional[np.ndarray],
-                              half_number_of_bins: int = 16, use_degrees: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+def create_binned_orientation(
+    vector_orientations: np.ndarray,
+    vector_magnitudes: Optional[np.ndarray],
+    half_number_of_bins: int = 16,
+    use_degrees: bool = True,
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Bin the vector orientation data.
 
@@ -308,8 +316,12 @@ def create_binned_orientation(vector_orientations: np.ndarray, vector_magnitudes
         minimum_angle = -np.pi
         maximum_angle = np.pi
 
-    phi_histogram_bins = np.histogram_bin_edges(phi, bins=number_of_bins, range=(minimum_angle, maximum_angle))
-    theta_histogram_bins = np.histogram_bin_edges(theta, bins=number_of_bins, range=(minimum_angle, maximum_angle))
+    phi_histogram_bins = np.histogram_bin_edges(
+        phi, bins=number_of_bins, range=(minimum_angle, maximum_angle)
+    )
+    theta_histogram_bins = np.histogram_bin_edges(
+        theta, bins=number_of_bins, range=(minimum_angle, maximum_angle)
+    )
 
     # Digitize returns indices which are off-by-one
     phi_bin_indices = np.digitize(phi, phi_histogram_bins) - 1
@@ -332,7 +344,9 @@ def create_binned_orientation(vector_orientations: np.ndarray, vector_magnitudes
 
         if magnitude_weighted:
             angular_histogram_2d[phi_bin, theta_bin] += vector_magnitudes[i]
-            angular_histogram_2d[mirrored_phi_bin, mirrored_theta_bin] += vector_magnitudes[i]
+            angular_histogram_2d[
+                mirrored_phi_bin, mirrored_theta_bin
+            ] += vector_magnitudes[i]
         else:
             angular_histogram_2d[phi_bin, theta_bin] += 1
             angular_histogram_2d[mirrored_phi_bin, mirrored_theta_bin] += 1
@@ -343,8 +357,12 @@ def create_binned_orientation(vector_orientations: np.ndarray, vector_magnitudes
     return angular_histogram_2d, bin_boundaries
 
 
-def create_angular_binning_from_vectors(vectors: np.ndarray, half_number_of_bins: int = 18, use_degrees: bool = True,
-                                        weight_by_magnitude: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+def create_angular_binning_from_vectors(
+    vectors: np.ndarray,
+    half_number_of_bins: int = 18,
+    use_degrees: bool = True,
+    weight_by_magnitude: bool = True,
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Run the complete binning procedure on a list of vectors.
 
@@ -390,7 +408,9 @@ def create_angular_binning_from_vectors(vectors: np.ndarray, half_number_of_bins
     non_zero_vectors = remove_zero_vectors(vectors)
 
     # Compute the angles
-    vector_angles = compute_vector_orientation_angles(vectors=non_zero_vectors, use_degrees=use_degrees)
+    vector_angles = compute_vector_orientation_angles(
+        vectors=non_zero_vectors, use_degrees=use_degrees
+    )
 
     # If weighing by magnitude, compute the magnitudes.
     if weight_by_magnitude:
@@ -399,8 +419,11 @@ def create_angular_binning_from_vectors(vectors: np.ndarray, half_number_of_bins
         vector_magnitudes = None
 
     # Bin the data into the 2D histogram
-    binned_data, bins = create_binned_orientation(vector_orientations=vector_angles,
-                                                  vector_magnitudes=vector_magnitudes,
-                                                  half_number_of_bins=half_number_of_bins, use_degrees=use_degrees)
+    binned_data, bins = create_binned_orientation(
+        vector_orientations=vector_angles,
+        vector_magnitudes=vector_magnitudes,
+        half_number_of_bins=half_number_of_bins,
+        use_degrees=use_degrees,
+    )
 
     return binned_data, bins

@@ -15,11 +15,16 @@ from .core import create_angular_binning_from_vectors
 from .plotting import CardinalDirection, RotationDirection, produce_histogram_plots
 
 
-def perform_anisotropy_rose_pipeline(vectors: np.ndarray, half_number_of_bins: int = 18, use_degrees: bool = True,
-                                     sphere_radius: float = 2.0, weight_by_magnitude: bool = True,
-                                     zero_position_2d: CardinalDirection = CardinalDirection.NORTH,
-                                     rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
-                                     colour_map: str = "gray"):
+def perform_anisotropy_rose_pipeline(
+    vectors: np.ndarray,
+    half_number_of_bins: int = 18,
+    use_degrees: bool = True,
+    sphere_radius: float = 2.0,
+    weight_by_magnitude: bool = True,
+    zero_position_2d: CardinalDirection = CardinalDirection.NORTH,
+    rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
+    colour_map: str = "gray",
+):
     """
     Run the entire anisotropy rose pipeline.
 
@@ -43,9 +48,20 @@ def perform_anisotropy_rose_pipeline(vectors: np.ndarray, half_number_of_bins: i
 
     **TODO: Add the ability to easily save from here.**
     """
-    binned_data, bins = create_angular_binning_from_vectors(vectors=vectors, half_number_of_bins=half_number_of_bins,
-                                                            use_degrees=use_degrees, weight_by_magnitude=weight_by_magnitude)
 
-    produce_histogram_plots(binned_data=binned_data, bins=bins, sphere_radius=sphere_radius,
-                            zero_position_2d=zero_position_2d, rotation_direction=rotation_direction,
-                            use_degrees=use_degrees, colour_map=colour_map)
+    binned_data, bins = create_angular_binning_from_vectors(
+        vectors=vectors,
+        half_number_of_bins=half_number_of_bins,
+        use_degrees=use_degrees,
+        weight_by_magnitude=weight_by_magnitude,
+    )
+
+    produce_histogram_plots(
+        binned_data=binned_data,
+        bins=bins,
+        sphere_radius=sphere_radius,
+        zero_position_2d=zero_position_2d,
+        rotation_direction=rotation_direction,
+        use_degrees=use_degrees,
+        colour_map=colour_map,
+    )

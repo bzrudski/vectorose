@@ -35,12 +35,15 @@ class NumericExportType(enum.Enum):
         * EXCEL: Microsoft Excel spreadsheet (compatible with Excel 2007
             or later). File extension: ``*.xlsx``.
     """
+
     CSV = "csv"
     NPY = "npy"
     EXCEL = "xlsx"
 
 
-def __infer_filetype_from_filename(filename: str, file_type_enum: Type[enum.Enum]) -> Optional[enum.Enum]:
+def __infer_filetype_from_filename(
+    filename: str, file_type_enum: Type[enum.Enum]
+) -> Optional[enum.Enum]:
     """
     Infer a file type from a filename.
 
@@ -62,7 +65,7 @@ def __infer_filetype_from_filename(filename: str, file_type_enum: Type[enum.Enum
     basename, extension = os.path.splitext(filename)
 
     # Remove the dot from the extension.
-    cleaned_extension = extension.lstrip('.')
+    cleaned_extension = extension.lstrip(".")
 
     try:
         # Try to get the file type based on the extension.
@@ -74,7 +77,9 @@ def __infer_filetype_from_filename(filename: str, file_type_enum: Type[enum.Enum
     return file_type
 
 
-def __infer_numeric_filetype_from_filename(filename: str) -> Optional[NumericExportType]:
+def __infer_numeric_filetype_from_filename(
+    filename: str,
+) -> Optional[NumericExportType]:
     """
     Infer a ``NumericExportType`` from a filename.
 
@@ -88,16 +93,21 @@ def __infer_numeric_filetype_from_filename(filename: str) -> Optional[NumericExp
         Otherwise, ``None``.
     """
 
-    export_file_type = __infer_filetype_from_filename(filename=filename, file_type_enum=NumericExportType)
+    export_file_type = __infer_filetype_from_filename(
+        filename=filename, file_type_enum=NumericExportType
+    )
 
     return export_file_type
 
 
-def __export_data(data: np.ndarray, filepath: str | pd.ExcelWriter,
-                  column_headers: Optional[List] = None,
-                  indices: Optional[List] = None,
-                  sheet_name: str = "Sheet1",
-                  file_type: Optional[NumericExportType] = None):
+def __export_data(
+    data: np.ndarray,
+    filepath: str | pd.ExcelWriter,
+    column_headers: Optional[List] = None,
+    indices: Optional[List] = None,
+    sheet_name: str = "Sheet1",
+    file_type: Optional[NumericExportType] = None,
+):
     """
     Export array data to file.
 
@@ -144,7 +154,9 @@ def __export_data(data: np.ndarray, filepath: str | pd.ExcelWriter,
 
     file_extension = file_type.value
 
-    if not isinstance(filepath, pd.ExcelWriter) and not filepath.endswith(file_extension):
+    if not isinstance(filepath, pd.ExcelWriter) and not filepath.endswith(
+        file_extension
+    ):
         filepath = f"{filepath}.{file_extension}"
 
     # Now, we do a different saving procedure depending on the file type
@@ -161,18 +173,28 @@ def __export_data(data: np.ndarray, filepath: str | pd.ExcelWriter,
     should_write_columns = column_headers is not None
 
     if file_type is NumericExportType.CSV:
-        vector_data_frame.to_csv(filepath, sep="\t", index=should_write_indices, header=should_write_columns)
+        vector_data_frame.to_csv(
+            filepath, sep="\t", index=should_write_indices, header=should_write_columns
+        )
         return
 
     elif file_type is NumericExportType.EXCEL:
-        vector_data_frame.to_excel(filepath, sheet_name=sheet_name, index=should_write_indices,
-                                   header=should_write_columns)
+        vector_data_frame.to_excel(
+            filepath,
+            sheet_name=sheet_name,
+            index=should_write_indices,
+            header=should_write_columns,
+        )
         return
 
 
-def export_vectors_with_orientations(vectors: np.ndarray, angles: np.ndarray, filepath: str | pd.ExcelWriter,
-                                     sheet_name: str = "Sheet1",
-                                     file_type: Optional[NumericExportType] = None):
+def export_vectors_with_orientations(
+    vectors: np.ndarray,
+    angles: np.ndarray,
+    filepath: str | pd.ExcelWriter,
+    sheet_name: str = "Sheet1",
+    file_type: Optional[NumericExportType] = None,
+):
     """
     Export vectors with orientation data.
 
@@ -218,17 +240,24 @@ def export_vectors_with_orientations(vectors: np.ndarray, angles: np.ndarray, fi
 
     # sheet_name = "VectorsOrientations"
 
-    __export_data(data=vectors_with_orientation,
-                  filepath=filepath,
-                  column_headers=column_headers,
-                  sheet_name=sheet_name,
-                  file_type=file_type)
+    __export_data(
+        data=vectors_with_orientation,
+        filepath=filepath,
+        column_headers=column_headers,
+        sheet_name=sheet_name,
+        file_type=file_type,
+    )
 
 
-def export_one_dimensional_histogram(histogram_bins: np.ndarray, histogram_values: np.ndarray,
-                                     filepath: str | pd.ExcelWriter, bins_header: str = "Bin",
-                                     value_header: str = "Count", sheet_name: str = "Sheet1",
-                                     file_type: Optional[NumericExportType] = None):
+def export_one_dimensional_histogram(
+    histogram_bins: np.ndarray,
+    histogram_values: np.ndarray,
+    filepath: str | pd.ExcelWriter,
+    bins_header: str = "Bin",
+    value_header: str = "Count",
+    sheet_name: str = "Sheet1",
+    file_type: Optional[NumericExportType] = None,
+):
     """
     Export a 1D histogram to a file.
 
@@ -273,23 +302,31 @@ def export_one_dimensional_histogram(histogram_bins: np.ndarray, histogram_value
     histogram_bin_starts = histogram_bins[:-1]
     histogram_bin_ends = histogram_bins[1:]
 
-    complete_histogram_data = np.stack(histogram_bin_starts, histogram_bin_ends, histogram_values, axis=-1)
+    complete_histogram_data = np.stack(
+        histogram_bin_starts, histogram_bin_ends, histogram_values, axis=-1
+    )
 
     start_label = f"{bins_header}_Start"
     end_label = f"{bins_header}_End"
 
     column_headers = [start_label, end_label, value_header]
 
-    __export_data(data=complete_histogram_data,
-                  filepath=filepath,
-                  column_headers=column_headers,
-                  sheet_name=sheet_name,
-                  file_type=file_type)
+    __export_data(
+        data=complete_histogram_data,
+        filepath=filepath,
+        column_headers=column_headers,
+        sheet_name=sheet_name,
+        file_type=file_type,
+    )
 
 
-def export_two_dimensional_histogram(histogram_bins: np.ndarray, histogram_values: np.ndarray,
-                                     filepath: str | pd.ExcelWriter, sheet_name: str = "Sheet1",
-                                     file_type: Optional[NumericExportType] = None):
+def export_two_dimensional_histogram(
+    histogram_bins: np.ndarray,
+    histogram_values: np.ndarray,
+    filepath: str | pd.ExcelWriter,
+    sheet_name: str = "Sheet1",
+    file_type: Optional[NumericExportType] = None,
+):
     """
     Export a 2D histogram.
 
@@ -331,8 +368,14 @@ def export_two_dimensional_histogram(histogram_bins: np.ndarray, histogram_value
     row_labels = histogram_bins[0]
     column_labels = histogram_bins[1]
 
-    __export_data(data=padded_histogram, filepath=filepath, column_headers=column_labels, indices=row_labels,
-                  sheet_name=sheet_name, file_type=file_type)
+    __export_data(
+        data=padded_histogram,
+        filepath=filepath,
+        column_headers=column_labels,
+        indices=row_labels,
+        sheet_name=sheet_name,
+        file_type=file_type,
+    )
 
     if file_type is NumericExportType.NPY:
         bin_filepath = filepath
