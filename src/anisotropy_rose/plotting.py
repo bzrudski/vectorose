@@ -85,16 +85,20 @@ def produce_phi_theta_1d_histogram_data(binned_data: np.ndarray) -> np.ndarray:
     """
     Return the marginal 1D :math:`\\phi,\\theta` histogram arrays.
 
-    This function computes the marginal histogram frequencies for :math:`\\phi, \\theta`. The :math:`\\phi`
-    histogram relies on the 3D magnitude while the :math:`\\theta` histogram relies on the in-plane magnitude. If the
-    binned data is a 2D array, containing a count-based histogram, both marginals are computed using the same array,
-    summing along their respective axes.
+    This function computes the marginal histogram frequencies for
+    :math:`\\phi, \\theta`. The :math:`\\phi` histogram relies on the 3D
+    magnitude while the :math:`\\theta` histogram relies on the in-plane
+    magnitude. If the binned data is a 2D array, containing a
+    count-based histogram, both marginals are computed using the same
+    array, summing along their respective axes.
 
-    :param binned_data: NumPy array containing the 2D :math:`\phi,\theta` histogram. This may be either
-                        magnitude-weighted or count-weighted.
-    :return: NumPy array containing the marginal :math:`\phi,\theta` histograms. The zero-axis will have size 2,
-             with the first element containing the :math:`\phi` histogram and the second element containing the
-             :math:`theta` histogram.
+    :param binned_data: NumPy array containing the
+        2D :math:`\phi,\theta` histogram. This may be either
+        magnitude-weighted or count-weighted.
+    :return: NumPy array containing the marginal :math:`\phi,\theta`
+        histograms. The zero-axis will have size 2, with the first
+        element containing the :math:`\phi` histogram and the second
+        element containing the :math:`theta` histogram.
     """
     # Sum along an axis to compute the marginals
     if binned_data.ndim == 3:
@@ -546,24 +550,30 @@ def produce_histogram_plots(
     """
     Produce a show the anisotropy rose histograms.
 
-    This function produces and shows a 3-panel figure containing (from left to right):
+    This function produces and shows a 3-panel figure containing
+    (from left to right):
 
     * The 3D hemisphere plot of :math:`\\phi,\\theta`.
     * The 2D polar histogram of :math:`\\theta`.
     * The 2D polar histogram of :math:`\\phi`.
 
-    A number of plotting parameters may be modified here. See the parameter descriptions for more details.
+    A number of plotting parameters may be modified here. See the
+    parameter descriptions for more details.
 
-    :param binned_data: The binned histogram data for the :math:`\phi,\theta` plane.
+    :param binned_data: The binned histogram data for the
+        :math:`\phi,\theta` plane.
     :param bins: The boundaries of the bins.
     :param sphere_radius: The radius of the sphere used for 3D plotting.
-    :param zero_position_2d: The cardinal direction where zero should be placed in the 2D polar histograms
-                             (default: North).
-    :param rotation_direction: The direction of increasing angles in the 2D polar histograms (default: clockwise).
-    :param use_degrees: Indicate whether the values are in degrees. If ``True``, values are assumed to be in
-                        degrees. Otherwise, radians are assumed.
-    :param colour_map: Name of the matplotlib colourmap to use to colour the hemisphere. If an invalid name is
-                       provided, a default greyscale colourmap ("gray") will be used.
+    :param zero_position_2d: The cardinal direction where zero should be
+        placed in the 2D polar histograms (default: North).
+    :param rotation_direction: The direction of increasing angles in the
+        2D polar histograms (default: clockwise).
+    :param use_degrees: Indicate whether the values are in degrees. If
+        ``True``, values are assumed to be in degrees. Otherwise,
+        radians are assumed.
+    :param colour_map: Name of the matplotlib colourmap to use to colour
+        the hemisphere. If an invalid name is provided, a default
+        greyscale colourmap ("gray") will be used.
     :param plot_title: title of the overall plot (optional).
     :return: ``None``, but produces a figure on the screen.
     """
