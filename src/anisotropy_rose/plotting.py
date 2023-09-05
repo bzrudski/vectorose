@@ -10,7 +10,7 @@ of anisotropy vector fields.
 """
 
 import enum
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any
 
 import mpl_toolkits.mplot3d.axes3d
 import matplotlib as mpl
@@ -201,6 +201,8 @@ def produce_spherical_histogram_plot(
     axes_z_limits: tuple[float] = (-1.75, 1.75),
     hide_cartesian_axis_labels: bool = False,
     hide_cartesian_axis_ticks: bool = True,
+    plot_colourbar: bool = False,
+    colour_bar_kwargs: dict[str, Any] = {},
 ) -> mpl_toolkits.mplot3d.axes3d.Axes3D:
     """
     Produce a spherical histogram plot on the provided axes.
@@ -254,6 +256,9 @@ def produce_spherical_histogram_plot(
         axis labels for the cartesian axes.
     :param hide_cartesian_axis_ticks: Indicate whether to hide the axis
         ticks for the cartesian axes.
+    :param plot_colourbar: Indicate whether to include a colour bar on
+        the plot.
+    :param colour_bar_kwargs: keyword arguments for the colour bar.
     :return: a reference to the ``Axes3D`` object passed in as ``ax``.
     """
 
@@ -474,6 +479,10 @@ def produce_spherical_histogram_plot(
                 alpha=0.5,
                 clip_on=True,
             )
+
+    if plot_colourbar:
+        scalar_mappable = mpl.cm.ScalarMappable(norm=normaliser, cmap=mpl_colour_map)
+        plt.colorbar(mappable=scalar_mappable, ax=ax, **colour_bar_kwargs)
 
     return ax
 
