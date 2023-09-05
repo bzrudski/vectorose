@@ -98,6 +98,7 @@ def produce_histogram_plots(
     rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
     use_degrees: bool = True,
     colour_map: str = "gray",
+    plot_title: Optional[str] = None
 ):
     """
     Produce a show the anisotropy rose histograms.
@@ -120,6 +121,7 @@ def produce_histogram_plots(
                         degrees. Otherwise, radians are assumed.
     :param colour_map: Name of the matplotlib colourmap to use to colour the hemisphere. If an invalid name is
                        provided, a default greyscale colourmap ("gray") will be used.
+    :param plot_title: title of the overall plot (optional).
     :return: ``None``, but produces a figure on the screen.
     """
     # Compute the 1D histograms from the binned data
@@ -267,12 +269,12 @@ def produce_histogram_plots(
         facecolors=sphere_face_colours,
         alpha=1,
     )
-    surface.set_edgecolor("white")
-    surface.set_linewidth(0.25)
+    # surface.set_edgecolor("white")
+    # surface.set_linewidth(0.25)
     ax.set_xlim(-2.2, 2.2)
     ax.set_ylim(-2.2, 2.2)
     ax.set_zlim(-1.75, 1.75)
-    ax.set_title("Vector Intensity Distribution", fontweight="bold", fontsize=14)
+    ax.set_title("Vector Intensity Distribution", fontsize=14)
 
     # Hide the 3D axis
     ax.set_xticks([])
@@ -389,7 +391,7 @@ def produce_histogram_plots(
     ax2 = plt.subplot(132, projection="polar")
     ax2.set_theta_direction(rotation_direction)
     ax2.set_theta_zero_location(zero_position_2d)
-    ax2.set_title(r"$\theta$ (Angle in $XY$)", fontweight="bold", fontsize=14)
+    ax2.set_title(r"$\theta$ (Angle in $XY$)", fontsize=14)
     ax2.axes.yaxis.set_ticklabels([])
     start, end = ax2.get_xlim()
     ax2.xaxis.set_ticks(np.arange(start, end, 30 * np.pi / 180))
@@ -401,12 +403,13 @@ def produce_histogram_plots(
     ax3 = plt.subplot(133, projection="polar")
     ax3.set_theta_direction(rotation_direction)
     ax3.set_theta_zero_location(zero_position_2d)
-    ax3.set_title(r"$\phi$ (Angle from $+Z$)", fontweight="bold", fontsize=14)
+    ax3.set_title(r"$\phi$ (Angle from $+Z$)", fontsize=14)
     ax3.axes.yaxis.set_ticklabels([])
     start, end = ax3.get_xlim()
     ax3.xaxis.set_ticks(np.arange(start, end, 30 * np.pi / 180))
     ax3.bar(phi_bins, phi_histogram, align="edge", width=phi_bin_width, color="blue")
 
     # Show the plots
+    plt.suptitle(plot_title, fontweight="bold", fontsize=14)
     plt.subplots_adjust(left=0.05, right=0.95, wspace=0.25)
     plt.show()
