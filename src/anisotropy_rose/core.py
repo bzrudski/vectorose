@@ -304,9 +304,7 @@ def create_binned_orientation(
     # the count-based approach.
     one_column = np.ones((1, number_of_vectors))
 
-    vector_magnitudes = np.concatenate(
-        [vector_magnitudes, one_column], axis=-1
-    )
+    vector_magnitudes = np.concatenate([vector_magnitudes, one_column], axis=-1)
 
     # Extract the angles
     phi = vector_orientations[:, AngularIndex.PHI]
@@ -346,9 +344,9 @@ def create_binned_orientation(
         mirrored_theta_bin = theta_bin - half_number_of_bins
 
         angular_histogram_2d[phi_bin, theta_bin] += vector_magnitudes[i]
-        angular_histogram_2d[
-            mirrored_phi_bin, mirrored_theta_bin
-        ] += vector_magnitudes[i]
+        angular_histogram_2d[mirrored_phi_bin, mirrored_theta_bin] += vector_magnitudes[
+            i
+        ]
 
     # Create an array that contains both the phi and theta
     # histogram boundaries.
@@ -358,9 +356,7 @@ def create_binned_orientation(
 
 
 def create_angular_binning_from_vectors(
-    vectors: np.ndarray,
-    half_number_of_bins: int = 18,
-    use_degrees: bool = True,
+    vectors: np.ndarray, half_number_of_bins: int = 18, use_degrees: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Run the complete binning procedure on a list of vectors.

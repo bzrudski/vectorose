@@ -68,5 +68,5 @@ def perform_anisotropy_rose_pipeline(
         rotation_direction=rotation_direction,
         use_degrees=use_degrees,
         colour_map=colour_map,
-        plot_title=plot_title
+        plot_title=plot_title,
     )
