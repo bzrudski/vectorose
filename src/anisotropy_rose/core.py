@@ -82,7 +82,7 @@ def remove_zero_vectors(vectors: np.ndarray) -> np.ndarray:
 
 
 def convert_spherical_to_cartesian_coordinates(
-    angular_coordinates: np.ndarray, radius: float = 1
+    angular_coordinates: np.ndarray, radius: float | np.ndarray = 1
 ) -> np.ndarray:
     """
     Convert spherical coordinates to cartesian coordinates.
@@ -113,8 +113,9 @@ def convert_spherical_to_cartesian_coordinates(
         datapoints. This function can also be used on the output of
         ``np.mgrid``, if the arrays have been stacked such that the
         final axis is used to distinguish between phi and theta.
-    :param radius: A single float representing the radius of the sphere
-        (default: unit radius).
+    :param radius: A float or array representing the radius of the
+        sphere (default: unit radius). If array, the array must have
+        ``n`` rows.
     :return: Array with 3 columns, corresponding to the cartesian
         coordinates in X, Y, Z, and ``n`` rows, one for each data point.
         If mgrids are provided, then multiple sheets will be returned in
@@ -186,6 +187,11 @@ def compute_vector_orientation_angles(
     """
 
     n = len(vectors)
+
+    # Ensure that all vectors are in octants with positive x.
+    vectors = np.copy(vectors)
+    vectors[vectors[:, 0] < 0] = -vectors[vectors[:, 0] < 0]
+
     x: np.ndarray = vectors[:, 0]
     y: np.ndarray = vectors[:, 1]
     z: np.ndarray = vectors[:, 2]
@@ -302,7 +308,7 @@ def create_binned_orientation(
 
     # Augment the vector counts with a `1` so that we can easily perform
     # the count-based approach.
-    one_column = np.ones((1, number_of_vectors))
+    one_column = np.ones((number_of_vectors, 1))
 
     vector_magnitudes = np.concatenate([vector_magnitudes, one_column], axis=-1)
 
@@ -343,10 +349,11 @@ def create_binned_orientation(
         theta_bin = theta_bin_indices[i]
         mirrored_theta_bin = theta_bin - half_number_of_bins
 
-        angular_histogram_2d[phi_bin, theta_bin] += vector_magnitudes[i]
-        angular_histogram_2d[mirrored_phi_bin, mirrored_theta_bin] += vector_magnitudes[
-            i
-        ]
+        # Why divide by 2? So that we aren't double-counting.
+        angular_histogram_2d[phi_bin, theta_bin] += vector_magnitudes[i] / 2
+        angular_histogram_2d[mirrored_phi_bin, mirrored_theta_bin] += (
+            vector_magnitudes[i] / 2
+        )
 
     # Create an array that contains both the phi and theta
     # histogram boundaries.
