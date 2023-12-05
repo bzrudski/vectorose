@@ -81,7 +81,9 @@ class AngularUnits(enum.Enum):
     RADIANS = 1
 
 
-def produce_phi_theta_1d_histogram_data(binned_data: np.ndarray) -> np.ndarray:
+def produce_phi_theta_1d_histogram_data(
+    binned_data: np.ndarray, weight_by_magnitude: bool = True,
+) -> np.ndarray:
     """
     Return the marginal 1D :math:`\\phi,\\theta` histogram arrays.
 
@@ -95,13 +97,16 @@ def produce_phi_theta_1d_histogram_data(binned_data: np.ndarray) -> np.ndarray:
     :param binned_data: NumPy array containing the
         2D :math:`\phi,\theta` histogram. This may be either
         magnitude-weighted or count-weighted.
+    :param weight_by_magnitude: Indicate whether the 1D histograms
+        should be weighted by magnitude. If ``False``, the produced
+        histograms will be weighted by count.
     :return: NumPy array containing the marginal :math:`\phi,\theta`
         histograms. The zero-axis will have size 2, with the first
         element containing the :math:`\phi` histogram and the second
         element containing the :math:`theta` histogram.
     """
     # Sum along an axis to compute the marginals
-    if binned_data.ndim == 3:
+    if weight_by_magnitude:
         phi_histogram = np.sum(
             binned_data[..., MagnitudeType.THREE_DIMENSIONAL], axis=AngularIndex.THETA
         )
@@ -109,8 +114,12 @@ def produce_phi_theta_1d_histogram_data(binned_data: np.ndarray) -> np.ndarray:
             binned_data[..., MagnitudeType.IN_PLANE], axis=AngularIndex.PHI
         )
     else:
-        phi_histogram = np.sum(binned_data, axis=AngularIndex.THETA)
-        theta_histogram = np.sum(binned_data, axis=AngularIndex.PHI)
+        phi_histogram = np.sum(
+            binned_data[..., MagnitudeType.COUNT], axis=AngularIndex.THETA
+        )
+        theta_histogram = np.sum(
+            binned_data[..., MagnitudeType.COUNT], axis=AngularIndex.PHI
+        )
 
     one_dimensional_histograms = np.stack([phi_histogram, theta_histogram])
 
@@ -555,6 +564,7 @@ def produce_histogram_plots(
     use_degrees: bool = True,
     colour_map: str = "gray",
     plot_title: Optional[str] = None,
+    weight_by_magnitude: bool = True,
 ):
     """
     Produce a show the anisotropy rose histograms.
@@ -584,19 +594,22 @@ def produce_histogram_plots(
         the hemisphere. If an invalid name is provided, a default
         greyscale colourmap ("gray") will be used.
     :param plot_title: title of the overall plot (optional).
+    :param weight_by_magnitude: Indicate whether plots should be
+        weighted by magnitude or simply by count.
     :return: ``None``, but produces a figure on the screen.
     """
     # Compute the 1D histograms from the binned data
-    one_dimensional_histograms = produce_phi_theta_1d_histogram_data(binned_data)
+    one_dimensional_histograms = produce_phi_theta_1d_histogram_data(
+        binned_data, weight_by_magnitude=weight_by_magnitude
+    )
     phi_histogram: np.ndarray = one_dimensional_histograms[AngularIndex.PHI]
     theta_histogram: np.ndarray = one_dimensional_histograms[AngularIndex.THETA]
 
     # Get the data to plot on the sphere
-    if binned_data.ndim == 3:
+    if weight_by_magnitude:
         original_intensity_data = binned_data[..., MagnitudeType.THREE_DIMENSIONAL]
-
     else:
-        original_intensity_data = binned_data
+        original_intensity_data = binned_data[..., MagnitudeType.COUNT]
 
     sphere_intensity_data = prepare_two_dimensional_histogram(
         binned_data=original_intensity_data
@@ -618,7 +631,7 @@ def produce_histogram_plots(
     # Need to convert the bins back to radians if things have been done in degrees
     if use_degrees:
         bins = np.radians(bins)
-    
+
     # Remove the last element
     bins = bins[:, :-1]
 

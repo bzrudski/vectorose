@@ -57,13 +57,13 @@ def perform_anisotropy_rose_pipeline(
         vectors=vectors,
         half_number_of_bins=half_number_of_bins,
         use_degrees=use_degrees,
-        weight_by_magnitude=weight_by_magnitude,
     )
 
     produce_histogram_plots(
         binned_data=binned_data,
         bins=bins,
         sphere_radius=sphere_radius,
+        weight_by_magnitude=weight_by_magnitude,
         zero_position_2d=zero_position_2d,
         rotation_direction=rotation_direction,
         use_degrees=use_degrees,

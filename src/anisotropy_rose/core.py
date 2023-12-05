@@ -51,6 +51,7 @@ class MagnitudeType(enum.IntEnum):
 
     THREE_DIMENSIONAL = 0
     IN_PLANE = 1
+    COUNT = 2
 
 
 def remove_zero_vectors(vectors: np.ndarray) -> np.ndarray:
@@ -249,59 +250,63 @@ def compute_vector_magnitudes(vectors: np.ndarray) -> np.ndarray:
 
 def create_binned_orientation(
     vector_orientations: np.ndarray,
-    vector_magnitudes: Optional[np.ndarray],
+    vector_magnitudes: np.ndarray,
     half_number_of_bins: int = 16,
     use_degrees: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Bin the vector orientation data.
 
-    Construct an array containing the histogram data obtained by binning the orientation data. This function will
-    return a >=2-dimensional array. If ``vector_magnitudes`` is ``None``, the result is a simple count-based
-    2D histogram of :math:`\\phi` vs. :math:`\\theta`. If ``vector_magnitudes`` is provided and contains **both**
-    the in-plane and 3D magnitudes, the output is two 2D histograms (stacked one on top of the other), which contain
-    magnitude-weighted frequencies.
+    Construct an array containing the histogram data obtained by binning
+    the orientation data.
 
-    The input angles must be in the range :math:`0 \\leq \\phi < \\pi` and :math:`0 \\leq \\theta < \\pi`
-    in radians, or :math:`0 \\leq \\phi < 180` and :math:`0 \\leq \\theta < 180` in degrees. There **cannot** be
-    any other orientations included, as these will be overwritten.
+    The input angles must be in the range :math:`0 \\leq \\phi < \\pi`
+    and :math:`0 \\leq \\theta < \\pi` in radians, or
+    :math:`0 \\leq \\phi < 180` and :math:`0 \\leq \\theta < 180` in
+    degrees. There **cannot** be any other orientations included, as
+    these will be overwritten.
 
-    Once the bins are assigned, a mirroring step is performed to fill in the missing angles. The mirroring is as
-    follows for the case where the magnitudes are provided:
+    Once the bins are assigned, a mirroring step is performed to fill in
+    the missing angles. In each case, the corresponding mirrored bin is
+    obtained by subtracting the half-number of bins.
 
-    * In the 3D magnitude-weighted histogram, no mirroring occurs, as :math:`\\phi` only extends from 0 to 180
-      degrees. The values are copied to the second half of the bins to allow simpler visualisation. However,
-      these values must **not** be used in a 3D visualisation.
-    * In the in-plane magnitude-weighted histogram, the values for the :math:`\\theta` bins going from 180 to 360
-      degrees are assigned the same values as the bins from 0 to 180 degrees.
-
-    In the case of count-weighted histograms, a simple mirroring approach is used that copies the counts for the
-    first half of the theta bins to the second half. No :math:`\\phi`-mirroring is necessary.
-
-    :param vector_orientations: 2D NumPy array containing ``n`` rows, one for each vector, and 2 columns,
-                                corresponding to the angles :math:`\phi,\theta`.
-    :param vector_magnitudes: Optional 2D NumPy array containing ``n`` rows, one for each vector, and 2 columns,
-                              corresponding to the 3D and in-plane magnitudes, respectively. If ``None``,
-                              then the histogram is based simply on counts, not on magnitudes.
-    :param half_number_of_bins: The half-number of bins. This represents the number of bins that should be produced
-                                in the 180\u00b0 (:math:`\\pi` rad) range for each set of angles. This number
-                                **must** be even.
-    :param use_degrees: Indicate whether the angles are provided in degrees. If ``True``, angles are interpreted as
-                        degrees, otherwise the angles are interpreted as radians.
-    :return: Tuple containing 2D histogram of :math:`\phi,\theta` and an array providing bounds of the histogram bins.
-             If the magnitudes are provided, this will be a two-sheet histogram, with dimensions
-             ``(half_number_of_bins * 2, half_number_of_bins * 2, 2)``. If the histogram is count-based,
-             the array is 2D (omitting the final index). Axis zero corresponds to :math:`\phi` and axis one
-             corresponds to :math:`\theta`. The histogram bins array is of shape ``(2,
-             2 * half_half_number_of_bins + 1)``, where the first row/sheet represents the bins for :math:`\phi` and
-             the second represents the bins for :math:`\theta`.
+    :param vector_orientations: 2D NumPy array containing ``n`` rows,
+        one for each vector, and 2 columns, corresponding to the
+        angles :math:`\phi,\theta`.
+    :param vector_magnitudes: 2D NumPy array containing ``n`` rows, one
+        for each vector, and 2 columns, corresponding to the 3D and
+        in-plane magnitudes, respectively.
+    :param half_number_of_bins: The half-number of bins. This represents
+        the number of bins that should be produced in the 180\u00b0
+        (:math:`\\pi` rad) range for each set of angles.
+    :param use_degrees: Indicate whether the angles are provided in
+        degrees. If ``True``, angles are interpreted as degrees,
+        otherwise the angles are interpreted as radians.
+    :return: Tuple containing 2D histograms of :math:`\phi,\theta` and
+        an array providing bounds of the histogram bins. The histogram
+        contains 3 sheets and has dimensions
+        ``(half_number_of_bins * 2, half_number_of_bins * 2, 3)``.
+         See ``MagnitudeType`` for the correct indexing for each sheet.
+         Axis zero corresponds to :math:`\phi` and axis one corresponds
+         to :math:`\theta`. The histogram bins array
+         is of shape ``(2, 2 * half_half_number_of_bins + 1)``, where
+         the first row/sheet represents the bins for :math:`\phi` and
+         the second represents the bins for :math:`\theta`.
     """
 
     # Indicate whether we are weighting by magnitude
-    magnitude_weighted = vector_magnitudes is not None
+    # magnitude_weighted = vector_magnitudes is not None
 
     # Get the number of vectors
     number_of_vectors = len(vector_orientations)
+
+    # Augment the vector counts with a `1` so that we can easily perform
+    # the count-based approach.
+    one_column = np.ones((1, number_of_vectors))
+
+    vector_magnitudes = np.concatenate(
+        [vector_magnitudes, one_column], axis=-1
+    )
 
     # Extract the angles
     phi = vector_orientations[:, AngularIndex.PHI]
@@ -327,14 +332,12 @@ def create_binned_orientation(
     phi_bin_indices = np.digitize(phi, phi_histogram_bins) - 1
     theta_bin_indices = np.digitize(theta, theta_histogram_bins) - 1
 
-    # Now, to prepare the histogram array, we need to check if we're weighing by magnitude
-    if magnitude_weighted:
-        angular_histogram_2d = np.zeros((number_of_bins, number_of_bins, 2))
-    else:
-        angular_histogram_2d = np.zeros((number_of_bins, number_of_bins))
+    # Now, to prepare the histogram array:
+    angular_histogram_2d = np.zeros((number_of_bins, number_of_bins, 3))
 
-    # Now, for the iterations. We can easily mirror through subtraction so that we can actually modify both the original
-    # and the reflected cells at the same time.
+    # Now, for the iterations. We can easily mirror through subtraction
+    # so that we can actually modify both the original and the reflected
+    # cells at the same time.
     for i in range(number_of_vectors):
         phi_bin = phi_bin_indices[i]
         mirrored_phi_bin = phi_bin - half_number_of_bins
@@ -342,16 +345,13 @@ def create_binned_orientation(
         theta_bin = theta_bin_indices[i]
         mirrored_theta_bin = theta_bin - half_number_of_bins
 
-        if magnitude_weighted:
-            angular_histogram_2d[phi_bin, theta_bin] += vector_magnitudes[i]
-            angular_histogram_2d[
-                mirrored_phi_bin, mirrored_theta_bin
-            ] += vector_magnitudes[i]
-        else:
-            angular_histogram_2d[phi_bin, theta_bin] += 1
-            angular_histogram_2d[mirrored_phi_bin, mirrored_theta_bin] += 1
+        angular_histogram_2d[phi_bin, theta_bin] += vector_magnitudes[i]
+        angular_histogram_2d[
+            mirrored_phi_bin, mirrored_theta_bin
+        ] += vector_magnitudes[i]
 
-    # Create an array that contains both the phi and theta histogram boundaries.
+    # Create an array that contains both the phi and theta
+    # histogram boundaries.
     bin_boundaries = np.stack([phi_histogram_bins, theta_histogram_bins])
 
     return angular_histogram_2d, bin_boundaries
@@ -361,7 +361,6 @@ def create_angular_binning_from_vectors(
     vectors: np.ndarray,
     half_number_of_bins: int = 18,
     use_degrees: bool = True,
-    weight_by_magnitude: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Run the complete binning procedure on a list of vectors.
@@ -381,11 +380,6 @@ def create_angular_binning_from_vectors(
     :param use_degrees: Indicates whether the angles should be computed
         in degrees. If ``True``, all angles will be stored in degrees
         (default). Otherwise, all angles will be stored in radians.
-    :param weight_by_magnitude: Indicate whether the histograms should
-        be weighted by magnitude. If ``True``, the :math:`\phi`
-        histogram is weighted by the 3D magnitude and the
-        :math:`\theta` histogram is weighted by the magnitude in
-        the :math:`(x,y)`-plane.
     :return: Tuple containing 2D histogram of :math:`\phi,\theta` and
         an array providing bounds of the histogram bins. If
         ``weight_by_magnitude`` is ``True``, this will be a two-sheet
@@ -413,10 +407,10 @@ def create_angular_binning_from_vectors(
     )
 
     # If weighing by magnitude, compute the magnitudes.
-    if weight_by_magnitude:
-        vector_magnitudes = compute_vector_magnitudes(non_zero_vectors)
-    else:
-        vector_magnitudes = None
+    # if weight_by_magnitude:
+    vector_magnitudes = compute_vector_magnitudes(non_zero_vectors)
+    # else:
+    #     vector_magnitudes = None
 
     # Bin the data into the 2D histogram
     binned_data, bins = create_binned_orientation(
