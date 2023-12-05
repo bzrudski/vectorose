@@ -82,7 +82,8 @@ class AngularUnits(enum.Enum):
 
 
 def produce_phi_theta_1d_histogram_data(
-    binned_data: np.ndarray, weight_by_magnitude: bool = True,
+    binned_data: np.ndarray,
+    weight_by_magnitude: bool = True,
 ) -> np.ndarray:
     """
     Return the marginal 1D :math:`\\phi,\\theta` histogram arrays.

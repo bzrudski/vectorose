@@ -191,7 +191,7 @@ def compute_vector_orientation_angles(
     z: np.ndarray = vectors[:, 2]
 
     # Compute the raw angles using arctan2
-    phi = np.arctan2(np.sqrt(x ** 2 + y ** 2), z)
+    phi = np.arctan2(np.sqrt(x**2 + y**2), z)
     theta = np.arctan2(x, y)
 
     # Now, we need to fix the angles so that we keep them in the appropriate ranges of zero to pi
@@ -238,8 +238,8 @@ def compute_vector_magnitudes(vectors: np.ndarray) -> np.ndarray:
     y: np.ndarray = vectors[:, 1]
     z: np.ndarray = vectors[:, 2]
 
-    three_dimensional_magnitude = np.sqrt(x ** 2 + y ** 2 + z ** 2)
-    in_plane_magnitude = np.sqrt(x ** 2 + y ** 2)
+    three_dimensional_magnitude = np.sqrt(x**2 + y**2 + z**2)
+    in_plane_magnitude = np.sqrt(x**2 + y**2)
 
     magnitudes_array = np.zeros((n, 2))
     magnitudes_array[:, MagnitudeType.IN_PLANE] = in_plane_magnitude
@@ -356,7 +356,9 @@ def create_binned_orientation(
 
 
 def create_angular_binning_from_vectors(
-    vectors: np.ndarray, half_number_of_bins: int = 18, use_degrees: bool = True,
+    vectors: np.ndarray,
+    half_number_of_bins: int = 18,
+    use_degrees: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Run the complete binning procedure on a list of vectors.
