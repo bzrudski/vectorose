@@ -6,6 +6,8 @@ Joseph Deering, Benjamin Rudski
 
 This module provides tools to create artificial vectors for testing.
 """
+from numbers import Real
+from typing import Sequence
 
 import numpy as np
 
@@ -94,3 +96,101 @@ def create_vectors_with_primary_orientation(
     )
 
     return cartesian_coordinates
+
+
+def create_vectors_multiple_orientations(
+    phis: Sequence[float] | np.ndarray,
+    thetas: Sequence[float] | np.ndarray,
+    numbers_of_vectors: Sequence[int] | np.ndarray | Real = 1000,
+    phi_stds: float | Sequence[float] | np.ndarray = 1.0,
+    theta_stds: float | Sequence[float] | np.ndarray = 1.0,
+    magnitudes: float | Sequence[float] | np.ndarray = 1.0,
+    magnitude_stds: float | Sequence[float] | np.ndarray = 0.5,
+    inversion_probs: float | Sequence[float] | np.ndarray = 0.5,
+    use_degrees: bool = False,
+) -> np.ndarray:
+    """
+    Create a noisy set of vectors with multiple orientations.
+
+    Create a set of noisy vectors with dominant magnitudes and multiple
+    dominant orientations. Gaussian noise is applied in both angular
+    directions and in the magnitude. These vectors are all assumed to be
+    located at the origin. This function does not consider any spatial
+    distribution. Arguments aside from phi and theta can be passed as
+    sequence or array types in order to have different properties
+    for each dominant direction.
+
+    :param phis: Dominant phi orientation.
+    :param thetas: Dominant theta orientation.
+    :param numbers_of_vectors: Number of vectors to produce.
+    :param phi_stds: Standard deviation of Gaussian noise applied to
+        the phi angles.
+    :param theta_stds: Standard deviation(s) of Gaussian noise applied
+        to the theta angles.
+    :param magnitudes: Average length(s) of the vectors.
+    :param magnitude_stds: Standard deviation(s) of Gaussian noise
+        applied to the magnitude.
+    :param inversion_probs: Probability of inverting the sense of the
+        vectors.
+    :param use_degrees: Indicate that angles are in degrees.
+    :return: NumPy array with ``sum(numbers_of_vectors)`` rows and three
+        columns, containing the respective ``x,y,z`` components of the
+        produced vectors.
+    """
+
+    # Convert the arguments to NumPy arrays
+    phi_array = np.array(phis)
+    theta_array = np.array(thetas)
+
+    # Get the number of vector families
+    number_of_families = len(phi_array)
+
+    # Convert the remaining parameters to arrays
+    arguments = {
+        "number_of_vectors": numbers_of_vectors,
+        "phi_std": phi_stds,
+        "theta_std": theta_stds,
+        "magnitude": magnitudes,
+        "magnitude_std": magnitude_stds,
+        "inversion_prob": inversion_probs,
+    }
+
+    corrected_argument_arrays = {}
+
+    for arr_name in arguments:
+        arg = arguments[arr_name]
+
+        if isinstance(arg, Real):
+            corrected_arr = arg * np.ones(number_of_families)
+        else:
+            corrected_arr = arg
+        corrected_argument_arrays[arr_name] = corrected_arr
+
+    numbers_of_vectors_array = corrected_argument_arrays["number_of_vectors"].astype(
+        int
+    )
+    phi_std_array = corrected_argument_arrays["phi_std"]
+    theta_std_array = corrected_argument_arrays["theta_std"]
+    magnitude_array = corrected_argument_arrays["magnitude"]
+    magnitude_std_array = corrected_argument_arrays["magnitude_std"]
+    inversion_probs_array = corrected_argument_arrays["inversion_prob"]
+
+    # And now, we can iterate:
+    vector_results = [
+        create_vectors_with_primary_orientation(
+            phi=phi_array[i],
+            theta=theta_array[i],
+            number_of_vectors=numbers_of_vectors_array[i],
+            phi_std=phi_std_array[i],
+            theta_std=theta_std_array[i],
+            magnitude=magnitude_array[i],
+            magnitude_std=magnitude_std_array[i],
+            inversion_prob=inversion_probs_array[i],
+            use_degrees=use_degrees,
+        )
+        for i in range(number_of_families)
+    ]
+
+    all_vectors = np.concatenate(vector_results, axis=0)
+
+    return all_vectors
