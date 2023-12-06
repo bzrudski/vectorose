@@ -566,6 +566,7 @@ def produce_histogram_plots(
     colour_map: str = "gray",
     plot_title: Optional[str] = None,
     weight_by_magnitude: bool = True,
+    **kwargs: dict[str, Any]
 ):
     """
     Produce a show the anisotropy rose histograms.
@@ -597,6 +598,7 @@ def produce_histogram_plots(
     :param plot_title: title of the overall plot (optional).
     :param weight_by_magnitude: Indicate whether plots should be
         weighted by magnitude or simply by count.
+    :param kwargs: extra keyword arguments for plotting.
     :return: ``None``, but produces a figure on the screen.
     """
     # Compute the 1D histograms from the binned data
@@ -626,6 +628,7 @@ def produce_histogram_plots(
         histogram_data=sphere_intensity_data,
         plot_title="Vector Intensity Distribution",
         colour_map=colour_map,
+        **kwargs
     )
 
     # Construct the 2D plots

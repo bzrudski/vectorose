@@ -9,7 +9,7 @@ the 2D and 3D rose diagrams of anisotropy vector fields given a
 vector field.
 
 """
-from typing import Optional
+from typing import Optional, Any
 
 import numpy as np
 
@@ -27,6 +27,7 @@ def perform_anisotropy_rose_pipeline(
     rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
     colour_map: str = "gray",
     plot_title: Optional[str] = None,
+    **kwargs: dict[str, Any],
 ):
     """
     Run the entire anisotropy rose pipeline.
@@ -48,6 +49,7 @@ def perform_anisotropy_rose_pipeline(
     :param colour_map: Name of the matplotlib colour map to be used in the 3D hemisphere plot. If an invalid name is
                        specified, the default greyscale map ("gray") is used.
     :param plot_title: Title of the overall plot.
+    :param kwargs: Additional keyword arguments for plotting.
     :return: ``None``, but produces a figure on screen.
 
     **TODO: Add the ability to easily save from here.**
@@ -69,4 +71,5 @@ def perform_anisotropy_rose_pipeline(
         use_degrees=use_degrees,
         colour_map=colour_map,
         plot_title=plot_title,
+        **kwargs,
     )
