@@ -553,7 +553,7 @@ def produce_polar_histogram_plot(
     bin_width = bins[1] - bins[0]
     ax.set_theta_direction(rotation_direction)
     ax.set_theta_zero_location(zero_position)
-    ax.set_title(plot_title, fontsize=14)
+    ax.set_title(plot_title)
     ax.axes.yaxis.set_ticklabels([])
 
     if axis_ticks_increment is not None:
