@@ -11,13 +11,16 @@ save vector fields and anisotropy histograms.
 
 import enum
 import os
-from typing import Optional, Type, List
+from typing import Optional, Type, List, Sequence
 
 import numpy as np
 import pandas as pd
 
+DEFAULT_LOCATION_COLUMNS = (0, 1, 2)
+DEFAULT_COMPONENT_COLUMNS = (-3, -2, -1)
 
-class NumericExportType(enum.Enum):
+
+class VectorFileType(enum.Enum):
     """
     Export types for numeric data.
 
@@ -77,27 +80,115 @@ def __infer_filetype_from_filename(
     return file_type
 
 
-def __infer_numeric_filetype_from_filename(
+def __infer_vector_filetype_from_filename(
     filename: str,
-) -> Optional[NumericExportType]:
+) -> Optional[VectorFileType]:
     """
-    Infer a ``NumericExportType`` from a filename.
+    Infer a ``VectorFileType`` from a filename.
 
-    This function tries to infer a ``NumericExportType`` from a provided
+    This function tries to infer a ``VectorFileType`` from a provided
     filename by checking the extension. If no valid extension is found,
-    ``None`` is returned. Otherwise, the determined export type is
+    ``None`` is returned. Otherwise, the determined vector type is
     returned.
 
     :param filename: string containing the filename.
-    :return: ``NumericExportType`` if a valid export filetype is found.
+    :return: ``VectorFileType`` if a valid vector filetype is found.
         Otherwise, ``None``.
     """
 
-    export_file_type = __infer_filetype_from_filename(
-        filename=filename, file_type_enum=NumericExportType
+    vector_file_type = __infer_filetype_from_filename(
+        filename=filename, file_type_enum=VectorFileType
     )
 
-    return export_file_type
+    return vector_file_type
+
+
+def import_vector_field(
+    filepath: str,
+    default_file_type: VectorFileType = VectorFileType.NPY,
+    contains_headers: bool = False,
+    sheet_name: Optional[str] = None,
+    location_columns: Optional[Sequence[int]] = DEFAULT_LOCATION_COLUMNS,
+    component_columns: Sequence[int] = DEFAULT_COMPONENT_COLUMNS,
+) -> Optional[np.ndarray]:
+    """
+    Import a vector field.
+
+    Load a vector field from a file into a NumPy array. For available
+    file formats, see ``VectorFileType``. The file type is inferred from
+    the filename. If it cannot be inferred, the ``default_file_type`` is
+    tried. If the vector field is not valid, then ``None`` is returned.
+
+    :param filepath: File path to the vector field file.
+    :param default_file_type: File type to attempt if the type cannot be
+        inferred from the filename.
+    :param contains_headers: Indicate whether the file contains headers.
+        This option is only considered if the vectors are in a CSV or
+        Excel file.
+    :param sheet_name: Name of the sheet to consider if the vectors are
+        in an Excel file.
+    :param location_columns: Columns indicating the spatial coordinates
+        of the vectors in the order ``(x, y, z)``. If this is set to
+        ``None``, the vectors are all assumed to be located at the
+        origin. By default, the first three columns are assumed to
+        refer to ``(x, y, z)``, respectively.
+    :param component_columns: Column indices referring to the vector
+        components in the order ``(vx, vy, vz)``. This argument
+        **cannot** be ``None``. By default, columns ``(-3, -2, -1)`` are
+        assumed to be the ``(vx, vy, vz)``.
+    :return: NumPy array containing the vectors. The array has shape
+        ``(n, 3)`` or ``(n, 6)``, depending on whether the locations
+        are included. The columns correspond to ``(x,y,z)`` coordinates
+        of the location (if available), followed by ``(vx, vy, vz)``
+        components. If the filetype cannot be properly inferred,
+        a value of ``None`` is returned instead.
+    """
+
+    # First, infer the file type from the filename
+    filetype = __infer_vector_filetype_from_filename(filepath)
+
+    # If inference fails, try the default file type.
+    if filetype is None:
+        filetype = default_file_type
+
+    if filetype is VectorFileType.NPY:
+        try:
+            vector_field: np.ndarray = np.load(filepath)
+        except (OSError, ValueError):
+            # Invalid NumPy array, so return None.
+            return None
+
+    # Use Pandas in the other cases
+    else:
+        header_row: Optional[int] = 0 if contains_headers else None
+        try:
+            # Reading function depends on whether CSV or Excel
+            if filetype is VectorFileType.CSV:
+                vector_field_dataframe = pd.read_csv(filepath, header=header_row)
+            elif filetype is VectorFileType.EXCEL:
+                vector_field_dataframe = pd.read_excel(
+                    filepath, sheet_name=sheet_name, header=header_row
+                )
+            else:
+                return None
+            vector_field = vector_field_dataframe.to_numpy()
+        except (OSError, ValueError):
+            return None
+
+    n, d = vector_field.shape
+
+    # Now, for the column parsing
+    if location_columns is None or d < 6:
+        # No location, only consider the components
+        clean_vector_field = vector_field[:, component_columns]
+    else:
+        # Consider both the location and the components.
+        # Squeeze is necessary to not break type safety.
+        clean_vector_field = vector_field[
+            :, (location_columns, component_columns)
+        ].squeeze(axis=-1)
+
+    return clean_vector_field
 
 
 def __export_data(
@@ -106,7 +197,7 @@ def __export_data(
     column_headers: Optional[List] = None,
     indices: Optional[List] = None,
     sheet_name: str = "Sheet1",
-    file_type: Optional[NumericExportType] = None,
+    file_type: Optional[VectorFileType] = None,
 ):
     """
     Export array data to file.
@@ -142,13 +233,13 @@ def __export_data(
     """
 
     if isinstance(filepath, pd.ExcelWriter):
-        file_type = NumericExportType.EXCEL
+        file_type = VectorFileType.EXCEL
 
     if file_type is None:
-        inferred_filetype = __infer_numeric_filetype_from_filename(filename=filepath)
+        inferred_filetype = __infer_vector_filetype_from_filename(filename=filepath)
 
         if inferred_filetype is None:
-            inferred_filetype = NumericExportType.CSV
+            inferred_filetype = VectorFileType.CSV
 
         file_type = inferred_filetype
 
@@ -160,7 +251,7 @@ def __export_data(
         filepath = f"{filepath}.{file_extension}"
 
     # Now, we do a different saving procedure depending on the file type
-    if file_type is NumericExportType.NPY:
+    if file_type is VectorFileType.NPY:
         np.save(filepath, data)
         return
 
@@ -172,13 +263,13 @@ def __export_data(
     should_write_indices = indices is not None
     should_write_columns = column_headers is not None
 
-    if file_type is NumericExportType.CSV:
+    if file_type is VectorFileType.CSV:
         vector_data_frame.to_csv(
             filepath, sep="\t", index=should_write_indices, header=should_write_columns
         )
         return
 
-    elif file_type is NumericExportType.EXCEL:
+    elif file_type is VectorFileType.EXCEL:
         vector_data_frame.to_excel(
             filepath,
             sheet_name=sheet_name,
@@ -193,7 +284,7 @@ def export_vectors_with_orientations(
     angles: np.ndarray,
     filepath: str | pd.ExcelWriter,
     sheet_name: str = "Sheet1",
-    file_type: Optional[NumericExportType] = None,
+    file_type: Optional[VectorFileType] = None,
 ):
     """
     Export vectors with orientation data.
@@ -256,7 +347,7 @@ def export_one_dimensional_histogram(
     bins_header: str = "Bin",
     value_header: str = "Count",
     sheet_name: str = "Sheet1",
-    file_type: Optional[NumericExportType] = None,
+    file_type: Optional[VectorFileType] = None,
 ):
     """
     Export a 1D histogram to a file.
@@ -325,7 +416,7 @@ def export_two_dimensional_histogram(
     histogram_values: np.ndarray,
     filepath: str | pd.ExcelWriter,
     sheet_name: str = "Sheet1",
-    file_type: Optional[NumericExportType] = None,
+    file_type: Optional[VectorFileType] = None,
 ):
     """
     Export a 2D histogram.
@@ -377,7 +468,7 @@ def export_two_dimensional_histogram(
         file_type=file_type,
     )
 
-    if file_type is NumericExportType.NPY:
+    if file_type is VectorFileType.NPY:
         bin_filepath = filepath
         filename_addition = "_histogram_bins.npy"
 

@@ -194,6 +194,7 @@ def produce_spherical_histogram_plot(
     ax: mpl_toolkits.mplot3d.axes3d.Axes3D,
     sphere_radius: float,
     histogram_data: np.ndarray,
+    weight_by_magnitude: bool,
     plot_title: Optional[str] = None,
     minimum_value: Optional[float] = None,
     maximum_value: Optional[float] = None,
@@ -231,9 +232,12 @@ def produce_spherical_histogram_plot(
         histogram. The projection of these axes **must** be 3D.
     :param sphere_radius: Radius of the sphere to plot.
     :param histogram_data: Binned data to plot. This data should have
-        the shape ``(n, 2n)`` where ``n`` represents the half-number of
+        the shape ``(2n, 2n)`` where ``n`` represents the half-number of
         histogram bins. We currently assume that the half-number of bins
-        is the **same** in both :math:`\\phi` and :math:`\\theta`.
+        is the **same** in both :math:`\\phi` and :math:`\\theta`. This
+        function separates the data to plot half of it on the sphere.
+    :param weight_by_magnitude: Indicate whether plots should be
+        weighted by magnitude or simply by count.
     :param plot_title: Title of the plot produced (optional).
     :param minimum_value: Minimum value for data normalisation. If not
         specified, the minimum of the data is automatically used
@@ -272,7 +276,18 @@ def produce_spherical_histogram_plot(
     :return: a reference to the ``Axes3D`` object passed in as ``ax``.
     """
 
-    half_number_of_bins, number_of_bins = histogram_data.shape
+    # Get the data to plot on the sphere. We must determine if we want
+    # it to be magnitude-weighted or count weighted.
+    if weight_by_magnitude:
+        original_intensity_data = histogram_data[..., MagnitudeType.THREE_DIMENSIONAL]
+    else:
+        original_intensity_data = histogram_data[..., MagnitudeType.COUNT]
+
+    cleaned_histogram_data = prepare_two_dimensional_histogram(
+        binned_data=original_intensity_data
+    )
+
+    half_number_of_bins, number_of_bins = cleaned_histogram_data.shape
 
     # Now, the age-old question... What do we want the bounds to be...
     # Well, we want to have the phi go from zero to 180 only! But, we
@@ -313,7 +328,7 @@ def produce_spherical_histogram_plot(
         mpl_colour_map = plt.get_cmap("gray")
 
     normaliser = plt.Normalize(vmin=minimum_value, vmax=maximum_value)
-    normalised_sphere_intensities = normaliser(histogram_data)
+    normalised_sphere_intensities = normaliser(cleaned_histogram_data)
     sphere_face_colours = mpl_colour_map(normalised_sphere_intensities)
 
     # Construct the 3D plot
@@ -566,7 +581,7 @@ def produce_histogram_plots(
     colour_map: str = "gray",
     plot_title: Optional[str] = None,
     weight_by_magnitude: bool = True,
-    **kwargs: dict[str, Any]
+    **kwargs: dict[str, Any],
 ):
     """
     Produce a show the anisotropy rose histograms.
@@ -608,16 +623,6 @@ def produce_histogram_plots(
     phi_histogram: np.ndarray = one_dimensional_histograms[AngularIndex.PHI]
     theta_histogram: np.ndarray = one_dimensional_histograms[AngularIndex.THETA]
 
-    # Get the data to plot on the sphere
-    if weight_by_magnitude:
-        original_intensity_data = binned_data[..., MagnitudeType.THREE_DIMENSIONAL]
-    else:
-        original_intensity_data = binned_data[..., MagnitudeType.COUNT]
-
-    sphere_intensity_data = prepare_two_dimensional_histogram(
-        binned_data=original_intensity_data
-    )
-
     # Construct the 3D plot
     plt.figure(figsize=(10, 3.5))
     ax: mpl_toolkits.mplot3d.axes3d.Axes3D = plt.subplot(131, projection="3d")
@@ -625,10 +630,11 @@ def produce_histogram_plots(
     ax = produce_spherical_histogram_plot(
         ax=ax,
         sphere_radius=sphere_radius,
-        histogram_data=sphere_intensity_data,
+        histogram_data=binned_data,
+        weight_by_magnitude=weight_by_magnitude,
         plot_title="Vector Intensity Distribution",
         colour_map=colour_map,
-        **kwargs
+        **kwargs,
     )
 
     # Construct the 2D plots
