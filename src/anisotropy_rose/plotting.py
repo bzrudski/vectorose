@@ -571,6 +571,74 @@ def produce_polar_histogram_plot(
     return ax
 
 
+def produce_polar_histogram_plot_from_2d_bins(
+    ax: mpl.projections.polar.PolarAxes,
+    angle: AngularIndex,
+    data: numpy.ndarray,
+    bins: np.ndarray,
+    bin_angle_unit: AngularUnits = AngularUnits.DEGREES,
+    weight_by_magnitude: bool = True,
+    **kwargs: dict[str, Any],
+) -> mpl.projections.polar.PolarAxes:
+    """
+    Produce Polar Histogram from 2D binned data
+
+    Produce the polar histogram starting from the 2D histogram data.
+    This function takes in existing Matplotlib axes and plots the
+    histogram on them.
+
+    :param ax: Matplotlib polar axes on which the histogram will be
+        plotted.
+    :param angle: Indicate which angle to extract from the data. See
+        ``anisotropy_rose.core.AngularIndex`` for details.
+    :param data: 2D histogram binned data of shape ``(2n, 2n, 3)`` where
+        ``n`` is the half-number of bins used in the binning process.
+    :param bins: Bounds of the bins used to construct the histograms. If
+        the array is 2D, then the angular indexing will be used to
+        extract the phi bin boundaries. If ``2n + 1`` entries are
+        present, the last value is removed to ensure that only the lower
+        bound of each bin is kept.
+    :param bin_angle_unit: Unit for the bin angles.
+    :param weight_by_magnitude: Indicate whether the histograms should
+        be weighted by count or by magnitude. If magnitude is used, the
+        phi histogram is weighted by 3D magnitude while the theta
+        histogram is weighted by the projected magnitude in the XY
+        plane.
+    :param kwargs: Keyword arguments for the plotting. See
+        ``produce_polar_histogram_plot`` for more details.
+    :return: A reference to the axes used for plotting.
+    """
+
+    # Compute the 1D histograms from the binned data
+    one_dimensional_histograms = produce_phi_theta_1d_histogram_data(
+        data, weight_by_magnitude=weight_by_magnitude
+    )
+
+    # Select the relevant 1D histogram
+    selected_histogram_data = one_dimensional_histograms[angle]
+
+    if bin_angle_unit == AngularUnits.DEGREES:
+        bins = np.radians(bins)
+
+    data_shape = selected_histogram_data.shape
+    bin_shape = bins.shape
+
+    if len(bin_shape) == 2:
+        bins = bins[angle]
+
+    if len(bins) > data_shape[0]:
+        bins = bins[:-1]
+
+    ax = produce_polar_histogram_plot(
+        ax=ax,
+        data=selected_histogram_data,
+        bins=bins,
+        **kwargs
+    )
+
+    return ax
+
+
 def produce_histogram_plots(
     binned_data: np.ndarray,
     bins: np.ndarray,
@@ -616,6 +684,7 @@ def produce_histogram_plots(
     :param kwargs: extra keyword arguments for plotting.
     :return: ``None``, but produces a figure on the screen.
     """
+
     # Compute the 1D histograms from the binned data
     one_dimensional_histograms = produce_phi_theta_1d_histogram_data(
         binned_data, weight_by_magnitude=weight_by_magnitude
