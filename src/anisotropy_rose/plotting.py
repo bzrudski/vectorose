@@ -207,6 +207,8 @@ def produce_spherical_histogram_plot(
     label_theta_axis: bool = True,
     phi_label_positions: np.ndarray = np.arange(0, np.pi + 1e-2, np.pi / 6),
     theta_label_positions: np.ndarray = np.arange(0, 2 * np.pi, np.pi / 6),
+    phi_axis_colour: str = "black",
+    theta_axis_colour: str = "black",
     axes_x_limits: tuple[float] = (-2.2, 2.2),
     axes_y_limits: tuple[float] = (-2.2, 2.2),
     axes_z_limits: tuple[float] = (-1.75, 1.75),
@@ -263,6 +265,8 @@ def produce_spherical_histogram_plot(
         labels for :math:`\\phi` along its circular axis.
     :param theta_label_positions: Indicate angular positions for the
         labels for :math:`\\theta` along its circular axis.
+    :param phi_axis_colour: Colour for the phi axis.
+    :param theta_axis_colour: Colour for the theta axis.
     :param axes_x_limits: Figure size limits along the ``x``-axis.
     :param axes_y_limits: Figure size limits along the ``y``-axis.
     :param axes_z_limits: Figure size limits along the ``z``-axis.
@@ -379,8 +383,9 @@ def produce_spherical_histogram_plot(
             phi_axis_cartesian[:, 0],
             phi_axis_cartesian[:, 1],
             phi_axis_cartesian[:, 2],
-            "k:",
+            ":",
             linewidth=0.5,
+            color=phi_axis_colour,
         )
 
     if plot_theta_axis:
@@ -398,8 +403,9 @@ def produce_spherical_histogram_plot(
             theta_axis_cartesian[:, 0],
             theta_axis_cartesian[:, 1],
             theta_axis_cartesian[:, 2],
-            "k:",
+            ":",
             linewidth=0.5,
+            color=theta_axis_colour,
         )
 
     # Add the spherical axis labels
@@ -519,8 +525,9 @@ def produce_polar_histogram_plot(
     zero_position: CardinalDirection = CardinalDirection.NORTH,
     rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
     plot_title: Optional[str] = None,
-    axis_ticks_increment: Optional[float] = 30,
-    axis_ticks_increment_unit: AngularUnits = AngularUnits.DEGREES,
+    label_axis: bool = True,
+    axis_ticks: np.ndarray = np.arange(0, 360, 30),
+    axis_ticks_unit: AngularUnits = AngularUnits.DEGREES,
     colour: str = "blue",
 ) -> mpl.projections.polar.PolarAxes:
     """
@@ -534,19 +541,19 @@ def produce_polar_histogram_plot(
     :param data: Data to plot. This should have the same size
         as ``bins``.
     :param bins: Lower value of each bin in the histogram.
+        matplotlib colour.
     :param zero_position: Cardinal direction corresponding to where 0
         should be placed on the polar axes.
     :param rotation_direction: Direction in which the bin values should
         increase from the zero-point specified in ``zero_position``.
     :param plot_title: Optional title of the plot.
-    :param axis_ticks_increment: Increment of the polar axis ticks. This
-        value may be specified in degrees or radians. Unit is specified
-        in ``axis_ticks_increment_unit``. If ``None``, then no axis
-        ticks are included.
-    :param axis_ticks_increment_unit: Indicates what angular unit is
+    :param label_axis: Indicate whether the circumferential axis should
+        be labelled.
+    :param axis_ticks: Axis ticks for the histogram. Units specified
+        in ``axis_ticks_unit``.
+    :param axis_ticks_unit: Indicates what angular unit is
         used for specifying the axis ticks. Default is degrees.
     :param colour: Colour used for the histogram bars. Must be a valid
-        matplotlib colour.
     :return: The ``PolarAxes`` used for plotting.
     """
 
@@ -556,13 +563,14 @@ def produce_polar_histogram_plot(
     ax.set_title(plot_title)
     ax.axes.yaxis.set_ticklabels([])
 
-    if axis_ticks_increment is not None:
-        start, end = ax.get_xlim()
+    if label_axis:
+        # start, end = ax.get_xlim()
 
-        if axis_ticks_increment_unit is AngularUnits.DEGREES:
-            axis_ticks_increment = np.radians(axis_ticks_increment)
+        if axis_ticks_unit is AngularUnits.DEGREES:
+            axis_ticks = np.radians(axis_ticks)
+            # axis_ticks_increment = np.radians(axis_ticks_increment)
 
-        ax.xaxis.set_ticks(np.arange(start, end, axis_ticks_increment))
+        ax.xaxis.set_ticks(axis_ticks)
     else:
         ax.xaxis.set_ticks([])
 
@@ -630,10 +638,7 @@ def produce_polar_histogram_plot_from_2d_bins(
         bins = bins[:-1]
 
     ax = produce_polar_histogram_plot(
-        ax=ax,
-        data=selected_histogram_data,
-        bins=bins,
-        **kwargs
+        ax=ax, data=selected_histogram_data, bins=bins, **kwargs
     )
 
     return ax
