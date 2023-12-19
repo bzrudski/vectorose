@@ -16,6 +16,7 @@ import mpl_toolkits.mplot3d.axes3d
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.projections
+import matplotlib.colorbar
 import numpy
 import numpy as np
 
@@ -216,7 +217,7 @@ def produce_spherical_histogram_plot(
     hide_cartesian_axis_ticks: bool = True,
     plot_colourbar: bool = False,
     colour_bar_kwargs: dict[str, Any] = {},
-) -> mpl_toolkits.mplot3d.axes3d.Axes3D:
+) -> tuple[mpl_toolkits.mplot3d.axes3d.Axes3D, Optional[mpl.colorbar.Colorbar]]:
     """
     Produce a spherical histogram plot on the provided axes.
 
@@ -277,7 +278,8 @@ def produce_spherical_histogram_plot(
     :param plot_colourbar: Indicate whether to include a colour bar on
         the plot.
     :param colour_bar_kwargs: keyword arguments for the colour bar.
-    :return: a reference to the ``Axes3D`` object passed in as ``ax``.
+    :return: a reference to the ``Axes3D`` object passed in as ``ax``,
+        as well as a reference to the added ``ColorBar`` (or ``None``).
     """
 
     # Get the data to plot on the sphere. We must determine if we want
@@ -511,11 +513,13 @@ def produce_spherical_histogram_plot(
                 clip_on=True,
             )
 
+    colour_bar: Optional[mpl.colorbar.Colorbar] = None
+
     if plot_colourbar:
         scalar_mappable = mpl.cm.ScalarMappable(norm=normaliser, cmap=mpl_colour_map)
-        plt.colorbar(mappable=scalar_mappable, ax=ax, **colour_bar_kwargs)
+        colour_bar = plt.colorbar(mappable=scalar_mappable, ax=ax, **colour_bar_kwargs)
 
-    return ax
+    return ax, colour_bar
 
 
 def produce_polar_histogram_plot(
@@ -701,7 +705,7 @@ def produce_histogram_plots(
     plt.figure(figsize=(10, 3.5))
     ax: mpl_toolkits.mplot3d.axes3d.Axes3D = plt.subplot(131, projection="3d")
 
-    ax = produce_spherical_histogram_plot(
+    ax, _ = produce_spherical_histogram_plot(
         ax=ax,
         sphere_radius=sphere_radius,
         histogram_data=binned_data,
