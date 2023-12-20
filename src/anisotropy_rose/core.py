@@ -387,13 +387,12 @@ def create_angular_binning_from_vectors(
         (default). Otherwise, all angles will be stored in radians.
     :return: Tuple containing 2D histogram of :math:`\phi,\theta` and
         an array providing bounds of the histogram bins. If
-        ``weight_by_magnitude`` is ``True``, this will be a two-sheet
+        ``weight_by_magnitude`` is ``True``, this will be a three-sheet
         histogram, with dimensions ``(half_number_of_bins * 2,
-        half_number_of_bins * 2, 2)``. If the histogram is
-        count-based, the array is 2D (omitting the final index).
-        Axis zero corresponds to :math:`\phi` and axis one corresponds
-        to :math:`\theta`. The histogram bins array is of shape ``(2,
-        2 * half_half_number_of_bins + 1)``, where the first row
+        half_number_of_bins * 2, 3)``. Axis zero corresponds to
+        :math:`\phi` and axis one corresponds to :math:`\theta`. The
+        histogram bins array is of shape
+        ``(2, 2 * half_half_number_of_bins + 1)``, where the first row
         represents the bins for :math:`\phi` and the second represents
         the bins for :math:`\theta`.
     """

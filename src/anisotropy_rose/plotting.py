@@ -565,7 +565,7 @@ def produce_polar_histogram_plot(
     ax.set_theta_direction(rotation_direction)
     ax.set_theta_zero_location(zero_position)
     ax.set_title(plot_title)
-    ax.axes.yaxis.set_ticklabels([])
+    # ax.axes.yaxis.set_ticklabels([])
 
     if label_axis:
         # start, end = ax.get_xlim()
