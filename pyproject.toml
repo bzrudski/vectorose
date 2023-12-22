@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "anisotropy_rose"
-version = "0.0.6+2"
+version = "0.0.6+3"
 authors = [
     { name="Joseph Deering", email="joseph.deering@mcgill.ca" },
     { name="Benjamin Rudski", email="benjamin.rudski@mail.mcgill.ca" },

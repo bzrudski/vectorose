@@ -44,6 +44,29 @@ class VectorFileType(enum.Enum):
     EXCEL = "xlsx"
 
 
+class ImageFileType(enum.Enum):
+    """
+    Image File Types.
+
+    File types for images for export. These include both raster formats
+    (``*.png`` and ``*.tiff``) and vector formats (``*.svg`` and
+    ``*.pdf``). The members of this enumerated type have as value the
+    string extensions for the respective file types **without** the dot.
+    When constructing a filename, the dot must be added.
+
+    Attributes:
+        * PNG: Portable Network Graphics (png) image (raster).
+        * TIFF: Tagged Image File Format (tiff) image (raster).
+        * SVG: Scalable Vector Graphic (svg) image (vector).
+        * PDF: Portable Document Format (pdf) file (vector).
+    """
+
+    PNG = "png"
+    TIFF = "tiff"
+    SVG = "svg"
+    PDF = "pdf"
+
+
 def __infer_filetype_from_filename(
     filename: str, file_type_enum: Type[enum.Enum]
 ) -> Optional[enum.Enum]:
