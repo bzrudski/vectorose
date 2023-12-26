@@ -389,8 +389,8 @@ def create_angular_binning_from_vectors(
         an array providing bounds of the histogram bins. If
         ``weight_by_magnitude`` is ``True``, this will be a three-sheet
         histogram, with dimensions ``(half_number_of_bins * 2,
-        half_number_of_bins * 2, 3)``. Axis zero corresponds to
-        :math:`\phi` and axis one corresponds to :math:`\theta`. The
+        half_number_of_bins * 2, 3)``. Axis zero corresponds
+        to :math:`\phi` and axis one corresponds to  :math:`\theta`. The
         histogram bins array is of shape
         ``(2, 2 * half_half_number_of_bins + 1)``, where the first row
         represents the bins for :math:`\phi` and the second represents

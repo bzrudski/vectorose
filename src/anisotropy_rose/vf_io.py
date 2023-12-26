@@ -417,7 +417,7 @@ def export_one_dimensional_histogram(
     histogram_bin_ends = histogram_bins[1:]
 
     complete_histogram_data = np.stack(
-        histogram_bin_starts, histogram_bin_ends, histogram_values, axis=-1
+        [histogram_bin_starts, histogram_bin_ends, histogram_values], axis=-1
     )
 
     start_label = f"{bins_header}_Start"
