@@ -209,7 +209,7 @@ def import_vector_field(
         column_indices = list(location_columns) + list(component_columns)
 
         # Squeeze is necessary to not break type safety.
-        clean_vector_field = vector_field[:, column_indices].squeeze(axis=-1)
+        clean_vector_field = vector_field[:, column_indices]
 
     return clean_vector_field
 
