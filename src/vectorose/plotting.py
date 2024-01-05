@@ -210,14 +210,14 @@ def produce_spherical_histogram_plot(
     theta_label_positions: np.ndarray = np.arange(0, 2 * np.pi, np.pi / 6),
     phi_axis_colour: str = "black",
     theta_axis_colour: str = "black",
-    axes_x_limits: tuple[float] = (-2.2, 2.2),
-    axes_y_limits: tuple[float] = (-2.2, 2.2),
-    axes_z_limits: tuple[float] = (-1.75, 1.75),
+    axes_x_limits: Tuple[float, float] = (-2.2, 2.2),
+    axes_y_limits: Tuple[float, float] = (-2.2, 2.2),
+    axes_z_limits: Tuple[float, float] = (-1.75, 1.75),
     hide_cartesian_axis_labels: bool = False,
     hide_cartesian_axis_ticks: bool = True,
     plot_colourbar: bool = False,
     colour_bar_kwargs: dict[str, Any] = {},
-) -> tuple[mpl_toolkits.mplot3d.axes3d.Axes3D, Optional[mpl.colorbar.Colorbar]]:
+) -> Tuple[mpl_toolkits.mplot3d.axes3d.Axes3D, Optional[matplotlib.colorbar.Colorbar]]:
     """
     Produce a spherical histogram plot on the provided axes.
 
@@ -513,7 +513,7 @@ def produce_spherical_histogram_plot(
                 clip_on=True,
             )
 
-    colour_bar: Optional[mpl.colorbar.Colorbar] = None
+    colour_bar: Optional[matplotlib.colorbar.Colorbar] = None
 
     if plot_colourbar:
         scalar_mappable = mpl.cm.ScalarMappable(norm=normaliser, cmap=mpl_colour_map)
@@ -523,7 +523,7 @@ def produce_spherical_histogram_plot(
 
 
 def produce_polar_histogram_plot(
-    ax: mpl.projections.polar.PolarAxes,
+    ax: matplotlib.projections.polar.PolarAxes,
     data: numpy.ndarray,
     bins: np.ndarray,
     zero_position: CardinalDirection = CardinalDirection.NORTH,
@@ -533,7 +533,7 @@ def produce_polar_histogram_plot(
     axis_ticks: np.ndarray = np.arange(0, 360, 30),
     axis_ticks_unit: AngularUnits = AngularUnits.DEGREES,
     colour: str = "blue",
-) -> mpl.projections.polar.PolarAxes:
+) -> matplotlib.projections.polar.PolarAxes:
     """
     Produce 2D polar histogram.
 
