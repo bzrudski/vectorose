@@ -11,7 +11,7 @@ binning the orientations.
 """
 
 import enum
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import numpy as np
 
@@ -82,7 +82,7 @@ def remove_zero_vectors(vectors: np.ndarray) -> np.ndarray:
 
 
 def convert_spherical_to_cartesian_coordinates(
-    angular_coordinates: np.ndarray, radius: float | np.ndarray = 1
+    angular_coordinates: np.ndarray, radius: Union[float, np.ndarray] = 1
 ) -> np.ndarray:
     """
     Convert spherical coordinates to cartesian coordinates.
