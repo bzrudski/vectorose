@@ -1,11 +1,10 @@
-"""
-Anisotropy Rose - Angle Calculations
+"""Angle and histogram calculations
 
-Joseph Deering, Benjamin Rudski
-2023
+Benjamin Rudski, Joseph Deering
+2023--
 
-This module provides the calculations for the :math:`\phi` and
-:math:`\theta` angles from a vector field, as well as the functions for
+This module provides the calculations for the :math:`\\phi` and
+:math:`\\theta` angles from a vector field, as well as the functions for
 binning the orientations.
 
 """
@@ -17,21 +16,20 @@ import numpy as np
 
 
 class AngularIndex(enum.IntEnum):
+    """Angular Index
+
+    Stores the index of the different angles to avoid ambiguity in code.
+
+    Attributes
+    ----------
+    PHI
+        Angle phi (:math:`\\phi`), representing the angle with respect to
+        the positive :math:`y`-axis. Index 0 in all arrays.
+
+    THETA
+        Angle theta (:math:`\\theta`), representing the angle of incline
+        with respect to the positive :math:`z`-axis. Index 1 in all arrays.
     """
-    Angular Index
-
-    Stores the index of the different angles to avoid ambiguity in
-    code.
-
-    Attributes:
-        * PHI: Angle phi (:math:`\\phi`), representing the angle with
-            respect to the positive :math:`y`-axis. Index 0 in all
-            arrays.
-        * THETA: Angle theta (:math:`\\theta`), representing the angle
-            of incline with respect to the positive :math:`z`-axis.
-            Index 1 in all arrays.
-    """
-
     PHI = 0
     THETA = 1
 
@@ -42,11 +40,18 @@ class MagnitudeType(enum.IntEnum):
 
     Type of magnitude considered when constructing the histograms.
 
-    Attributes:
-        * THREE_DIMENSIONAL: Euclidean magnitude in 3D space. Index 0 in
-            all arrays.
-        * IN_PLANE: Magnitude of the :math:`x,y`-projection of the
-            vector. Index 1 in all arrays.
+    Attributes
+    ----------
+
+    THREE_DIMENSIONAL
+        Euclidean magnitude in 3D space. Index 0 in all arrays.
+
+    IN_PLANE
+        Magnitude of the :math:`x,y`-projection of the vector. Index 1 in 
+        all arrays.
+
+    COUNT
+        Simple count-based approach, where every vector has a weight of 1.
     """
 
     THREE_DIMENSIONAL = 0
@@ -55,16 +60,22 @@ class MagnitudeType(enum.IntEnum):
 
 
 def remove_zero_vectors(vectors: np.ndarray) -> np.ndarray:
-    """
-    Prune zero-vectors.
+    """Prune zero-vectors.
 
     Remove vectors of zero magnitude from the list of vectors.
 
-    :param vectors: ``n`` by 6 or ``n`` by 3 array of vectors. If the
-        array has 6 columns, **the last 3 are assumed to be the vector
-        components**.
-    :return: list of vectors with the same number of columns as the
-        original, without any vectors of zero magnitude.
+    Parameters
+    ----------
+
+    vectors: 
+        ``n`` by 6 or ``n`` by 3 array of vectors. If the array has 6 
+        columns, *the last 3 are assumed to be the vector components*.
+
+    Return
+    ------
+    np.ndarray:
+        List of vectors with the same number of columns as the
+        original without any vectors of zero magnitude.
     """
 
     # Determine which columns contain the vector components
@@ -84,14 +95,13 @@ def remove_zero_vectors(vectors: np.ndarray) -> np.ndarray:
 def convert_spherical_to_cartesian_coordinates(
     angular_coordinates: np.ndarray, radius: Union[float, np.ndarray] = 1
 ) -> np.ndarray:
-    """
-    Convert spherical coordinates to cartesian coordinates.
+    """Convert spherical coordinates to cartesian coordinates.
 
     Convert spherical coordinates provided in terms of phi and theta
     into cartesian coordinates. For the conversion to be possible, a
     sphere radius must also be specified. If none is provided, the
     sphere is assumed to be the unit sphere. The angles must be provided
-     in **radians**.
+    in **radians**.
 
     The equations governing the conversion are:
 
@@ -108,18 +118,27 @@ def convert_spherical_to_cartesian_coordinates(
     The returned array is also a 2D array, with three columns (X, Y, Z)
     and ``n`` rows.
 
-    :param angular_coordinates: Array with >=2 columns representing phi
-        and theta, respectively, and ``n`` rows representing the
-        datapoints. This function can also be used on the output of
-        ``np.mgrid``, if the arrays have been stacked such that the
-        final axis is used to distinguish between phi and theta.
-    :param radius: A float or array representing the radius of the
-        sphere (default: unit radius). If array, the array must have
-        ``n`` rows.
-    :return: Array with 3 columns, corresponding to the cartesian
+    Parameters
+    ----------
+    angular_coordinates
+        Array with >=2 columns representing :math:`phi` and :math:`theta`, 
+        respectively (see :func:`AngularIndex`), and ``n`` rows 
+        representing the data points. This function can also be used on the
+        output of :func:`np.mgrid`, if the arrays have been stacked such
+        that the final axis is used to distinguish between phi and theta.
+
+    radius
+        A `float` or `np.ndarray` representing the radius of the sphere.
+        If the value passed is an array, it must have ``n`` rows, one for
+        each data point. Default: ``radius=1``.
+
+    Return
+    ------
+    np.ndarray:
+        Array with 3 columns, corresponding to the cartesian
         coordinates in X, Y, Z, and ``n`` rows, one for each data point.
-        If mgrids are provided, then multiple sheets will be returned in
-        this array, with the -1 axis still used to distinguish between
+        If mgrids are provided, then multiple sheets will be returned 
+        in this array, with the -1 axis still used to distinguish between
         x, y, z.
     """
 
@@ -140,8 +159,7 @@ def convert_spherical_to_cartesian_coordinates(
 def compute_vector_orientation_angles(
     vectors: np.ndarray, use_degrees: bool = False
 ) -> np.ndarray:
-    """
-    Compute the vector orientation angles phi and theta.
+    """Compute the vector orientation angles phi and theta.
 
     For all vectors passed in ``vectors``, compute the :math:`\\phi` and
     :math:`\\theta` orientation angles. We define the angles to be:

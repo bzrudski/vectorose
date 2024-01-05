@@ -34,3 +34,13 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # a list of builtin themes.
 #
 html_theme = "furo"
+
+# -- Options for napoleon ----------------------------------------------------
+
+# We want the return type to be presented inline
+napoleon_use_rtype = False
+
+# We want the types to be pre-processed
+napoleon_preprocess_types = True
+
+
