@@ -9,7 +9,7 @@ the 2D and 3D rose diagrams of anisotropy vector fields given a
 vector field.
 
 """
-from typing import Optional, Any
+from typing import Dict, Optional, Any
 
 import numpy as np
 
@@ -27,7 +27,7 @@ def perform_anisotropy_rose_pipeline(
     rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
     colour_map: str = "gray",
     plot_title: Optional[str] = None,
-    **kwargs: dict[str, Any],
+    **kwargs: Dict[str, Any],
 ):
     """
     Run the entire anisotropy rose pipeline.

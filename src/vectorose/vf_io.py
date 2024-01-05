@@ -11,7 +11,7 @@ save vector fields and anisotropy histograms.
 
 import enum
 import os
-from typing import Optional, Type, List, Sequence
+from typing import Optional, Type, List, Sequence, Union
 
 import numpy as np
 import pandas as pd
@@ -216,7 +216,7 @@ def import_vector_field(
 
 def __export_data(
     data: np.ndarray,
-    filepath: str | pd.ExcelWriter,
+    filepath: Union[str, pd.ExcelWriter],
     column_headers: Optional[List] = None,
     indices: Optional[List] = None,
     sheet_name: str = "Sheet1",
@@ -305,7 +305,7 @@ def __export_data(
 def export_vectors_with_orientations(
     vectors: np.ndarray,
     angles: np.ndarray,
-    filepath: str | pd.ExcelWriter,
+    filepath: Union[str, pd.ExcelWriter],
     sheet_name: str = "Sheet1",
     file_type: Optional[VectorFileType] = None,
 ):
@@ -366,7 +366,7 @@ def export_vectors_with_orientations(
 def export_one_dimensional_histogram(
     histogram_bins: np.ndarray,
     histogram_values: np.ndarray,
-    filepath: str | pd.ExcelWriter,
+    filepath: Union[str, pd.ExcelWriter],
     bins_header: str = "Bin",
     value_header: str = "Count",
     sheet_name: str = "Sheet1",
@@ -437,7 +437,7 @@ def export_one_dimensional_histogram(
 def export_two_dimensional_histogram(
     histogram_bins: np.ndarray,
     histogram_values: np.ndarray,
-    filepath: str | pd.ExcelWriter,
+    filepath: Union[str, pd.ExcelWriter],
     sheet_name: str = "Sheet1",
     file_type: Optional[VectorFileType] = None,
 ):

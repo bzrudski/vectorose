@@ -10,7 +10,7 @@ of anisotropy vector fields.
 """
 
 import enum
-from typing import Optional, Tuple, Any
+from typing import Dict, Optional, Tuple, Any
 
 import mpl_toolkits.mplot3d.axes3d
 import matplotlib as mpl
@@ -590,7 +590,7 @@ def produce_polar_histogram_plot_from_2d_bins(
     bins: np.ndarray,
     bin_angle_unit: AngularUnits = AngularUnits.DEGREES,
     weight_by_magnitude: bool = True,
-    **kwargs: dict[str, Any],
+    **kwargs: Dict[str, Any],
 ) -> mpl.projections.polar.PolarAxes:
     """
     Produce Polar Histogram from 2D binned data
@@ -658,7 +658,7 @@ def produce_histogram_plots(
     colour_map: str = "gray",
     plot_title: Optional[str] = None,
     weight_by_magnitude: bool = True,
-    **kwargs: dict[str, Any],
+    **kwargs: Dict[str, Any],
 ):
     """
     Produce a show the anisotropy rose histograms.

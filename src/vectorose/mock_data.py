@@ -7,7 +7,7 @@ Joseph Deering, Benjamin Rudski
 This module provides tools to create artificial vectors for testing.
 """
 from numbers import Real
-from typing import Sequence
+from typing import Sequence, Union
 
 import numpy as np
 
@@ -99,14 +99,14 @@ def create_vectors_with_primary_orientation(
 
 
 def create_vectors_multiple_orientations(
-    phis: Sequence[float] | np.ndarray,
-    thetas: Sequence[float] | np.ndarray,
-    numbers_of_vectors: Sequence[int] | np.ndarray | Real = 1000,
-    phi_stds: float | Sequence[float] | np.ndarray = 1.0,
-    theta_stds: float | Sequence[float] | np.ndarray = 1.0,
-    magnitudes: float | Sequence[float] | np.ndarray = 1.0,
-    magnitude_stds: float | Sequence[float] | np.ndarray = 0.5,
-    inversion_probs: float | Sequence[float] | np.ndarray = 0.5,
+    phis: Union[Sequence[float], np.ndarray],
+    thetas: Union[Sequence[float], np.ndarray],
+    numbers_of_vectors: Union[Sequence[int], np.ndarray, Real] = 1000,
+    phi_stds: Union[float, Sequence[float], np.ndarray] = 1.0,
+    theta_stds: Union[float, Sequence[float], np.ndarray] = 1.0,
+    magnitudes: Union[float, Sequence[float], np.ndarray] = 1.0,
+    magnitude_stds: Union[float, Sequence[float], np.ndarray] = 0.5,
+    inversion_probs: Union[float, Sequence[float], np.ndarray] = 0.5,
     use_degrees: bool = False,
 ) -> np.ndarray:
     """
