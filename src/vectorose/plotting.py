@@ -20,7 +20,7 @@ import matplotlib.colorbar
 import numpy
 import numpy as np
 
-from .core import (
+from .vectorose import (
     MagnitudeType,
     AngularIndex,
     convert_spherical_to_cartesian_coordinates,

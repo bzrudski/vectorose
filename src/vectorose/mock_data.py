@@ -11,7 +11,7 @@ from typing import Sequence, Union
 
 import numpy as np
 
-from .core import convert_spherical_to_cartesian_coordinates
+from .vectorose import convert_spherical_to_cartesian_coordinates
 
 
 def create_vectors_with_primary_orientation(
