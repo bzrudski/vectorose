@@ -14,9 +14,10 @@ from typing import Dict, Optional, Tuple, Any
 
 import mpl_toolkits.mplot3d.axes3d
 import matplotlib as mpl
-import matplotlib.pyplot as plt
-import matplotlib.projections
+import matplotlib.cm
 import matplotlib.colorbar
+import matplotlib.projections
+import matplotlib.pyplot as plt
 import numpy
 import numpy as np
 
@@ -516,7 +517,7 @@ def produce_spherical_histogram_plot(
     colour_bar: Optional[matplotlib.colorbar.Colorbar] = None
 
     if plot_colourbar:
-        scalar_mappable = mpl.cm.ScalarMappable(norm=normaliser, cmap=mpl_colour_map)
+        scalar_mappable = matplotlib.cm.ScalarMappable(norm=normaliser, cmap=mpl_colour_map)
         colour_bar = plt.colorbar(mappable=scalar_mappable, ax=ax, **colour_bar_kwargs)
 
     return ax, colour_bar
@@ -562,8 +563,8 @@ def produce_polar_histogram_plot(
     """
 
     bin_width = bins[1] - bins[0]
-    ax.set_theta_direction(rotation_direction)
-    ax.set_theta_zero_location(zero_position)
+    ax.set_theta_direction(rotation_direction.value)
+    ax.set_theta_zero_location(zero_position.value)
     ax.set_title(plot_title)
     ax.axes.yaxis.set_ticklabels([])
 
@@ -584,14 +585,14 @@ def produce_polar_histogram_plot(
 
 
 def produce_polar_histogram_plot_from_2d_bins(
-    ax: mpl.projections.polar.PolarAxes,
+    ax: matplotlib.projections.polar.PolarAxes,
     angle: AngularIndex,
     data: numpy.ndarray,
     bins: np.ndarray,
     bin_angle_unit: AngularUnits = AngularUnits.DEGREES,
     weight_by_magnitude: bool = True,
     **kwargs: Dict[str, Any],
-) -> mpl.projections.polar.PolarAxes:
+) -> matplotlib.projections.polar.PolarAxes:
     """
     Produce Polar Histogram from 2D binned data
 
