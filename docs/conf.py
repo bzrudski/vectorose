@@ -20,6 +20,7 @@ extensions = [
     "autoapi.extension",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
+    "sphinx.ext.intersphinx"
 ]
 autoapi_dirs = ["../src"]
 
@@ -43,4 +44,12 @@ napoleon_use_rtype = False
 # We want the types to be pre-processed
 napoleon_preprocess_types = True
 
+# -- Options for intersphinx_mapping -----------------------------------------
 
+# See https://gist.github.com/bskinn/0e164963428d4b51017cebdb6cda5209
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'matplotlib': ('https://matplotlib.org/stable', None),
+    'pandas': ('https://pandas.pydata.org/docs', None),
+}
