@@ -1,11 +1,13 @@
-"""
-Anisotropy Rose
+# Copyright (c) 2023-, Benjamin Rudski, Joseph Deering
+#
+# This code is licensed under the MIT License. See the `LICENSE` file for
+# more details about copying.
 
-Joseph Deering, Benjamin Rudski
-2023
+"""
+Functions for plotting vector roses.
 
 This module provides the ability to construct 2D and 3D rose diagrams
-of anisotropy vector fields.
+of orientation/vector fields.
 
 """
 
@@ -32,9 +34,45 @@ class CardinalDirection(str, enum.Enum):
     """
     Cardinal Directions
 
-    This string-based enumerated type is useful when preparing 2D polar figures.
+    This string-based enumerated type is useful when preparing 2D polar
+    figures. Members reflect cardinal directions, which may be used to
+    indicate positions on circular (polar) axes. The values are consistent
+    with the Matplotlib convention (see
+    :meth:`matplotlib.projections.polar.PolarAxes.set_theta_zero_location`
+    for details).
 
-    See: https://matplotlib.org/stable/api/projections/polar.html#matplotlib.projections.polar.PolarAxes.set_theta_zero_location
+    Members
+    -------
+    NORTH
+        Location directly upwards.
+
+    NORTH_WEST
+        Location in the upper left corner.
+
+    WEST
+        Location on the left side.
+
+    SOUTH_WEST
+        Location in the lower left corner.
+
+    SOUTH
+        Location directly downwards.
+
+    SOUTH_EAST
+        Location in the lower right corner.
+
+    EAST
+        Location on the right side.
+
+    NORTH_EAST
+        Location in the upper right corner.
+
+    See Also
+    --------
+    matplotlib.projections.polar.PolarAxes.set_theta_zero_location:
+        Set the zero position of a polar plot using one of the member
+        values for this type.
+
     """
 
     NORTH = "N"
@@ -51,12 +89,25 @@ class RotationDirection(enum.IntEnum):
     """
     Rotation Direction
 
-    This int-based enumerated type defines two members:
+    This integer-based enumerated type represents two-dimensional rotation
+    direction. The convention used is consistent with the Matplotlib
+    documentation (see
+    :meth:matplotlib.projections.polar.PolarAxes.set_theta_direction for
+    details).
 
-    * Clockwise: -1
-    * Counter-clockwise / anti-clockwise: 1
+    Members
+    -------
+    CLOCKWISE:
+        Clockwise, or rightward rotation.
 
-    See: https://matplotlib.org/stable/api/projections/polar.html#matplotlib.projections.polar.PolarAxes.set_theta_direction
+    COUNTER_CLOCKWISE:
+        Counter-clockwise, anti-clockwise, or leftward rotation.
+
+    See Also
+    --------
+    matplotlib.projections.polar.PolarAxes.set_theta_direction:
+        Set the rotation direction of a polar plot using one of the member
+        values for this type.
     """
 
     CLOCKWISE = -1
@@ -72,11 +123,20 @@ class AngularUnits(enum.Enum):
     to the other, as this functionality is already very well included
     in NumPy.
 
-    Attributes:
-        * DEGREES: Indicates that angle is in degrees (typically in the
-            range 0 to 360 or -180 to +180).
-        * RADIANS: Indicates that angle is in radians (typically in the
-            range 0 to :math:`2\\pi` or :math:`-\\pi` to :math:`\\pi`).
+    Members
+    -------
+    DEGREES:
+        Represent angles in degrees (typically in the range 0 to 360 or
+        -180 to +180).
+
+    RADIANS:
+        Indicates that angle is in radians (typically in the range 0
+        to :math:`2\\pi` or :math:`-\\pi` to :math:`\\pi`).
+
+    See Also
+    --------
+    numpy.degrees: Convert numeric values from radians into degrees.
+    numpy.radians: Convert numeric values from degrees into radians.
     """
 
     DEGREES = 0
@@ -90,23 +150,44 @@ def produce_phi_theta_1d_histogram_data(
     """
     Return the marginal 1D :math:`\\phi,\\theta` histogram arrays.
 
-    This function computes the marginal histogram frequencies for
-    :math:`\\phi, \\theta`. The :math:`\\phi` histogram relies on the 3D
-    magnitude while the :math:`\\theta` histogram relies on the in-plane
-    magnitude. If the binned data is a 2D array, containing a
-    count-based histogram, both marginals are computed using the same
-    array, summing along their respective axes.
+    This function computes the marginal histograms for
+    :math:`\\phi, \\theta`. The histogram is calculated differently
+    depending on the value of ``weight_by_magnitude``. If
+    ``weight_by_magnitude`` is set to ``True``, then the :math:`\\phi`
+    histogram relies on the **3D magnitude** while the :math:`\\theta`
+    histogram relies on the **in-plane magnitude**. Otherwise, the non-
+    weighted count-based data are used for both one-dimensional histograms.
 
-    :param binned_data: NumPy array containing the
-        2D :math:`\phi,\theta` histogram. This may be either
-        magnitude-weighted or count-weighted.
-    :param weight_by_magnitude: Indicate whether the 1D histograms
-        should be weighted by magnitude. If ``False``, the produced
-        histograms will be weighted by count.
-    :return: NumPy array containing the marginal :math:`\phi,\theta`
-        histograms. The zero-axis will have size 2, with the first
-        element containing the :math:`\phi` histogram and the second
-        element containing the :math:`theta` histogram.
+    In both cases, the :math:`\\phi` histogram is obtained by summing the
+    binned values along the :math:`\\theta` axis, while the :math:`\\theta`
+    histogram is obtained by summing the binned values along
+    the :math:`\\phi` axis.
+
+    Parameters
+    ----------
+    binned_data
+        NumPy array containing the binned :math:`\\phi,\\theta` histogram.
+        This array should have shape ``(2n, 2n, 3)`` where ``n`` is the
+        half-number of histogram bins. See 
+        :func:`.create_binned_orientation` for a detailed explanation of 
+        the format.
+
+    weight_by_magnitude
+        Indicate whether the 1D histograms should be weighted by magnitude.
+        If ``False``, the produced histograms will be weighted by count.
+
+    Returns
+    -------
+    numpy.ndarray
+        NumPy array of shape ``(2, 2n)`` containing the marginal
+        :math:`\\phi,\\theta` histograms. The first axis is used to
+        determine the angle (see :class:`AngularIndex`) while the second
+        axis corresponds to the histogram bin index.
+
+    See Also
+    --------
+    .create_binned_orientation:
+        Create the 2D histogram to pass to this function.
     """
     # Sum along an axis to compute the marginals
     if weight_by_magnitude:
@@ -146,8 +227,23 @@ def prepare_two_dimensional_histogram(binned_data: np.ndarray) -> np.ndarray:
     not actually exist, but are used as a convenience to plot the full
     sphere).
 
-    :param binned_data: Binned 2D histogram data of shape ``(2n, 2n)``.
-    :return: Adjusted histogram data of shape ``(n, 2n)``.
+    Parameters
+    ----------
+    binned_data
+        Binned 2D histogram data of shape ``(2n, 2n)``. Note that only a
+        single sheet is passed to this function. The input may be
+        magnitude-weighted or count weighted.
+
+    Returns
+    -------
+    numpy.ndarray
+        Adjusted histogram data of shape ``(n, 2n)``.
+
+    See Also
+    --------
+    .create_binned_orientation:
+        Create the 2D histogram to pass to this function.
+
     """
 
     number_of_bins = binned_data.shape[0]
@@ -177,15 +273,21 @@ def prepare_two_dimensional_histogram(binned_data: np.ndarray) -> np.ndarray:
 
 
 class SphereProjection(enum.Enum):
-    """
-    Sphere projection method for 3D figures.
+    """Projection type for 3D figures.
 
-    Enumerated type for the projection method for 3D figures. Value
-    type: ``str``.
+    Enumerated type representing the projection type for 3D figures. The
+    values of the members are compatible with the Matplotlib 3D axes method
+    :meth:`mpl_toolkits.mplot3d.axes3d.Axes3D.set_proj_type`.
 
-    Attributes:
-        * ORTHOGRAPHIC: orthographic projection.
-        * PERSPECTIVE: perspective projection.
+
+    Members
+    -------
+
+    ORTHOGRAPHIC
+        Orthographic projection.
+
+    PERSPECTIVE
+        Perspective projection.
     """
 
     ORTHOGRAPHIC = "ortho"
@@ -219,68 +321,122 @@ def produce_spherical_histogram_plot(
     plot_colourbar: bool = False,
     colour_bar_kwargs: dict[str, Any] = {},
 ) -> Tuple[mpl_toolkits.mplot3d.axes3d.Axes3D, Optional[matplotlib.colorbar.Colorbar]]:
-    """
-    Produce a spherical histogram plot on the provided axes.
+    """Produce a spherical histogram plot on the provided axes.
 
-    Using the provided axes, produce a spherical histogram plot. This
-    plot has a constant radius and is coloured using the provided data
-    using the specified colour map. The data can optionally be
-    normalised to fit a new range. The provided axes must have the
-    projection set to 3D using ``projection='3d'``.
+    Using the provided axes, produce a spherical plot of provided 2D
+    histogram data. This plot has a constant radius and is coloured using
+    the provided data using the specified colour map. The data can
+    optionally be normalised to fit a new range.
 
-    The histogram data provided must occupy the entire sphere. No
-    manipulations will be performed in this function to get the face
-    colours to match the number of faces.
-
-    :param ax: Matplotlib ``Axes3D`` on which to plot the 3D spherical
+    Parameters
+    ----------
+    ax
+        Matplotlib :class:`Axes3D` on which to plot the 3D spherical
         histogram. The projection of these axes **must** be 3D.
-    :param sphere_radius: Radius of the sphere to plot.
-    :param histogram_data: Binned data to plot. This data should have
+
+    sphere_radius
+        Radius of the sphere to plot.
+
+    histogram_data
+        Binned data to plot. This data should have
         the shape ``(2n, 2n)`` where ``n`` represents the half-number of
         histogram bins. We currently assume that the half-number of bins
         is the **same** in both :math:`\\phi` and :math:`\\theta`. This
         function separates the data to plot half of it on the sphere.
-    :param weight_by_magnitude: Indicate whether plots should be
-        weighted by magnitude or simply by count.
-    :param plot_title: Title of the plot produced (optional).
-    :param minimum_value: Minimum value for data normalisation. If not
-        specified, the minimum of the data is automatically used
-        instead.
-    :param maximum_value: Maximum value for data normalisation. If not
-        specified, the maximum of the data is automatically used
-        instead.
-    :param colour_map: Name of the Matplotlib colour map to be used for
-        colouring the histogram data.
-    :param sphere_projection: 3D projection method to be used for the
-        spherical figure. Options are orthographic and perspective
-        projection.
-    :param sphere_alpha: Opacity of the sphere.
-    :param plot_phi_axis: Indicate whether the :math:`\\phi` axis should
-        be plotted in 3D.
-    :param plot_theta_axis: Indicate whether the :math:`\\theta` axis
-        should be plotted in 3D.
-    :param label_phi_axis: Indicate whether to label the :math:`\\phi`
-        axis.
-    :param label_theta_axis: Indicate whether to label the
-        :math:`\\theta` axis.
-    :param phi_label_positions: Indicate angular positions for the
-        labels for :math:`\\phi` along its circular axis.
-    :param theta_label_positions: Indicate angular positions for the
-        labels for :math:`\\theta` along its circular axis.
-    :param phi_axis_colour: Colour for the phi axis.
-    :param theta_axis_colour: Colour for the theta axis.
-    :param axes_x_limits: Figure size limits along the ``x``-axis.
-    :param axes_y_limits: Figure size limits along the ``y``-axis.
-    :param axes_z_limits: Figure size limits along the ``z``-axis.
-    :param hide_cartesian_axis_labels: Indicate whether to hide the
-        axis labels for the cartesian axes.
-    :param hide_cartesian_axis_ticks: Indicate whether to hide the axis
-        ticks for the cartesian axes.
-    :param plot_colourbar: Indicate whether to include a colour bar on
-        the plot.
-    :param colour_bar_kwargs: keyword arguments for the colour bar.
-    :return: a reference to the ``Axes3D`` object passed in as ``ax``,
-        as well as a reference to the added ``ColorBar`` (or ``None``).
+
+    weight_by_magnitude
+        Indicate whether plots should be weighted by magnitude or by count.
+
+    plot_title
+        Title of the plot produced (optional).
+
+    minimum_value
+        Minimum value for data normalisation. If not specified, the minimum
+        of the data is automatically used instead.
+
+    maximum_value
+        Maximum value for data normalisation. If not specified, the maximum
+        of the data is automatically used instead.
+
+    colour_map
+        Name of the Matplotlib colour map to be used for colouring the
+        histogram data.
+
+    sphere_projection
+        3D projection method to be used for the spherical figure. Options
+        are orthographic and perspective projection.
+        See :class:`SphereProjection`.
+
+    sphere_alpha
+        Opacity of the sphere.
+
+    plot_phi_axis
+        Indicate whether the :math:`\\phi` axis should be plotted in 3D.
+
+    plot_theta_axis
+        Indicate whether the :math:`\\theta` axis should be plotted in 3D.
+
+    label_phi_axis
+        Indicate whether to label the :math:`\\phi` axis.
+
+    label_theta_axis
+        Indicate whether to label the :math:`\\theta` axis.
+
+    phi_label_positions
+        Indicate angular positions for the labels for :math:`\\phi` along
+        its circular axis.
+
+    theta_label_positions
+        Indicate angular positions for the labels for :math:`\\theta` along
+        its circular axis.
+
+    phi_axis_colour
+        Colour for the phi axis.
+
+    theta_axis_colour
+        Colour for the theta axis.
+
+    axes_x_limits
+        Figure size limits along the ``x``-axis.
+
+    axes_y_limits
+        Figure size limits along the ``y``-axis.
+
+    axes_z_limits
+        Figure size limits along the ``z``-axis.
+
+    hide_cartesian_axis_labels
+        Indicate whether to hide the axis labels for the cartesian axes.
+
+    hide_cartesian_axis_ticks
+        Indicate whether to hide the axis ticks for the cartesian axes.
+
+    plot_colourbar
+        Indicate whether to include a colour bar on the plot.
+
+    colour_bar_kwargs
+        Keyword arguments for the colour bar, passed as a dictionary. For
+        details on the available keyword arguments,
+        see :class:`matplotlib.colorbar.Colorbar`.
+
+    Returns
+    -------
+    mpl_toolkits.mplot3d.axes3d.Axes3D
+        A reference to the :class:`Axes3D` object passed in as ``ax``.
+
+    matplotlib.colorbar.Colorbar
+        A reference to the added ``Colorbar`` (or ``None`` if no 
+        colour bar is plotted).
+
+    
+    Warnings
+    --------
+    The provided axes must have the projection set to 3D
+    using ``projection="3d"``.
+
+    The histogram data provided must occupy the entire sphere. No
+    manipulations will be performed in this function to get the face
+    colours to match the number of faces.
     """
 
     # Get the data to plot on the sphere. We must determine if we want
@@ -517,7 +673,9 @@ def produce_spherical_histogram_plot(
     colour_bar: Optional[matplotlib.colorbar.Colorbar] = None
 
     if plot_colourbar:
-        scalar_mappable = matplotlib.cm.ScalarMappable(norm=normaliser, cmap=mpl_colour_map)
+        scalar_mappable = matplotlib.cm.ScalarMappable(
+            norm=normaliser, cmap=mpl_colour_map
+        )
         colour_bar = plt.colorbar(mappable=scalar_mappable, ax=ax, **colour_bar_kwargs)
 
     return ax, colour_bar
@@ -535,31 +693,69 @@ def produce_polar_histogram_plot(
     axis_ticks_unit: AngularUnits = AngularUnits.DEGREES,
     colour: str = "blue",
 ) -> matplotlib.projections.polar.PolarAxes:
-    """
-    Produce 2D polar histogram.
+    """Produce 1D polar histogram.
 
-    Produce a 2D polar histogram using the specified data on the
-    provided axes. The axes provided **must** be created using
-    ``projection="Polar"``.
+    Produce a 1D polar histogram using the specified data on the
+    provided axes.
+    
 
-    :param ax: Matplotlib ``PolarAxes`` on which to plot the data.
-    :param data: Data to plot. This should have the same size
-        as ``bins``.
-    :param bins: Lower value of each bin in the histogram.
-        matplotlib colour.
-    :param zero_position: Cardinal direction corresponding to where 0
-        should be placed on the polar axes.
-    :param rotation_direction: Direction in which the bin values should
-        increase from the zero-point specified in ``zero_position``.
-    :param plot_title: Optional title of the plot.
-    :param label_axis: Indicate whether the circumferential axis should
-        be labelled.
-    :param axis_ticks: Axis ticks for the histogram. Units specified
-        in ``axis_ticks_unit``.
-    :param axis_ticks_unit: Indicates what angular unit is
-        used for specifying the axis ticks. Default is degrees.
-    :param colour: Colour used for the histogram bars. Must be a valid
-    :return: The ``PolarAxes`` used for plotting.
+    Parameters
+    ----------    
+    ax
+        Matplotlib :class:`matplotlib.projections.polar.PolarAxes` on which
+        to plot the data.
+    
+    data
+        Data to plot. This should have the same size as ``bins``.
+    
+    bins
+        *Lower value* of each bin in the histogram.
+    
+    zero_position
+        Zero-position on the polar axes, expressed as a member of the 
+        enumerated class :class:`CardinalDirection`.
+    
+    rotation_direction
+        Rotation direction indicating how the bin values should
+        increase from the zero-point specified in ``zero_position``,
+        represented as a member of :class:`RotationDirection`.
+    
+    plot_title
+        Optional title of the plot.
+    
+    label_axis
+        Indicate whether the circumferential axis should be labelled.
+    
+    axis_ticks
+        Axis ticks for the histogram. Units specified in 
+        ``axis_ticks_unit``.
+    
+    axis_ticks_unit
+        :class:`AngularUnits` indicating what unit should be used for 
+        specifying the axis ticks. Default is :attr:`AngularUnits.DEGREES`.
+    
+    colour
+        Colour used for the histogram bars. Must be a valid matplotlib
+        colour [#f1]_.
+    
+    Returns
+    -------
+
+    matplotlib.projections.polar.PolarAxes
+        The ``PolarAxes`` used for plotting.
+
+    Warnings
+    --------
+    The axes provided **must** be created using ``projection="Polar"``.
+    
+    See Also
+    --------
+    matplotlib.projections.polar.PolarAxes:
+        Polar axes used for plotting the polar histogram.
+
+    References
+    ----------
+    .. [#f1] https://matplotlib.org/stable/users/explain/colors/colors.html
     """
 
     bin_width = bins[1] - bins[0]
@@ -593,33 +789,61 @@ def produce_polar_histogram_plot_from_2d_bins(
     weight_by_magnitude: bool = True,
     **kwargs: Dict[str, Any],
 ) -> matplotlib.projections.polar.PolarAxes:
-    """
-    Produce Polar Histogram from 2D binned data
+    """Produce polar histogram from 2D binned data
 
-    Produce the polar histogram starting from the 2D histogram data.
-    This function takes in existing Matplotlib axes and plots the
-    histogram on them.
+    Produce a polar histogram for the specified angle, starting from the 2D
+    histogram data. This function takes in existing Matplotlib axes and 
+    plots the histogram on them.
 
-    :param ax: Matplotlib polar axes on which the histogram will be
-        plotted.
-    :param angle: Indicate which angle to extract from the data. See
-        ``anisotropy_rose.core.AngularIndex`` for details.
-    :param data: 2D histogram binned data of shape ``(2n, 2n, 3)`` where
+    Parameters
+    ----------
+    ax
+        Matplotlib polar axes on which the histogram will be plotted.
+    
+    angle
+        Indicate which angle to extract from the data. See
+        :class:``AngularIndex`` for details.
+    
+    data
+        2D histogram binned data of shape ``(2n, 2n, 3)`` where
         ``n`` is the half-number of bins used in the binning process.
-    :param bins: Bounds of the bins used to construct the histograms. If
+    
+    bins
+        Bounds of the bins used to construct the histograms. If
         the array is 2D, then the angular indexing will be used to
         extract the phi bin boundaries. If ``2n + 1`` entries are
         present, the last value is removed to ensure that only the lower
         bound of each bin is kept.
-    :param bin_angle_unit: Unit for the bin angles.
-    :param weight_by_magnitude: Indicate whether the histograms should
-        be weighted by count or by magnitude. If magnitude is used, the
-        phi histogram is weighted by 3D magnitude while the theta
-        histogram is weighted by the projected magnitude in the XY
-        plane.
-    :param kwargs: Keyword arguments for the plotting. See
-        ``produce_polar_histogram_plot`` for more details.
-    :return: A reference to the axes used for plotting.
+    
+    bin_angle_unit
+        Unit for the bin angles. See :class:`AngularUnits`.
+    
+    weight_by_magnitude
+        Indicate whether the histograms should be weighted by count or by 
+        magnitude. If magnitude is used, the phi histogram is weighted by
+        3D magnitude while the theta histogram is weighted by the projected
+        magnitude in the XY plane.
+    
+    **kwargs
+        Keyword arguments for the plotting. See
+        :func:`produce_polar_histogram_plot` for more details.
+
+    Returns
+    -------
+    matplotlib.projections.polar.PolarAxes
+        A reference to the axes ``ax`` used for plotting.
+
+    Warnings
+    --------
+    The axes passed in ``ax`` must be of type 
+    :class:`matplotlib.projections.polar.PolarAxes`. To create these axes,
+    ensure to set ``projection="Polar"``.
+
+    See Also
+    --------
+    produce_polar_histogram_plot:
+        Produce a polar plot from 1D data. See documentation for the 
+        keyword arguments that can be passed to this function.
     """
 
     # Compute the 1D histograms from the binned data
@@ -661,38 +885,82 @@ def produce_histogram_plots(
     weight_by_magnitude: bool = True,
     **kwargs: Dict[str, Any],
 ):
-    """
-    Produce a show the anisotropy rose histograms.
+    """Produce and show the vector rose histograms.
 
-    This function produces and shows a 3-panel figure containing
-    (from left to right):
+    This function takes in 2D binned histogram input and shows a 3-panel 
+    figure containing (from left to right):
 
-    * The 3D hemisphere plot of :math:`\\phi,\\theta`.
-    * The 2D polar histogram of :math:`\\theta`.
-    * The 2D polar histogram of :math:`\\phi`.
+    * The 2D sphere plot of :math:`\\phi,\\theta`.
+    * The 1D polar histogram of :math:`\\theta`.
+    * The 1D polar histogram of :math:`\\phi`.
 
     A number of plotting parameters may be modified here. See the
-    parameter descriptions for more details.
+    parameter descriptions for more details, as well as the above plotting
+    functions.
 
-    :param binned_data: The binned histogram data for the
-        :math:`\phi,\theta` plane.
-    :param bins: The boundaries of the bins.
-    :param sphere_radius: The radius of the sphere used for 3D plotting.
-    :param zero_position_2d: The cardinal direction where zero should be
-        placed in the 2D polar histograms (default: North).
-    :param rotation_direction: The direction of increasing angles in the
-        2D polar histograms (default: clockwise).
-    :param use_degrees: Indicate whether the values are in degrees. If
-        ``True``, values are assumed to be in degrees. Otherwise,
-        radians are assumed.
-    :param colour_map: Name of the matplotlib colourmap to use to colour
+    Parameters
+    ----------
+    binned_data
+        The binned histogram data for the :math:`\\phi,\\theta` plane. This
+        NumPy array should have size ``(2n, 2n, 3)`` where ``n`` is the
+        half-number of histogram bins used to construct the histogram.
+        See :func:`.create_binned_orientation` for more details. See
+        :class:`MagnitudeType` for the indexing rules along the last axis.
+    
+    bins
+        The boundaries of the bins. This array should be of size
+        ``(2, 2n + 1)`` where ``n`` represents the half-number of bins.
+        See :class:`AngularIndex` for the indexing rules along the first
+        axis.
+    
+    sphere_radius
+        The radius of the sphere used for 3D plotting.
+    
+    zero_position_2d
+        The :class:`CardinalDirection` where zero should be placed in the
+        1D polar histograms (default: North).
+    
+    rotation_direction
+        The :class:`RotationDirection` of increasing angles in the 1D polar
+        histograms (default: clockwise).
+    
+    use_degrees
+        Indicate whether the values are in degrees. If ``True``, values are
+        assumed to be in degrees. Otherwise, radians are assumed.
+    
+    colour_map
+        Name of the matplotlib colour map [#f2]_ to use to colour
         the hemisphere. If an invalid name is provided, a default
-        greyscale colourmap ("gray") will be used.
-    :param plot_title: title of the overall plot (optional).
-    :param weight_by_magnitude: Indicate whether plots should be
-        weighted by magnitude or simply by count.
-    :param kwargs: extra keyword arguments for plotting.
-    :return: ``None``, but produces a figure on the screen.
+        greyscale colour map ("gray") will be used.
+    
+    plot_title
+        Title of the overall plot (optional).
+    
+    weight_by_magnitude
+        Indicate whether plots should be weighted by magnitude or by count.
+    
+    **kwargs
+        Extra keyword arguments for the sphere plotting. See 
+        :func:`produce_spherical_histogram_plot` for available arguments.
+
+    
+    See Also
+    --------
+    produce_spherical_histogram_plot: 
+        Create the spherical plot in isolation.
+    
+    produce_polar_histogram_plot:
+        Create 1D polar histograms in isolation from 1D histogram data.
+
+    .create_binned_orientation:
+        Bin vectors into a 2D :math:`\\phi,\\theta` histogram. The return
+        values from that function may be passed as arguments to this 
+        function.
+
+
+    References
+    ----------
+    .. [#f2] https://matplotlib.org/stable/users/explain/colors/colormaps.html
     """
 
     # Compute the 1D histograms from the binned data

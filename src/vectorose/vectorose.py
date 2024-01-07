@@ -1,7 +1,9 @@
-"""Angle and histogram calculations
+# Copyright (c) 2023-, Benjamin Rudski, Joseph Deering
+# 
+# This code is licensed under the MIT License. See the `LICENSE` file for
+# more details about copying.
 
-Benjamin Rudski, Joseph Deering
-2023--
+"""Angle and histogram calculations
 
 This module provides the calculations for the :math:`\\phi` and
 :math:`\\theta` angles from a vector field, as well as the functions for
@@ -20,8 +22,8 @@ class AngularIndex(enum.IntEnum):
 
     Stores the index of the different angles to avoid ambiguity in code.
 
-    Attributes
-    ----------
+    Members
+    -------
     PHI
         Angle phi (:math:`\\phi`), representing the angle with respect to
         the positive :math:`y`-axis. Index 0 in all arrays.
@@ -40,9 +42,8 @@ class MagnitudeType(enum.IntEnum):
 
     Type of magnitude considered when constructing the histograms.
 
-    Attributes
-    ----------
-
+    Members
+    -------
     THREE_DIMENSIONAL
         Euclidean magnitude in 3D space. Index 0 in all arrays.
 
@@ -73,7 +74,7 @@ def remove_zero_vectors(vectors: np.ndarray) -> np.ndarray:
 
     Return
     ------
-    np.ndarray:
+    numpy.ndarray:
         List of vectors with the same number of columns as the
         original without any vectors of zero magnitude.
     """
@@ -103,21 +104,6 @@ def convert_spherical_to_cartesian_coordinates(
     sphere is assumed to be the unit sphere. The angles must be provided
     in **radians**.
 
-    The equations governing the conversion are:
-
-    .. math::
-
-        x &= r \\sin(\\theta)\\sin(\\phi)
-
-        y &= r \\cos(\\theta)\\sin(\\phi)
-
-        z &= r \\cos(\\phi)
-
-    The input is provided as a 2D array with 2 columns representing the
-    angles phi and theta, and ``n`` rows, representing the datapoints.
-    The returned array is also a 2D array, with three columns (X, Y, Z)
-    and ``n`` rows.
-
     Parameters
     ----------
     angular_coordinates
@@ -134,12 +120,30 @@ def convert_spherical_to_cartesian_coordinates(
 
     Return
     ------
-    np.ndarray:
+    numpy.ndarray:
         Array with 3 columns, corresponding to the cartesian
         coordinates in X, Y, Z, and ``n`` rows, one for each data point.
         If mgrids are provided, then multiple sheets will be returned 
         in this array, with the -1 axis still used to distinguish between
         x, y, z.
+
+    Notes
+    -----
+
+    The equations governing the conversion are:
+
+    .. math::
+
+        x &= r \\sin(\\theta)\\sin(\\phi)
+
+        y &= r \\cos(\\theta)\\sin(\\phi)
+
+        z &= r \\cos(\\phi)
+
+    The input is provided as a 2D array with 2 columns representing the
+    angles phi and theta, and ``n`` rows, representing the datapoints.
+    The returned array is also a 2D array, with three columns (X, Y, Z)
+    and ``n`` rows.
     """
 
     # Simple definition of a sphere used here.
@@ -162,30 +166,11 @@ def compute_vector_orientation_angles(
     """Compute the vector orientation angles phi and theta.
 
     For all vectors passed in ``vectors``, compute the :math:`\\phi` and
-    :math:`\\theta` orientation angles. We define the angles to be:
-
-    * :math:`\\phi` - The angle of tilt with respect to the positive
-      :math:`z`-axis. A vector with :math:`\\phi=0` will be oriented
-      parallel to the :math:`z`-axis, while a vector with
-      :math:`\\phi=\\pi/2` will be oriented parallel to the
-      :math:`(x,y)`-plane. A vector with :math:`\\phi=\\pi` will be
-      oriented parallel to the negative :math:`z`-axis.
-
-    * :math:`\\theta` - The orientation in the :math:`(x,y)`-plane with
-      respect to the *positive* :math:`y`-axis. A vector with
-      :math:`\\theta=0` will be parallel to the *positive*
-      :math:`y`-axis, while a vector with :math:`\\theta=\\pi/2` will be
-      oriented parallel to the *positive* :math:`x`-axis.
-
-    These angles are computed in the following manner:
-
-    .. math::
-
-        \\phi_i &= \\textup{arctan} \\left( \\frac{\\sqrt{{x_i} ^ 2 +
-        {y_i} ^ 2}}{z_i} \\right)
-
-        \\theta_i &= \\textup{arctan} \\left( \\frac{x_i}{y_i} \\right)
-
+    :math:`\\theta` orientation angles. The :math:`\\phi` angle corresponds
+    to the tilt with respect to the ``z`` axis, while the :math:`\\theta`
+    angle is the angle in the ``xy``-plane with respect to the ``y`` axis.
+    See **Notes** for more details on the definition and calculations 
+    of these angles.
 
     The unit for the angles is *radians* unless ``use_degrees`` is set
     to ``True``. The returned angles are in the range of 0
@@ -209,9 +194,44 @@ def compute_vector_orientation_angles(
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         2D NumPy array containing 2 columns, corresponding to
         :math:`\\phi,\\theta` for ``n`` rows.
+    
+    Notes
+    -----
+    In this package, we define the angles to be:
+
+    * :math:`\\phi` - The angle of tilt with respect to the positive
+      :math:`z`-axis. A vector with :math:`\\phi=0` will be oriented
+      parallel to the :math:`z`-axis, while a vector with
+      :math:`\\phi=\\pi/2` will be oriented parallel to the
+      :math:`(x,y)`-plane. A vector with :math:`\\phi=\\pi` will be
+      oriented parallel to the negative :math:`z`-axis.
+
+    * :math:`\\theta` - The orientation in the :math:`(x,y)`-plane with
+      respect to the *positive* :math:`y`-axis. A vector with
+      :math:`\\theta=0` will be parallel to the *positive*
+      :math:`y`-axis, while a vector with :math:`\\theta=\\pi/2` will be
+      oriented parallel to the *positive* :math:`x`-axis.
+
+    These angles are computed in the following manner:
+
+    .. math::
+
+        \\phi_i &= \\textup{arctan} \\left( \\frac{\\sqrt{{x_i} ^ 2 +
+        {y_i} ^ 2}}{z_i} \\right)
+
+        \\theta_i &= \\textup{arctan} \\left( \\frac{x_i}{y_i} \\right)
+
+    It is important to note that these angles have specific ranges to avoid
+    the possibility of describing the same angle in two different ways. The
+    :math:``\\phi`` angle must be in the range :math:`0 \\leq \\phi < \\pi`
+    in radians, or :math:`0 \\leq \\phi < 180` in degrees. The value of
+    :math:`\\theta` is defined in :math:`-\\pi \\leq \\theta < \\pi` in 
+    radians, or :math:`-180 \\leq \\theta < 180` in degrees. This function
+    restricts the range of :math:`\\theta` further due to the nature of
+    the orientations considered in the current application.
     """
 
     n = len(vectors)
@@ -252,17 +272,9 @@ def compute_vector_magnitudes(vectors: np.ndarray) -> np.ndarray:
     Compute vector magnitudes.
 
     Compute vector magnitudes in 3D, as well as the component of the
-    magnitude in the :math:`(x,y)`-plane. These magnitudes are calculated 
-    as:
-
-    .. math::
-
-        \\| v \\| &= \\sqrt{{v_x}^2 + {v_y}^2 + {v_z} ^ 2}
-
-        \\| v \\|_{xy} &= \\sqrt{{v_x}^2 + {v_y}^2}
-
-    See :class:`MagnitudeType` for the ordering of the different magnitudes
-    in the output array.
+    magnitude in the :math:`(x,y)`-plane. See **Notes** for the equations
+    used. See :class:`MagnitudeType` for the ordering of the different 
+    magnitudes in the output array.
 
     Parameters
     ----------
@@ -274,10 +286,21 @@ def compute_vector_magnitudes(vectors: np.ndarray) -> np.ndarray:
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         2D NumPy array containing two columns and ``n`` rows. The first 
         column corresponds to the 3D vector magnitude while the second
         column corresponds to the :math:`(x,y)` in-plane magnitude.
+
+    Notes
+    -----
+    The vector magnitudes are computed using the following equations:
+
+    .. math::
+
+        \\| v \\| &= \\sqrt{{v_x}^2 + {v_y}^2 + {v_z} ^ 2}
+
+        \\| v \\|_{xy} &= \\sqrt{{v_x}^2 + {v_y}^2}
+
     """
 
     n = len(vectors)
@@ -309,16 +332,6 @@ def create_binned_orientation(
     twice the number of bins passed in the ``half_number_of_bins`` 
     parameter.
 
-    The input angles must be in the range :math:`0 \\leq \\phi < \\pi`
-    and :math:`0 \\leq \\theta < \\pi` in radians, or
-    :math:`0 \\leq \\phi < 180` and :math:`0 \\leq \\theta < 180` in
-    degrees. There **cannot** be any other orientations included, as
-    these will be overwritten.
-
-    Once the bins are assigned, a mirroring step is performed to fill in
-    the missing angles. In each case, the corresponding mirrored bin is
-    obtained by subtracting the half-number of bins.
-
     Parameters
     ----------
     vector_orientations
@@ -343,18 +356,42 @@ def create_binned_orientation(
 
     Returns
     -------
-    numpy.ndarray, numpy.ndarray
-        Tuple containing: 2D histograms of :math:`\\phi,\\theta` and
-        an array providing bounds of the histogram bins. The histogram
-        contains 3 sheets and has dimensions
-        ``(half_number_of_bins * 2, half_number_of_bins * 2, 3)``.
-        See :class:`MagnitudeType` for the correct indexing to access each
-        sheet. Within a sheet, axis zero corresponds to :math:`\\phi` and
-        axis one corresponds to :math:`\\theta` (as per 
-        :class:`AngularIndex`). The histogram bins array is of shape
-        ``(2, 2 * half_half_number_of_bins + 1)``, where the first 
-        row/sheet represents the bins for :math:`\\phi` and
-        the second represents the bins for :math:`\\theta`.
+    binned_data: numpy.ndarray
+        2D histogram of :math:`\\phi,\\theta`. This histogram is
+        a three-sheet :class:`numpy.ndarray`, with dimensions 
+        ``(half_number_of_bins * 2, half_number_of_bins * 2, 3)``. Axis 
+        zero corresponds to :math:`\\phi` and axis one corresponds 
+        to :math:`\\theta`. The last axis is used for indexing the 
+        histogram by the magnitude type (see :class:`MagnitudeType`).
+
+    bins: numpy.ndarray
+        The bounds of the histogram bins. This array is of shape
+        ``(2, 2 * half_half_number_of_bins + 1)``, where the first row
+        represents the bins for :math:`\\phi` and the second represents
+        the bins for :math:`\\theta` (see :class:`AngularIndex`).
+
+    Warnings
+    --------
+    The input angles must be in the range :math:`0 \\leq \\phi < \\pi`
+    and :math:`0 \\leq \\theta < \\pi` in radians, or
+    :math:`0 \\leq \\phi < 180` and :math:`0 \\leq \\theta < 180` in
+    degrees. There **cannot** be any other orientations included, as
+    these will be overwritten.
+
+    Notes
+    -----
+    Histogram bins are computed using :func:`numpy.histogram_bin_edges`
+    and each vector is assigned to a bin using :func:`numpy.digitize`.
+
+    As mentioned above, the input vectors may only occupy half the range of
+    angular values for :math:`\\phi` and :math:`\\theta`, respectively. As
+    the current package deals with orientations without considering
+    direction, a given "vector" can be represented as having two 
+    corresponding locations on the surface of a sphere. When constructing
+    the histogram, we must perform a mirroring step to include each point
+    both in the origin angular location, as well as the angular bin
+    on the opposite side of the sphere. This corresponding location is
+    obtained by subtracting the half-number of bins from the computed bin.
     """
 
     # Indicate whether we are weighting by magnitude
@@ -450,18 +487,36 @@ def create_angular_binning_from_vectors(
 
     Returns
     -------
-    numpy.ndarray, numpy.ndarray
-        Tuple containing 2D histogram of :math:`\\phi,\\theta` and
-        an array providing bounds of the histogram bins. This histogram is
+    binned_data: numpy.ndarray
+        2D histogram of :math:`\\phi,\\theta`. This histogram is
         a three-sheet :class:`numpy.ndarray`, with dimensions 
         ``(half_number_of_bins * 2, half_number_of_bins * 2, 3)``. Axis 
         zero corresponds to :math:`\\phi` and axis one corresponds 
-        to :math:`\\theta`. The final axis is used for indexing the 
-        histogram by the magnitude type (see :class:`MagnitudeType`). The
-        histogram bins array is of shape
+        to :math:`\\theta`. The last axis is used for indexing the 
+        histogram by the magnitude type (see :class:`MagnitudeType`).
+
+    bins: numpy.ndarray
+        The bounds of the histogram bins. This array is of shape
         ``(2, 2 * half_half_number_of_bins + 1)``, where the first row
         represents the bins for :math:`\\phi` and the second represents
-        the bins for :math:`\\theta`.
+        the bins for :math:`\\theta` (see :class:`AngularIndex`).
+
+    See Also
+    --------
+    remove_zero_vectors: 
+        First step in this function, removes vectors of zero magnitude.
+
+    compute_vector_orientation_angles:
+        Second step, computes the :math:`\\phi` and :math:`\\theta` angles
+        for all vectors provided.
+    
+    compute_vector_magnitudes:
+        Next step, computes the 3D and in-plane magnitudes for the vectors.
+    
+    create_binned_orientation:
+        Final step, performs the binning based on the computed orientations
+        and magnitudes to produce a 2D angular histogram.
+
     """
 
     # First, check the size of the vector array. Only keep the

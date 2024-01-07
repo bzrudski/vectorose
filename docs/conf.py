@@ -43,6 +43,9 @@ napoleon_use_rtype = False
 
 # We want the types to be pre-processed
 napoleon_preprocess_types = True
+napoleon_custom_sections = [
+    ("Members", "params_style")
+]
 
 # -- Options for intersphinx_mapping -----------------------------------------
 
@@ -50,6 +53,6 @@ napoleon_preprocess_types = True
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
     'numpy': ('https://numpy.org/doc/stable/', None),
-    'matplotlib': ('https://matplotlib.org/stable', None),
+    'matplotlib': ('https://matplotlib.org/stable/', None),
     'pandas': ('https://pandas.pydata.org/docs', None),
 }
