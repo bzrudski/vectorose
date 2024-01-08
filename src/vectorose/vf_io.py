@@ -52,7 +52,7 @@ class VectorFileType(enum.Enum):
     Warnings
     --------
     When constructing a filename using the members of this type, a dot
-     ``(.)`` must be added.
+    ``(.)`` must be added.
     """
 
     CSV = "csv"
@@ -85,7 +85,7 @@ class ImageFileType(enum.Enum):
     Warnings
     --------
     When constructing a filename using the members of this type, a dot
-     ``(.)`` must be added.
+    ``(.)`` must be added.
     """
 
     PNG = "png"
