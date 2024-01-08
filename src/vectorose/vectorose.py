@@ -107,11 +107,12 @@ def convert_spherical_to_cartesian_coordinates(
     Parameters
     ----------
     angular_coordinates
-        Array with >=2 columns representing :math:`phi` and :math:`theta`, 
-        respectively (see :func:`AngularIndex`), and ``n`` rows 
-        representing the data points. This function can also be used on the
-        output of :func:`np.mgrid`, if the arrays have been stacked such
-        that the final axis is used to distinguish between phi and theta.
+        Array with >=2 columns representing :math:`\\phi` and 
+        :math:`\\theta`, respectively (see :class:`AngularIndex`), and
+        ``n`` rows representing the data points. This function can also be
+        used on the output of :func:`np.mgrid`, if the arrays have been
+        stacked such that the final axis is used to distinguish between phi
+        and theta.
 
     radius
         A :class:`float` or :class:`numpy.ndarray` representing the radius
