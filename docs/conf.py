@@ -20,7 +20,8 @@ extensions = [
     "autoapi.extension",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
-    "sphinx.ext.intersphinx"
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.todo"
 ]
 autoapi_dirs = ["../src"]
 
@@ -56,3 +57,6 @@ intersphinx_mapping = {
     'matplotlib': ('https://matplotlib.org/stable/', None),
     'pandas': ('https://pandas.pydata.org/docs', None),
 }
+
+# -- Options for todo --------------------------------------------------------
+todo_include_todos = True
