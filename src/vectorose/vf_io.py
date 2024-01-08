@@ -1,12 +1,13 @@
-"""
-Anisotropy Rose - I/O Operations
+# Copyright (c) 2023-, Benjamin Rudski, Joseph Deering
+#
+# This code is licensed under the MIT License. See the `LICENSE` file for
+# more details about copying.
 
-Joseph Deering, Benjamin Rudski
-2023
+"""
+Functions for import and export.
 
 This module provides the ability to load vector fields from file and
-save vector fields and anisotropy histograms.
-
+save vector fields and vector rose histogram data.
 """
 
 import enum
@@ -17,26 +18,41 @@ import numpy as np
 import pandas as pd
 
 DEFAULT_LOCATION_COLUMNS = (0, 1, 2)
+"""Default column numbers for the location coordinates in the order 
+``(x, y, z)``."""
+
 DEFAULT_COMPONENT_COLUMNS = (-3, -2, -1)
+"""Default column numbers for the vector components in the order 
+``(vx, vy, vz)``."""
 
 
 class VectorFileType(enum.Enum):
-    """
-    Export types for numeric data.
+    """File types for numeric data.
 
-    Numeric data may be exported in a number of different formats. This
-    enumerated type allows the user to specify which file type they
-    would like to use to export numeric data, such as vector lists and
-    binning arrays. The associated strings for each time are the file
-    extension **without a dot**.
+    Numeric data may be imported and exported in a number of different
+    formats. This enumerated type allows the user to specify which file
+    type they would like to use to load or store numeric data, such as
+    vector lists and binning arrays. The associated strings for each member
+    are the file extension **without a dot**.
 
-    Attributes:
-        * CSV: Comma-separated value file, in which the columns will be
-            separated by a tab "\\t". File extension: ``*.csv``.
-        * NPY: NumPy array, which can easily be loaded into NumPy. File
-            extension: ``*.npy``.
-        * EXCEL: Microsoft Excel spreadsheet (compatible with Excel 2007
-            or later). File extension: ``*.xlsx``.
+    Members
+    -------
+    CSV
+        Comma-separated value file, in which the columns will be separated
+        by a tab "\\t". File extension: ``*.csv``.
+
+    NPY
+        NumPy array, which can easily be loaded into NumPy. File extension:
+        ``*.npy``.
+
+    EXCEL
+        Microsoft Excel spreadsheet (compatible with Excel 2007 or later).
+        File extension: ``*.xlsx``.
+
+    Warnings
+    --------
+    When constructing a filename using the members of this type, a dot
+     ``(.)`` must be added.
     """
 
     CSV = "csv"
@@ -45,20 +61,31 @@ class VectorFileType(enum.Enum):
 
 
 class ImageFileType(enum.Enum):
-    """
-    Image File Types.
+    """Image File Types.
 
-    File types for images for export. These include both raster formats
-    (``*.png`` and ``*.tiff``) and vector formats (``*.svg`` and
-    ``*.pdf``). The members of this enumerated type have as value the
-    string extensions for the respective file types **without** the dot.
-    When constructing a filename, the dot must be added.
+    File types for images. These include both raster formats (``*.png`` and
+    ``*.tiff``) and vector formats (``*.svg`` and ``*.pdf``). The members
+    of this enumerated type have as value the string extensions for the
+    respective file types **without** the dot.
 
-    Attributes:
-        * PNG: Portable Network Graphics (png) image (raster).
-        * TIFF: Tagged Image File Format (tiff) image (raster).
-        * SVG: Scalable Vector Graphic (svg) image (vector).
-        * PDF: Portable Document Format (pdf) file (vector).
+    Members
+    -------
+    PNG
+        Portable Network Graphics (png) image (raster).
+
+    TIFF
+        Tagged Image File Format (tiff) image (raster).
+
+    SVG
+        Scalable Vector Graphic (svg) image (vector).
+
+    PDF
+        Portable Document Format (pdf) file (vector).
+
+    Warnings
+    --------
+    When constructing a filename using the members of this type, a dot
+     ``(.)`` must be added.
     """
 
     PNG = "png"
@@ -70,21 +97,33 @@ class ImageFileType(enum.Enum):
 def __infer_filetype_from_filename(
     filename: str, file_type_enum: Type[enum.Enum]
 ) -> Optional[enum.Enum]:
-    """
-    Infer a file type from a filename.
+    """Infer a file type from a filename.
 
-    This function tries to infer a file type, of the enumerated type
-    ``file_type_enum`` from a provided filename by checking the
+    This function tries to infer a file type, of the provided  enumerated
+    type ``file_type_enum`` from a provided filename by checking the
     extension. If no valid extension is found, ``None`` is returned.
     Otherwise, the determined file type is returned.
 
-    :param filename: string containing the filename.
-    :param file_type_enum: enumerated type representing the desired file
-        type. This enumerated type should have string values
-        representing various file extensions. These values **should
-        not** contain a dot.
-    :return: ``file_type_enum`` if a valid export filetype is found.
+    Parameters
+    ----------
+    filename
+        String containing the filename.
+
+    file_type_enum
+        Enumerated type representing the desired file type. This enumerated
+        type should have string values representing various file
+        extensions. These values **should not** contain a dot.
+
+    Returns
+    -------
+    file_type_enum or None:
+        Member of ``file_type_enum`` if a valid file type is found.
         Otherwise, ``None``.
+
+    See Also
+    --------
+    ImageFileType: Sample enumerated types to pass in for image files.
+    VectorFileType: Sample enumerated types for vector data files.
     """
 
     # Separate out the file extension
@@ -106,17 +145,23 @@ def __infer_filetype_from_filename(
 def __infer_vector_filetype_from_filename(
     filename: str,
 ) -> Optional[VectorFileType]:
-    """
-    Infer a ``VectorFileType`` from a filename.
+    """Infer a vector field file type from a filename.
 
-    This function tries to infer a ``VectorFileType`` from a provided
+    This function tries to infer a :class:`VectorFileType` from a provided
     filename by checking the extension. If no valid extension is found,
-    ``None`` is returned. Otherwise, the determined vector type is
+    :class:`None` is returned. Otherwise, the determined vector type is
     returned.
 
-    :param filename: string containing the filename.
-    :return: ``VectorFileType`` if a valid vector filetype is found.
-        Otherwise, ``None``.
+    Parameters
+    ----------
+    filename
+        String containing the filename.
+
+    Returns
+    -------
+    VectorFileType or None:
+        Vector file type corresponding to the filename if a valid filetype
+        is found. Otherwise, :class:`None`.
     """
 
     vector_file_type = __infer_filetype_from_filename(
@@ -134,32 +179,45 @@ def import_vector_field(
     location_columns: Optional[Sequence[int]] = DEFAULT_LOCATION_COLUMNS,
     component_columns: Sequence[int] = DEFAULT_COMPONENT_COLUMNS,
 ) -> Optional[np.ndarray]:
-    """
-    Import a vector field.
+    """Import a vector field.
 
     Load a vector field from a file into a NumPy array. For available
-    file formats, see ``VectorFileType``. The file type is inferred from
-    the filename. If it cannot be inferred, the ``default_file_type`` is
-    tried. If the vector field is not valid, then ``None`` is returned.
+    file formats, see :class:`VectorFileType`. The file type is inferred
+    from the filename. If it cannot be inferred, the ``default_file_type``
+    is tried. If the vector field is not valid, then :class:`None` is
+    returned.
 
-    :param filepath: File path to the vector field file.
-    :param default_file_type: File type to attempt if the type cannot be
-        inferred from the filename.
-    :param contains_headers: Indicate whether the file contains headers.
-        This option is only considered if the vectors are in a CSV or
-        Excel file.
-    :param sheet_name: Name of the sheet to consider if the vectors are
-        in an Excel file.
-    :param location_columns: Columns indicating the spatial coordinates
-        of the vectors in the order ``(x, y, z)``. If this is set to
-        ``None``, the vectors are all assumed to be located at the
-        origin. By default, the first three columns are assumed to
-        refer to ``(x, y, z)``, respectively.
-    :param component_columns: Column indices referring to the vector
-        components in the order ``(vx, vy, vz)``. This argument
-        **cannot** be ``None``. By default, columns ``(-3, -2, -1)`` are
-        assumed to be the ``(vx, vy, vz)``.
-    :return: NumPy array containing the vectors. The array has shape
+    Parameters
+    ----------
+    filepath
+        File path to the vector field file.
+
+    default_file_type
+        File type to attempt if the type cannot be inferred from the
+        filename.
+
+    contains_headers
+        Indicate whether the file contains headers. This option is only
+        considered if the vectors are in a CSV or Excel file.
+
+    sheet_name
+        Name of the sheet to consider if the vectors are in an Excel file.
+
+    location_columns
+        Column indices for the vector *spatial coordinates* in the order
+        ``(x, y, z)``. If this is set to :class:`None`, the vectors are
+        assumed to be located at the origin. By default, the first three
+        columns are assumed to refer to ``(x, y, z)``, respectively.
+
+    component_columns
+        Column indices referring to the vector *components* in the order
+        ``(vx, vy, vz)``. By default, the last three columns
+        ``(-3, -2, -1)`` are assumed to be the ``(vx, vy, vz)``.
+
+    Returns
+    -------
+    numpy.ndarray or None
+        NumPy array containing the vectors. The array has shape
         ``(n, 3)`` or ``(n, 6)``, depending on whether the locations
         are included. The columns correspond to ``(x,y,z)`` coordinates
         of the location (if available), followed by ``(vx, vy, vz)``
@@ -222,37 +280,68 @@ def __export_data(
     sheet_name: str = "Sheet1",
     file_type: Optional[VectorFileType] = None,
 ):
-    """
-    Export array data to file.
+    """Export array data to file.
 
     Export numeric array data to a file with one of the valid file types
-    enumerated in ``NumericExportType``. This function will
-    automatically infer the filetype if ``None`` is specified for
+    enumerated in :class:`VectorFileType`. This function will
+    automatically infer the filetype if :class:`None` is specified for
     ``file_type``. If no valid file type is found, the file type is
-    assumed to be CSV.
+    assumed to be :attr:`VectorFileType.CSV`.
 
-    :param data: data to write to file. This should be a 2D NumPy array.
-    :param filepath: filename where the data should be saved. If
-        ``file_type`` is ``None``, this filename is used to infer the
-        preferred export type. Alternatively, an ``ExcelWriter`` may be
-        passed here if multiple sheets are to be written to a single
-        Excel file. If an Excel filename is passed and not an
-        ExcelWriter, the contents of the file **will be overwritten**,
-        even if there is no sheet with the specified ``sheet_name``.
-    :param column_headers: Headers for the column names. If the desired
-        file format permits, these will be written in the output file.
-    :param indices: indices to use when saving the data. This allows
-        naming the rows of the data frame.
-    :param sheet_name: If the export file type allows (i.e., the export
-        format is ``EXCEL``), this will be used as the name of the
-        sheet. This will allow saving multiple pieces of data in the
-        same spreadsheet file.
-    :param file_type: Instance from ``NumericExportType`` to specify the
-        output file type. If ``None`` is specified (or the argument is
-        omitted), the file type will be inferred from the filename. If
-        no such inference can be performed, the export type will be
-        assumed to be CSV.
-    :return: ``None``
+    Parameters
+    ----------
+    data
+        NumPy array with data to write to file. This should be a 2D NumPy
+        array, (i.e., ``len(data.shape) == 2``).
+
+    filepath
+        Filename where the data should be saved. If ``file_type`` is
+        :class:`None`, this filename is used to infer the preferred export
+        type. Alternatively, a :class:`pandas.ExcelWriter` may be passed
+        here if multiple sheets are to be written to a single Excel file.
+        If an Excel filename is passed and not a
+        :class:`pandas.ExcelWriter`, the contents of the file **will be
+        overwritten**, even if there is no sheet with the specified
+        ``sheet_name``.
+
+    column_headers
+        Headers for the column names. If the desired file format permits,
+        these will be written in the output file.
+
+    indices
+        indices to use when saving the data. This allows naming the rows of
+        the data frame.
+
+    sheet_name
+        If the export file type allows (i.e., the export format is
+        :attr:`VectorFileType.EXCEL`), this will be used as the name of the
+        sheet. This will allow saving multiple pieces of data in the same
+        spreadsheet file.
+
+    file_type
+        Member of :class:`VectorFileType` specifying the output file
+        type. If ``None``, the file type will be inferred from the
+        filename. If no such inference can be performed, the export type
+        will be assumed to be CSV.
+
+    Warnings
+    --------
+    If an Excel filename is passed and not a :class:`pandas.ExcelWriter`,
+    the contents of the file **will be overwritten**, even if there is no
+    sheet with the specified ``sheet_name``. To write a multi-sheet Excel
+    file, the ``filepath`` parameter must be a :class:`pandas.ExcelWriter`.
+
+    See Also
+    --------
+
+    numpy.save:
+        Function for saving NumPy arrays to a ``*.npy`` file.
+
+    pandas.DataFrame.to_csv:
+        Function for saving a :class:`pandas.DataFrame` as a CSV file.
+
+    pandas.DataFrame.to_excel:
+        Function for saving a :class:`pandas.DataFrame` as an Excel file.
     """
 
     if isinstance(filepath, pd.ExcelWriter):
@@ -309,35 +398,41 @@ def export_vectors_with_orientations(
     sheet_name: str = "Sheet1",
     file_type: Optional[VectorFileType] = None,
 ):
-    """
-    Export vectors with orientation data.
+    """Export vectors with orientation data.
 
-    Save an array of vectors components, as well as their orientation
-    information, to a file. If this file is a CSV or an Excel file, a
-    header will be created to name the columns. If the vector array has
-    six columns, the first three are assumed to be the locations in
-    ``x, y, z`` while the final three are assumed to be the vector
-    components in ``x, y, z``. The angles are added on in the order of
-    ``phi, theta``.
+    Save an array of vectors components, as well as their
+    :math:`\\phi, \\theta` orientation information, to a file. If this file
+    is a CSV or an Excel file, a header will be created to name the
+    columns.
 
-    :param vectors: NumPy array of shape ``(n, 3)`` or ``(n, 6)``
-        containing ``n`` vectors. If there are 6 columns, the first 3
-        are assumed to be the location of the vectors in space while
-        the last 3 are assumed to be the vector components.
-    :param angles: NumPy array of shape ``(n, 2)`` containing the phi
-        and theta angles for each vector.
-    :param filepath: file path to save the vectors to. If this filename
-        has an extension, omit ``file_type`` and this function will
-        infer the file type from the extension. Otherwise, the final
-        filename will be the value passed here, with the appropriate
-        extension appended. This may also be an ``ExcelWriter`` in order
-        to support saving multiple sheets to a common Excel file.
-    :param sheet_name: name of the sheet if saving to Excel.
-    :param file_type: ``NumericExportType`` indicating the desired
-        output type. If this in ``None``, the filetype will be inferred
-        from the filepath. If no extension is present in either
-        argument, the output type will be assumed to be CSV.
-    :return: ``None``.
+    Parameters
+    ----------
+    vectors
+        NumPy array of shape ``(n, 3)`` or ``(n, 6)`` containing ``n``
+        vectors. If there are 6 columns, the first three are assumed to be
+        the locations in ``(x, y, z)`` while the final three are assumed to
+        be the vector components in ``(x, y, z)``.
+
+    angles
+        NumPy array of shape ``(n, 2)`` containing the :math:`\\phi` and
+        :math:`\\theta` angles for each vector.
+
+    filepath
+        Path to the vector output file. If this filename has an extension,
+        omit ``file_type`` and this function will infer the file type from
+        the extension. Otherwise, the appropriate extension will be
+        appended to this filename. This argument may Alternatively be a
+        :class:`pandas.ExcelWriter` instance to save the vectors into a
+        multi-sheet Excel file.
+
+    sheet_name
+        Name of the sheet if saving to Excel.
+
+    file_type
+        :class:`VectorFileType` indicating the desired output type. If
+        this is :class:`None`, the filetype will be inferred from the
+        ``filepath``. If no extension is present in either argument, the
+        output type will be assumed to be :attr:`VectorFileType.CSV`.
     """
 
     # Start by concatenating everything
@@ -372,45 +467,63 @@ def export_one_dimensional_histogram(
     sheet_name: str = "Sheet1",
     file_type: Optional[VectorFileType] = None,
 ):
-    """
-    Export a 1D histogram to a file.
+    """Export a 1D histogram to a file.
 
-    Save the provided histogram information to a file. The file is
-    structured to indicate clearly where each bin starts and ends.
-    Therefore, regardless of the file format used, the table will have
-    three columns, containing the bin start, bin end and bin value.
+    Save the provided 1D histogram data to a file. The file is
+    structured to indicate where each bin starts and ends, regardless of
+    the file format used. The table contains three columns, corresponding
+    to the bin start, bin end and bin value.
 
-    If the ``file_type`` parameter is ``CSV`` or ``EXCEL``, a header row
-    will be added. The headers for the first two columns depend on the
-    value of ``bins_header``, followed by the respective "_Start" and
-    "_End" text. The column containing the bin values is named with
-    ``value_header``.
+    Parameters
+    ----------
 
-    An ``ExcelWriter`` object can be passed instead of a filename to
-    extend an existing Excel sheet that is being written.
+    histogram_bins
+        One-dimensional NumPy array of shape ``(n + 1, )`` where ``n`` is
+        the number of bins. This array contains the boundaries of the
+        histogram, including the lower bound of the first bin and the upper
+        bound of the last bin.
 
-    :param histogram_bins: One-dimensional NumPy array of shape
-        ``(n + 1, )`` where ``n`` is the number of bins. This array
-        contains the boundaries of the histogram.
-    :param histogram_values: One-dimensional NumPy array of shape
-        ``(n, )`` where ``n`` is the number of bins. This array contains
-        the values of each bin of the histogram. These may be raw
-        counts, or a more complicated magnitude weighting.
-    :param bins_header: text to use for the header of the bin start and
-        end columns if saving to CSV or Excel.
-    :param value_header: text to use for the header of the histogram
-        values column if saving to CSV or Excel.
-    :param sheet_name: name of the sheet if saving to Excel.
-    :param filepath: string containing path to the output location or
-        ``ExcelWriter`` if saving many sheets to the same Excel file.
-        If the ``file_type`` is set to ``None``, this filename is used
-        to infer the file type. If no file type can be inferred, CSV
-        is assumed.
-    :param file_type: instance of ``NumericExportType`` indicating the
-        desired output file type of the histogram. If this is ``None``,
-        the function attempts to infer the file type from the provided
-        ``filepath``. If inference fails, the file_type defaults to CSV.
-    :return: ``None``.
+    histogram_values
+        One-dimensional NumPy array of shape ``(n, )`` where ``n`` is the
+        number of bins. This array contains the values of each bin of the
+        histogram. These may be raw counts, or a more complicated magnitude
+        weighting.
+
+    bins_header
+        Text to use for the header of the bin start and bin end columns if
+        saving to CSV or Excel.
+
+    value_header
+        Text to use for the header of the histogram values column if saving
+        to CSV or Excel.
+
+    sheet_name
+        Name of the sheet if saving to Excel.
+
+    filepath
+        String containing path to the output location or an object of type
+        :class:`pandas.ExcelWriter` if saving many sheets to the same Excel
+        file. If the ``file_type`` is set to :class:`None`, this filename
+        is used to infer the file type. If no file type can be inferred,
+        :attr:`VectorFileType.CSV` is assumed.
+
+    file_type
+        Member of :class`VectorFileType` indicating the desired output file
+        type of the histogram. If :class:`None`, the function attempts to
+        infer the file type from the provided ``filepath``. If inference
+        fails, the file_type defaults to :attr:`VectorFileType.CSV`.
+
+    Notes
+    -----
+    If the ``file_type`` parameter is :attr:`VectorFileType.CSV` or
+    :attr:`VectorFileType.EXCEL`, a header row is added. The headers for
+    the first two columns depend on the value of ``bins_header``, followed
+    by the respective "_Start" and "_End" text. The column containing the
+    bin values is named with ``value_header``.
+
+    A :class:`pandas.ExcelWriter` object can be passed instead of a
+    filename to extend an existing Excel file that is being written.
+
     """
 
     histogram_bin_starts = histogram_bins[:-1]
@@ -441,38 +554,48 @@ def export_two_dimensional_histogram(
     sheet_name: str = "Sheet1",
     file_type: Optional[VectorFileType] = None,
 ):
-    """
-    Export a 2D histogram.
+    """Export a 2D histogram.
 
     Save a 2D histogram to file. The histogram is altered to indicate
-    clearly where the bins begin and end. The final row and column
-    contain zero as there are no values beyond the end of the final bin.
-    The histogram must be square. If saving as CSV or EXCEL, the first
-    row and first column serve as headers for the table, containing the
-    bin start for a given cell. If saving as NPY, the bins are not
-    encoded in the file. Instead, a separate file is saved containing
-    the histogram bins.
+    clearly where the bins begin. The final row and column contain zero as
+    there are no values beyond the end of the final bin. The histogram must
+    be square. If saving as CSV or EXCEL, the first row and first column
+    serve as headers for the table, containing the bin start for a given
+    cell. If saving as NPY, the bins are not encoded in the file. Instead,
+    a separate file is saved containing the histogram bins.
 
-    :param histogram_bins: NumPy array containing the histogram bin
-        boundaries. For a histogram of shape ``(n, n)``, this array
-        will have shape ``(2, n + 1)``, where ``n`` is the number of
-        histogram bins. The zero-indexed bins in axis zero correspond to
+    Parameters
+    ----------
+
+    histogram_bins
+        NumPy array containing the histogram bin boundaries. For a
+        histogram of shape ``(n, n)``, this array will have shape
+        ``(2, n + 1)``, where ``n`` is the number of histogram bins.
+        The zero-indexed bins in axis zero correspond to
         the **rows** of the histogram array, while the one-indexed bins
         correspond to the **columns** in the histogram array.
-    :param histogram_values: 2D NumPy array containing the histogram.
-        This array has shape ``(n, n)`` where ``n`` is the number of
-        histogram bins for each axis.
-    :param filepath: string containing path to the output location or
-        ``ExcelWriter`` if saving many sheets to the same Excel file.
-        If the ``file_type`` is set to ``None``, this filename is used
-        to infer the file type. If no file type can be inferred, CSV
-        is assumed.
-    :param sheet_name: name of the sheet if saving to Excel.
-    :param file_type: instance of ``NumericExportType`` indicating the
-        desired output file type of the histogram. If this is ``None``,
-        the function attempts to infer the file type from the provided
-        ``filepath``. If inference fails, the file_type defaults to CSV.
-    :return: ``None``.
+
+    histogram_values
+        2D NumPy array containing the histogram. This array has shape
+        ``(n, n)`` where ``n`` is the number of histogram bins for each
+        axis.
+
+    filepath
+        String containing path to the output location or
+        :class:`pandas.ExcelWriter` if saving many sheets to the same Excel
+        file. If the ``file_type`` is set to :class:`None`, this filename
+        is used to infer the file type. If no file type can be inferred,
+        :attr:`VectorFileType.CSV` is assumed.
+
+    sheet_name
+        Name of the sheet if saving to Excel.
+
+    file_type
+        Member of :class:`VectorFileType` indicating the desired output
+        file type of the histogram data. If this is :class:`None`, the
+        function attempts to infer the file type from the provided
+        ``filepath``. If inference fails, the file_type defaults to
+        :attr:`VectorFileType.CSV`.
     """
 
     # Start by padding the histogram
