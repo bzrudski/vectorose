@@ -1,8 +1,11 @@
-"""
-Anisotropy Rose - mock data creator
+# Copyright (c) 2023-, Benjamin Rudski, Joseph Deering
+#
+# This code is licensed under the MIT License. See the `LICENSE` file for
+# more details about copying.
 
-Joseph Deering, Benjamin Rudski
-2023
+
+"""
+Mock vector data creator.
 
 This module provides tools to create artificial vectors for testing.
 """
@@ -25,35 +28,59 @@ def create_vectors_with_primary_orientation(
     inversion_prob: float = 0.5,
     use_degrees: bool = False,
 ) -> np.ndarray:
-    """
-    Create a noisy set of vectors.
+    """Create a noisy set of vectors.
 
     Create a set of noisy vectors with a dominant magnitude and a single
     dominant orientation. Gaussian noise is applied in both angular
     directions and in the magnitude. These vectors are all assumed to be
-    located at the origin. This function does not consider any spatial
+    located at the origin. This function **does not** consider any spatial
     distribution.
 
-    For more information on the procedure for converting spherical
-    coordinates to cartesian coordinates, see
-    ``.core.convert_spherical_to_cartesian_coordinates``.
-
-    :param phi: Dominant phi orientation.
-    :param theta: Dominant theta orientation.
-    :param number_of_vectors: Number of vectors to produce.
-    :param phi_std: Standard deviation of Gaussian noise applied to
-        the phi angles.
-    :param theta_std: Standard deviation of Gaussian noise applied to
-        the theta angles.
-    :param magnitude: Average length of the vectors.
-    :param magnitude_std: Standard deviation of Gaussian noise applied
-        to the magnitude.
-    :param inversion_prob: Probability of inverting the sense of the
-        vector, following a Bernoulli random variable.
-    :param use_degrees: Indicate that angles are in degrees.
-    :return: NumPy array with ``number_of_vectors`` rows and three
+    Parameters
+    ----------
+    phi
+        Dominant :math:`\\phi` orientation.
+    
+    theta
+        Dominant :math:`\\theta` orientation.
+    
+    number_of_vectors
+        Number of vectors to produce.
+    
+    phi_std
+        Standard deviation of Gaussian noise applied to the :math:\\`phi` 
+        angles.
+    
+    theta_std
+        Standard deviation of Gaussian noise applied to the :math:`\\theta`
+        angles.
+    
+    magnitude
+        Average length of the vectors.
+    
+    magnitude_std
+        Standard deviation of Gaussian noise applied to the magnitude.
+    
+    inversion_prob
+        Probability of inverting the sense of the vector, following a
+        Bernoulli random variable.
+    
+    use_degrees
+        Indicate that angles passed for :math:`\\phi` and :math:`\\theta` 
+        are in degrees.
+    
+    Returns
+    -------
+    numpy.ndarray
+        NumPy array with ``number_of_vectors`` rows and three
         columns, containing the respective ``x,y,z`` components of the
         produced vectors.
+
+    See Also
+    --------
+    .convert_spherical_to_cartesian_coordinates:
+        Function used to convert spherical coordinates in 
+        :math:`(\\phi, \\theta)` to cartesian :math:`(x,y,z)` coordinates.
     """
 
     # Create the phi angles
@@ -109,8 +136,7 @@ def create_vectors_multiple_orientations(
     inversion_probs: Union[float, Sequence[float], np.ndarray] = 0.5,
     use_degrees: bool = False,
 ) -> np.ndarray:
-    """
-    Create a noisy set of vectors with multiple orientations.
+    """Create a noisy set of vectors with multiple orientations.
 
     Create a set of noisy vectors with dominant magnitudes and multiple
     dominant orientations. Gaussian noise is applied in both angular
@@ -120,22 +146,49 @@ def create_vectors_multiple_orientations(
     sequence or array types in order to have different properties
     for each dominant direction.
 
-    :param phis: Dominant phi orientation.
-    :param thetas: Dominant theta orientation.
-    :param numbers_of_vectors: Number of vectors to produce.
-    :param phi_stds: Standard deviation of Gaussian noise applied to
-        the phi angles.
-    :param theta_stds: Standard deviation(s) of Gaussian noise applied
-        to the theta angles.
-    :param magnitudes: Average length(s) of the vectors.
-    :param magnitude_stds: Standard deviation(s) of Gaussian noise
-        applied to the magnitude.
-    :param inversion_probs: Probability of inverting the sense of the
-        vectors.
-    :param use_degrees: Indicate that angles are in degrees.
-    :return: NumPy array with ``sum(numbers_of_vectors)`` rows and three
+    Parameters
+    ----------
+    phis
+        Collection of dominant :math:`\\phi` orientations.
+    
+    thetas
+        Collection of dominant :math:`\\theta` orientations.
+    
+    numbers_of_vectors
+        Number of vectors to produce for each set of parameters.
+    
+    phi_stds
+        Standard deviation(s) of Gaussian noise applied to the
+        :math:`\\phi` angles.
+    
+    theta_stds
+        Standard deviation(s) of Gaussian noise applied to the
+        :math:`\\theta` angles.
+    
+    magnitudes
+        Average length of the vectors for each set of parameters.
+    
+    magnitude_stds
+        Standard deviation(s) of Gaussian noise applied to the magnitude.
+    
+    inversion_probs
+        Probability of inverting the sense of the vectors.
+    
+    use_degrees
+        Indicate that angles are in degrees.
+
+    Returns
+    -------
+    numpy.ndarray
+        NumPy array with ``sum(numbers_of_vectors)`` rows and three
         columns, containing the respective ``x,y,z`` components of the
         produced vectors.
+
+    See Also
+    --------
+    create_vectors_with_primary_orientation:
+        function used to create each family of directed vectors for the
+        provided parameter sets.
     """
 
     # Convert the arguments to NumPy arrays
