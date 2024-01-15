@@ -6,14 +6,15 @@
 """
 Functions for import and export.
 
-This module provides the ability to load vector fields from file and
-save vector fields and vector rose histogram data.
+This module provides the ability to load vector fields from file and save
+vector fields and vector rose histogram data.
 """
 
 import enum
 import os
-from typing import Optional, Type, List, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Type, Union
 
+import matplotlib.animation
 import numpy as np
 import pandas as pd
 
@@ -94,6 +95,31 @@ class ImageFileType(enum.Enum):
     PDF = "pdf"
 
 
+class VideoFileType(enum.Enum):
+    """Video File Types.
+
+    File types for videos and animations. The raw values for the members of
+    this enumerated type correspond to the respective file extensions
+    **without** a period.
+
+    Members
+    -------
+    MP4
+        Moving Picture Experts Group (MPEG) 4 video format.
+
+    GIF
+        Graphics Interchange Format animated image (regardless of whether
+        you pronounce if G-IF or J-IF).
+
+    Todo
+    ----
+    Add support for additional export formats.
+    """
+
+    MP4 = "mp4"
+    GIF = "gif"
+
+
 def __infer_filetype_from_filename(
     filename: str, file_type_enum: Type[enum.Enum]
 ) -> Optional[enum.Enum]:
@@ -169,6 +195,35 @@ def __infer_vector_filetype_from_filename(
     )
 
     return vector_file_type
+
+
+def __infer_video_filetype_from_filename(
+    filename: str,
+) -> Optional[VideoFileType]:
+    """Infer a video file type from a filename.
+
+    This function tries to infer a :class:`VideoFileType` from a provided
+    filename by checking the extension. If no valid extension is found,
+    :class:`None` is returned. Otherwise, the determined vector type is
+    returned.
+
+    Parameters
+    ----------
+    filename
+        String containing the filename.
+
+    Returns
+    -------
+    VideoFileType or None:
+        Video file type corresponding to the filename if a valid filetype
+        is found. Otherwise, :class:`None`.
+    """
+
+    video_file_type = __infer_filetype_from_filename(
+        filename=filename, file_type_enum=VideoFileType
+    )
+
+    return video_file_type
 
 
 def import_vector_field(
@@ -624,3 +679,54 @@ def export_two_dimensional_histogram(
             bin_filepath += filename_addition
 
         np.save(bin_filepath, arr=histogram_bins)
+
+
+def export_mpl_animation(
+    animation: matplotlib.animation.Animation,
+    filename: str,
+    file_type: VideoFileType = VideoFileType.MP4,
+    dpi: Optional[int] = 150,
+    fps: Optional[int] = None,
+    **export_kwargs: Dict[str, Any],
+):
+    """Export a Matplotlib animation.
+
+    Export a provided Matplotlib animation as a video.
+
+    Parameters
+    ----------
+    animation
+        The :class:`matplotlib.animation.Animation` animation to export.
+
+    filename
+        The destination for the video export. This filename will be used to
+        infer the export file type.
+
+    file_type
+        The default filetype to consider if unable to resolve the file type
+        from the file name.
+
+    dpi
+        Resolution of the exported video in dots-per-inch (DPI).
+
+    fps
+        Desired frame rate in the exported video.
+
+    export_kwargs
+        Additional keyword arguments
+        to :meth:`matplotlib.animation.Animation.save`.
+
+    See Also
+    --------
+    matplotlib.animation.Animation.save:
+        The function called to perform the actual export.
+
+    """
+
+    # Infer the file type from the filename
+    inferred_type = __infer_video_filetype_from_filename(filename)
+
+    if inferred_type is None:
+        filename = f"{filename}.{file_type.value}"
+
+    animation.save(filename=filename, fps=fps, dpi=dpi, **export_kwargs)
