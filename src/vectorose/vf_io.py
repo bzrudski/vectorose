@@ -114,6 +114,11 @@ class VideoFileType(enum.Enum):
     Todo
     ----
     Add support for additional export formats.
+
+    Warnings
+    --------
+    When constructing a filename using the members of this type, a dot
+    ``(.)`` must be added.
     """
 
     MP4 = "mp4"

@@ -1034,9 +1034,9 @@ def produce_histogram_plots(
 
 def __update_sphere_viewing_angle(
     frame: int,
-    sphere_axes: mpl_toolkits.mplot3d.Axes3D,
+    sphere_axes: mpl_toolkits.mplot3d.axes3d.Axes3D,
     angle_increment: int,
-) -> Iterable[mpl_toolkits.mplot3d.Axes3D]:
+) -> Iterable[mpl_toolkits.mplot3d.axes3d.Axes3D]:
     """Update the sphere viewing angle.
 
     Updates the sphere viewing angle to be the current angle, with
@@ -1050,7 +1050,7 @@ def __update_sphere_viewing_angle(
 
     Returns
     -------
-    Iterable[mpl_toolkits.mplot3d.Axes3D]
+    Iterable[mpl_toolkits.mplot3d.axes3d.Axes3D]
         An iterable containing a reference to the 3D sphere axes.
     """
 
@@ -1070,7 +1070,7 @@ def __update_sphere_viewing_angle(
 
 def animate_sphere_plot(
     sphere_figure: matplotlib.figure.Figure,
-    sphere_axes: mpl_toolkits.mplot3d.Axes3D,
+    sphere_axes: mpl_toolkits.mplot3d.axes3d.Axes3D,
     rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
     angle_increment: int = 10,
     animation_delay: int = 250,
@@ -1089,8 +1089,8 @@ def animate_sphere_plot(
         plot.
 
     sphere_axes
-        The :class:`mpl_toolkits.mplot3d.Axes3D` containing the sphere
-        plot. These axes **must** be 3D axes.
+        The :class:`mpl_toolkits.mplot3d.axes3d.Axes3D` containing the
+        sphere plot. These axes **must** be 3D axes.
 
     rotation_direction
         Direction for the **sphere** to rotate.
@@ -1124,7 +1124,7 @@ def animate_sphere_plot(
         The class that serves as the basis for the animations created
         here.
 
-    mpl_toolkits.mplot3d.Axes3D.view_init:
+    mpl_toolkits.mplot3d.axes3d.Axes3D.view_init:
         The method used to update the 3D viewing angle to produce the
         animations.
 
