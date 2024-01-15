@@ -317,7 +317,7 @@ def produce_spherical_histogram_plot(
     theta_axis_colour: str = "black",
     axes_x_limits: Tuple[float, float] = (-2.2, 2.2),
     axes_y_limits: Tuple[float, float] = (-2.2, 2.2),
-    axes_z_limits: Tuple[float, float] = (-1.75, 1.75),
+    axes_z_limits: Tuple[float, float] = (-2.2, 2.2),
     hide_cartesian_axis_labels: bool = False,
     hide_cartesian_axis_ticks: bool = True,
     plot_colourbar: bool = False,
@@ -512,6 +512,10 @@ def produce_spherical_histogram_plot(
     )
     # surface.set_edgecolor("white")
     # surface.set_linewidth(0.25)
+
+    # Set the aspect ratio so that all axes are the same.
+    ax.set_aspect("equal")
+    ax.set_box_aspect((1, 1, 1))
     ax.set_xlim(*axes_x_limits)
     ax.set_ylim(*axes_y_limits)
     ax.set_zlim(*axes_z_limits)
@@ -1033,8 +1037,7 @@ def __update_sphere_viewing_angle(
     sphere_axes: mpl_toolkits.mplot3d.Axes3D,
     angle_increment: int,
 ) -> Iterable[mpl_toolkits.mplot3d.Axes3D]:
-    """
-    Update the sphere viewing angle.
+    """Update the sphere viewing angle.
 
     Updates the sphere viewing angle to be the current angle, with
     the azimuth increased by an increment.
@@ -1073,8 +1076,7 @@ def animate_sphere_plot(
     animation_delay: int = 250,
     reset_initial_position: bool = True,
 ) -> matplotlib.animation.FuncAnimation:
-    """
-    Animate the sphere plot.
+    """Animate the sphere plot.
 
     Create an animation of the sphere plot rotating about its central
     axis (i.e., the axis running from the sphere's north pole to its
