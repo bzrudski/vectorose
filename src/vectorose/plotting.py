@@ -12,20 +12,22 @@ of orientation/vector fields.
 """
 
 import enum
-from typing import Dict, Optional, Tuple, Any
+import functools
+from typing import Any, Dict, Iterable, Optional, Tuple
 
-import mpl_toolkits.mplot3d.axes3d
-import matplotlib as mpl
+import matplotlib.animation
 import matplotlib.cm
 import matplotlib.colorbar
+import matplotlib.figure
 import matplotlib.projections
 import matplotlib.pyplot as plt
+import mpl_toolkits.mplot3d.axes3d
 import numpy
 import numpy as np
 
 from .vectorose import (
-    MagnitudeType,
     AngularIndex,
+    MagnitudeType,
     convert_spherical_to_cartesian_coordinates,
 )
 
@@ -168,8 +170,8 @@ def produce_phi_theta_1d_histogram_data(
     binned_data
         NumPy array containing the binned :math:`\\phi,\\theta` histogram.
         This array should have shape ``(2n, 2n, 3)`` where ``n`` is the
-        half-number of histogram bins. See 
-        :func:`.create_binned_orientation` for a detailed explanation of 
+        half-number of histogram bins. See
+        :func:`.create_binned_orientation` for a detailed explanation of
         the format.
 
     weight_by_magnitude
@@ -407,6 +409,8 @@ def produce_spherical_histogram_plot(
 
     hide_cartesian_axis_labels
         Indicate whether to hide the axis labels for the cartesian axes.
+        If this is set to ``True``, then the axes themselves will also
+        be hidden.
 
     hide_cartesian_axis_ticks
         Indicate whether to hide the axis ticks for the cartesian axes.
@@ -425,10 +429,10 @@ def produce_spherical_histogram_plot(
         A reference to the :class:`Axes3D` object passed in as ``ax``.
 
     matplotlib.colorbar.Colorbar
-        A reference to the added ``Colorbar`` (or ``None`` if no 
+        A reference to the added ``Colorbar`` (or ``None`` if no
         colour bar is plotted).
 
-    
+
     Warnings
     --------
     The provided axes must have the projection set to 3D
@@ -697,47 +701,47 @@ def produce_polar_histogram_plot(
 
     Produce a 1D polar histogram using the specified data on the
     provided axes.
-    
+
 
     Parameters
-    ----------    
+    ----------
     ax
         Matplotlib :class:`matplotlib.projections.polar.PolarAxes` on which
         to plot the data.
-    
+
     data
         Data to plot. This should have the same size as ``bins``.
-    
+
     bins
         *Lower value* of each bin in the histogram.
-    
+
     zero_position
-        Zero-position on the polar axes, expressed as a member of the 
+        Zero-position on the polar axes, expressed as a member of the
         enumerated class :class:`CardinalDirection`.
-    
+
     rotation_direction
         Rotation direction indicating how the bin values should
         increase from the zero-point specified in ``zero_position``,
         represented as a member of :class:`RotationDirection`.
-    
+
     plot_title
         Optional title of the plot.
-    
+
     label_axis
         Indicate whether the circumferential axis should be labelled.
-    
+
     axis_ticks
-        Axis ticks for the histogram. Units specified in 
+        Axis ticks for the histogram. Units specified in
         ``axis_ticks_unit``.
-    
+
     axis_ticks_unit
-        :class:`AngularUnits` indicating what unit should be used for 
+        :class:`AngularUnits` indicating what unit should be used for
         specifying the axis ticks. Default is :attr:`AngularUnits.DEGREES`.
-    
+
     colour
         Colour used for the histogram bars. Must be a valid matplotlib
         colour [#f1]_.
-    
+
     Returns
     -------
 
@@ -747,7 +751,7 @@ def produce_polar_histogram_plot(
     Warnings
     --------
     The axes provided **must** be created using ``projection="Polar"``.
-    
+
     See Also
     --------
     matplotlib.projections.polar.PolarAxes:
@@ -792,38 +796,38 @@ def produce_polar_histogram_plot_from_2d_bins(
     """Produce polar histogram from 2D binned data
 
     Produce a polar histogram for the specified angle, starting from the 2D
-    histogram data. This function takes in existing Matplotlib axes and 
+    histogram data. This function takes in existing Matplotlib axes and
     plots the histogram on them.
 
     Parameters
     ----------
     ax
         Matplotlib polar axes on which the histogram will be plotted.
-    
+
     angle
         Indicate which angle to extract from the data. See
         :class:``AngularIndex`` for details.
-    
+
     data
         2D histogram binned data of shape ``(2n, 2n, 3)`` where
         ``n`` is the half-number of bins used in the binning process.
-    
+
     bins
         Bounds of the bins used to construct the histograms. If
         the array is 2D, then the angular indexing will be used to
         extract the phi bin boundaries. If ``2n + 1`` entries are
         present, the last value is removed to ensure that only the lower
         bound of each bin is kept.
-    
+
     bin_angle_unit
         Unit for the bin angles. See :class:`AngularUnits`.
-    
+
     weight_by_magnitude
-        Indicate whether the histograms should be weighted by count or by 
+        Indicate whether the histograms should be weighted by count or by
         magnitude. If magnitude is used, the phi histogram is weighted by
         3D magnitude while the theta histogram is weighted by the projected
         magnitude in the XY plane.
-    
+
     **kwargs
         Keyword arguments for the plotting. See
         :func:`produce_polar_histogram_plot` for more details.
@@ -835,14 +839,14 @@ def produce_polar_histogram_plot_from_2d_bins(
 
     Warnings
     --------
-    The axes passed in ``ax`` must be of type 
+    The axes passed in ``ax`` must be of type
     :class:`matplotlib.projections.polar.PolarAxes`. To create these axes,
     ensure to set ``projection="Polar"``.
 
     See Also
     --------
     produce_polar_histogram_plot:
-        Produce a polar plot from 1D data. See documentation for the 
+        Produce a polar plot from 1D data. See documentation for the
         keyword arguments that can be passed to this function.
     """
 
@@ -887,7 +891,7 @@ def produce_histogram_plots(
 ):
     """Produce and show the vector rose histograms.
 
-    This function takes in 2D binned histogram input and shows a 3-panel 
+    This function takes in 2D binned histogram input and shows a 3-panel
     figure containing (from left to right):
 
     * The 2D sphere plot of :math:`\\phi,\\theta`.
@@ -906,55 +910,55 @@ def produce_histogram_plots(
         half-number of histogram bins used to construct the histogram.
         See :func:`.create_binned_orientation` for more details. See
         :class:`MagnitudeType` for the indexing rules along the last axis.
-    
+
     bins
         The boundaries of the bins. This array should be of size
         ``(2, 2n + 1)`` where ``n`` represents the half-number of bins.
         See :class:`AngularIndex` for the indexing rules along the first
         axis.
-    
+
     sphere_radius
         The radius of the sphere used for 3D plotting.
-    
+
     zero_position_2d
         The :class:`CardinalDirection` where zero should be placed in the
         1D polar histograms (default: North).
-    
+
     rotation_direction
         The :class:`RotationDirection` of increasing angles in the 1D polar
         histograms (default: clockwise).
-    
+
     use_degrees
         Indicate whether the values are in degrees. If ``True``, values are
         assumed to be in degrees. Otherwise, radians are assumed.
-    
+
     colour_map
         Name of the matplotlib colour map [#f2]_ to use to colour
         the hemisphere. If an invalid name is provided, a default
         greyscale colour map ("gray") will be used.
-    
+
     plot_title
         Title of the overall plot (optional).
-    
+
     weight_by_magnitude
         Indicate whether plots should be weighted by magnitude or by count.
-    
+
     **kwargs
-        Extra keyword arguments for the sphere plotting. See 
+        Extra keyword arguments for the sphere plotting. See
         :func:`produce_spherical_histogram_plot` for available arguments.
 
-    
+
     See Also
     --------
-    produce_spherical_histogram_plot: 
+    produce_spherical_histogram_plot:
         Create the spherical plot in isolation.
-    
+
     produce_polar_histogram_plot:
         Create 1D polar histograms in isolation from 1D histogram data.
 
     .create_binned_orientation:
         Bin vectors into a 2D :math:`\\phi,\\theta` histogram. The return
-        values from that function may be passed as arguments to this 
+        values from that function may be passed as arguments to this
         function.
 
 
@@ -1022,3 +1026,134 @@ def produce_histogram_plots(
     plt.suptitle(plot_title, fontweight="bold", fontsize=14)
     plt.subplots_adjust(left=0.05, right=0.95, wspace=0.25)
     plt.show()
+
+
+def __update_sphere_viewing_angle(
+    frame: int,
+    sphere_axes: mpl_toolkits.mplot3d.Axes3D,
+    angle_increment: int,
+) -> Iterable[mpl_toolkits.mplot3d.Axes3D]:
+    """
+    Update the sphere viewing angle.
+
+    Updates the sphere viewing angle to be the current angle, with
+    the azimuth increased by an increment.
+
+    Parameters
+    ----------
+    frame
+        The number of the current frame in the animation (required
+        to fit the animation signature, but unused here).
+
+    Returns
+    -------
+    Iterable[mpl_toolkits.mplot3d.Axes3D]
+        An iterable containing a reference to the 3D sphere axes.
+    """
+
+    # Get the information about the current viewing angle
+    elev = sphere_axes.elev
+    azim = sphere_axes.azim
+    roll = sphere_axes.roll
+
+    # Increment the azim
+    azim += angle_increment
+
+    # Set the new values
+    sphere_axes.view_init(elev=elev, azim=azim, roll=roll)
+
+    return [sphere_axes]
+
+
+def animate_sphere_plot(
+    sphere_figure: matplotlib.figure.Figure,
+    sphere_axes: mpl_toolkits.mplot3d.Axes3D,
+    rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
+    angle_increment: int = 10,
+    animation_delay: int = 250,
+    reset_initial_position: bool = True,
+) -> matplotlib.animation.FuncAnimation:
+    """
+    Animate the sphere plot.
+
+    Create an animation of the sphere plot rotating about its central
+    axis (i.e., the axis running from the sphere's north pole to its
+    south pole).
+
+    Parameters
+    ----------
+    sphere_figure
+        The :class:`matplotlib.figure.Figure` containing the sphere
+        plot.
+
+    sphere_axes
+        The :class:`mpl_toolkits.mplot3d.Axes3D` containing the sphere
+        plot. These axes **must** be 3D axes.
+
+    rotation_direction
+        Direction for the **sphere** to rotate.
+        See :class:`RotationDirection` for more information.
+
+    angle_increment
+        Increment of the angle in **degrees** for the rotation at each
+        frame. This value should be positive.
+
+    animation_delay
+        Time delay between frames in milliseconds.
+
+    reset_initial_position
+        Indicate whether the sphere should be reset to its original
+        orientation before recording the animation. This argument should
+        be set to ``False`` to allow a custom starting position.
+
+    Returns
+    -------
+    matplotlib.animation.FuncAnimation
+        The matplotlib animation produced by the sphere rotation.
+
+    Warnings
+    --------
+    We recommend to hide the polar axis ticks while performing the
+    animation. Otherwise, the result may look odd.
+
+    See Also
+    --------
+    matplotlib.animation.FuncAnimation:
+        The class that serves as the basis for the animations created
+        here.
+
+    mpl_toolkits.mplot3d.Axes3D.view_init:
+        The method used to update the 3D viewing angle to produce the
+        animations.
+
+    """
+
+    # Determine the sign of the angle increment
+    if rotation_direction is RotationDirection.CLOCKWISE:
+        angle_increment = abs(angle_increment)
+    else:
+        angle_increment = - abs(angle_increment)
+
+    # Create the function that will update the frame.
+    update_angle_func = functools.partial(
+        __update_sphere_viewing_angle,
+        sphere_axes=sphere_axes,
+        angle_increment=angle_increment,
+    )
+
+    # Check if we need to reset the orientation
+    if reset_initial_position:
+        sphere_axes.view_init()
+
+    # Get the number of frames necessary to do a full 360° rotation
+    number_of_frames = np.ceil(360 / angle_increment).astype(int)
+
+    # Create the animation
+    animation = matplotlib.animation.FuncAnimation(
+        fig=sphere_figure,
+        func=update_angle_func,
+        frames=number_of_frames,
+        interval=animation_delay,
+    )
+
+    return animation
