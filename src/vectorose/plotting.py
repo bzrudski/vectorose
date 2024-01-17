@@ -1074,7 +1074,7 @@ def animate_sphere_plot(
     rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
     angle_increment: int = 10,
     animation_delay: int = 250,
-    reset_initial_position: bool = True,
+    reset_initial_orientation: bool = True,
 ) -> matplotlib.animation.FuncAnimation:
     """Animate the sphere plot.
 
@@ -1103,7 +1103,7 @@ def animate_sphere_plot(
     animation_delay
         Time delay between frames in milliseconds.
 
-    reset_initial_position
+    reset_initial_orientation
         Indicate whether the sphere should be reset to its original
         orientation before recording the animation. This argument should
         be set to ``False`` to allow a custom starting position.
@@ -1144,11 +1144,11 @@ def animate_sphere_plot(
     )
 
     # Check if we need to reset the orientation
-    if reset_initial_position:
+    if reset_initial_orientation:
         sphere_axes.view_init()
 
     # Get the number of frames necessary to do a full 360° rotation
-    number_of_frames = np.ceil(360 / angle_increment).astype(int)
+    number_of_frames = np.abs(np.ceil(360 / angle_increment)).astype(int)
 
     # Create the animation
     animation = matplotlib.animation.FuncAnimation(
