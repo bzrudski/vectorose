@@ -1,5 +1,5 @@
 # Copyright (c) 2023-, Benjamin Rudski, Joseph Deering
-# 
+#
 # This code is licensed under the MIT License. See the `LICENSE` file for
 # more details about copying.
 
@@ -48,7 +48,7 @@ class MagnitudeType(enum.IntEnum):
         Euclidean magnitude in 3D space. Index 0 in all arrays.
 
     IN_PLANE
-        Magnitude of the :math:`x,y`-projection of the vector. Index 1 in 
+        Magnitude of the :math:`x,y`-projection of the vector. Index 1 in
         all arrays.
 
     COUNT
@@ -68,8 +68,8 @@ def remove_zero_vectors(vectors: np.ndarray) -> np.ndarray:
     Parameters
     ----------
 
-    vectors: 
-        ``n`` by 6 or ``n`` by 3 array of vectors. If the array has 6 
+    vectors:
+        ``n`` by 6 or ``n`` by 3 array of vectors. If the array has 6
         columns, *the last 3 are assumed to be the vector components*.
 
     Return
@@ -107,7 +107,7 @@ def convert_spherical_to_cartesian_coordinates(
     Parameters
     ----------
     angular_coordinates
-        Array with >=2 columns representing :math:`\\phi` and 
+        Array with >=2 columns representing :math:`\\phi` and
         :math:`\\theta`, respectively (see :class:`AngularIndex`), and
         ``n`` rows representing the data points. This function can also be
         used on the output of :func:`np.mgrid`, if the arrays have been
@@ -116,7 +116,7 @@ def convert_spherical_to_cartesian_coordinates(
 
     radius
         A :class:`float` or :class:`numpy.ndarray` representing the radius
-        of the sphere. If the value passed is an array, it must have ``n`` 
+        of the sphere. If the value passed is an array, it must have ``n``
         rows, one for each data point. Default: ``radius=1``.
 
     Return
@@ -124,7 +124,7 @@ def convert_spherical_to_cartesian_coordinates(
     numpy.ndarray:
         Array with 3 columns, corresponding to the cartesian
         coordinates in X, Y, Z, and ``n`` rows, one for each data point.
-        If mgrids are provided, then multiple sheets will be returned 
+        If mgrids are provided, then multiple sheets will be returned
         in this array, with the -1 axis still used to distinguish between
         x, y, z.
 
@@ -170,12 +170,12 @@ def compute_vector_orientation_angles(
     :math:`\\theta` orientation angles. The :math:`\\phi` angle corresponds
     to the tilt with respect to the ``z`` axis, while the :math:`\\theta`
     angle is the angle in the ``xy``-plane with respect to the ``y`` axis.
-    See **Notes** for more details on the definition and calculations 
+    See **Notes** for more details on the definition and calculations
     of these angles.
 
     The unit for the angles is *radians* unless ``use_degrees`` is set
     to ``True``. The returned angles are in the range of 0
-    to :math:`\\pi` (180\u00b0) for :math:`\\phi` and 0 to :math:`\\pi` 
+    to :math:`\\pi` (180\u00b0) for :math:`\\phi` and 0 to :math:`\\pi`
     (180\u00b0) for :math:`\\theta`. The first column in the returned array
     corresponds to :math:`\\phi` and the second to :math:`\\theta`. See
     :class:`AngularIndex` for more details about the ordering of the
@@ -186,11 +186,11 @@ def compute_vector_orientation_angles(
     vectors
         2D NumPy array containing 3 columns, corresponding to the x, y and
         z **components** of the vectors, and ``n`` rows, one for each
-        vector. **Note:** We only require the vector *components*, not the 
+        vector. **Note:** We only require the vector *components*, not the
         *coordinates* in space.
-    
+
     use_degrees
-        indicate whether the returned angles should be in degrees. 
+        indicate whether the returned angles should be in degrees.
         If ``False`` (default), the angles will be returned in *radians*.
 
     Returns
@@ -198,7 +198,7 @@ def compute_vector_orientation_angles(
     numpy.ndarray
         2D NumPy array containing 2 columns, corresponding to
         :math:`\\phi,\\theta` for ``n`` rows.
-    
+
     Notes
     -----
     In this package, we define the angles to be:
@@ -229,7 +229,7 @@ def compute_vector_orientation_angles(
     the possibility of describing the same angle in two different ways. The
     :math:``\\phi`` angle must be in the range :math:`0 \\leq \\phi < \\pi`
     in radians, or :math:`0 \\leq \\phi < 180` in degrees. The value of
-    :math:`\\theta` is defined in :math:`-\\pi \\leq \\theta < \\pi` in 
+    :math:`\\theta` is defined in :math:`-\\pi \\leq \\theta < \\pi` in
     radians, or :math:`-180 \\leq \\theta < 180` in degrees. This function
     restricts the range of :math:`\\theta` further due to the nature of
     the orientations considered in the current application.
@@ -274,23 +274,24 @@ def compute_vector_magnitudes(vectors: np.ndarray) -> np.ndarray:
 
     Compute vector magnitudes in 3D, as well as the component of the
     magnitude in the :math:`(x,y)`-plane. See **Notes** for the equations
-    used. See :class:`MagnitudeType` for the ordering of the different 
+    used. See :class:`MagnitudeType` for the ordering of the different
     magnitudes in the output array.
 
     Parameters
     ----------
     vectors
         2D NumPy array containing 3 columns, corresponding to the x, y and
-        z **components** of the vectors, and ``n`` rows, one for each 
-        vector. **Note:** We only require the vector *components*, not the 
+        z **components** of the vectors, and ``n`` rows, one for each
+        vector. **Note:** We only require the vector *components*, not the
         *coordinates* in space.
 
     Returns
     -------
     numpy.ndarray
-        2D NumPy array containing two columns and ``n`` rows. The first 
-        column corresponds to the 3D vector magnitude while the second
-        column corresponds to the :math:`(x,y)` in-plane magnitude.
+        2D NumPy array containing three columns and ``n`` rows. The first
+        column corresponds to the 3D vector magnitude. The second
+        column corresponds to the ``(x,y)`` in-plane magnitude. The third
+        column is 1 for all rows, corresponding to the count for each.
 
     Notes
     -----
@@ -312,9 +313,10 @@ def compute_vector_magnitudes(vectors: np.ndarray) -> np.ndarray:
     three_dimensional_magnitude = np.sqrt(x**2 + y**2 + z**2)
     in_plane_magnitude = np.sqrt(x**2 + y**2)
 
-    magnitudes_array = np.zeros((n, 2))
+    magnitudes_array = np.zeros((n, 3))
     magnitudes_array[:, MagnitudeType.IN_PLANE] = in_plane_magnitude
     magnitudes_array[:, MagnitudeType.THREE_DIMENSIONAL] = three_dimensional_magnitude
+    magnitudes_array[:, MagnitudeType.COUNT] = 1
 
     return magnitudes_array
 
@@ -330,14 +332,14 @@ def create_binned_orientation(
     Construct an array containing the histogram data obtained by binning
     the orientation data in two angular dimensions. The same number of bins
     are created in the :math:`\\phi` and :math:`\\theta` axes, which is
-    twice the number of bins passed in the ``half_number_of_bins`` 
+    twice the number of bins passed in the ``half_number_of_bins``
     parameter.
 
     Parameters
     ----------
     vector_orientations
         2D NumPy array containing ``n`` rows,
-        one for each vector, and 2 columns, corresponding to the
+        one for each vector, and 3 columns, corresponding to the
         angles :math:`\\phi,\\theta`.
 
     vector_magnitudes
@@ -359,15 +361,15 @@ def create_binned_orientation(
     -------
     binned_data: numpy.ndarray
         2D histogram of :math:`\\phi,\\theta`. This histogram is
-        a three-sheet :class:`numpy.ndarray`, with dimensions 
-        ``(half_number_of_bins * 2, half_number_of_bins * 2, 3)``. Axis 
-        zero corresponds to :math:`\\phi` and axis one corresponds 
-        to :math:`\\theta`. The last axis is used for indexing the 
+        a three-sheet :class:`numpy.ndarray`, with dimensions
+        ``(half_number_of_bins, half_number_of_bins, 3)``. Axis
+        zero corresponds to :math:`\\phi` and axis one corresponds
+        to :math:`\\theta`. The last axis is used for indexing the
         histogram by the magnitude type (see :class:`MagnitudeType`).
 
     bins: numpy.ndarray
         The bounds of the histogram bins. This array is of shape
-        ``(2, 2 * half_half_number_of_bins + 1)``, where the first row
+        ``(2, half_half_number_of_bins + 1)``, where the first row
         represents the bins for :math:`\\phi` and the second represents
         the bins for :math:`\\theta` (see :class:`AngularIndex`).
 
@@ -387,7 +389,7 @@ def create_binned_orientation(
     As mentioned above, the input vectors may only occupy half the range of
     angular values for :math:`\\phi` and :math:`\\theta`, respectively. As
     the current package deals with orientations without considering
-    direction, a given "vector" can be represented as having two 
+    direction, a given "vector" can be represented as having two
     corresponding locations on the surface of a sphere. When constructing
     the histogram, we must perform a mirroring step to include each point
     both in the origin angular location, as well as the angular bin
@@ -395,29 +397,20 @@ def create_binned_orientation(
     obtained by subtracting the half-number of bins from the computed bin.
     """
 
-    # Indicate whether we are weighting by magnitude
-    # magnitude_weighted = vector_magnitudes is not None
-
     # Get the number of vectors
     number_of_vectors = len(vector_orientations)
-
-    # Augment the vector counts with a `1` so that we can easily perform
-    # the count-based approach.
-    one_column = np.ones((number_of_vectors, 1))
-
-    vector_magnitudes = np.concatenate([vector_magnitudes, one_column], axis=-1)
 
     # Extract the angles
     phi = vector_orientations[:, AngularIndex.PHI]
     theta = vector_orientations[:, AngularIndex.THETA]
 
-    number_of_bins = 2 * half_number_of_bins
+    number_of_bins = half_number_of_bins
 
     if use_degrees:
-        minimum_angle = -180
+        minimum_angle = 0
         maximum_angle = 180
     else:
-        minimum_angle = -np.pi
+        minimum_angle = 0
         maximum_angle = np.pi
 
     phi_histogram_bins = np.histogram_bin_edges(
@@ -432,23 +425,13 @@ def create_binned_orientation(
     theta_bin_indices = np.digitize(theta, theta_histogram_bins) - 1
 
     # Now, to prepare the histogram array:
-    angular_histogram_2d = np.zeros((number_of_bins, number_of_bins, 3))
+    angular_histogram_2d = np.zeros((number_of_bins, number_of_bins, len(MagnitudeType)))
 
-    # Now, for the iterations. We can easily mirror through subtraction
-    # so that we can actually modify both the original and the reflected
-    # cells at the same time.
+    # Now, for the iterations. We set all the magnitudes simultaneously.
     for i in range(number_of_vectors):
         phi_bin = phi_bin_indices[i]
-        mirrored_phi_bin = phi_bin - half_number_of_bins
-
         theta_bin = theta_bin_indices[i]
-        mirrored_theta_bin = theta_bin - half_number_of_bins
-
-        # Why divide by 2? So that we aren't double-counting.
-        angular_histogram_2d[phi_bin, theta_bin] += vector_magnitudes[i] / 2
-        angular_histogram_2d[mirrored_phi_bin, mirrored_theta_bin] += (
-            vector_magnitudes[i] / 2
-        )
+        angular_histogram_2d[phi_bin, theta_bin] += vector_magnitudes[i]
 
     # Create an array that contains both the phi and theta
     # histogram boundaries.
@@ -465,7 +448,7 @@ def create_angular_binning_from_vectors(
     """Run the complete binning procedure on a list of vectors.
 
     Construct a 2D angular histogram from a 2D array of vectors with either
-    3 columns or 6 columns. If the vector field has 6 columns, the first 
+    3 columns or 6 columns. If the vector field has 6 columns, the first
     three will be considered the location coordinates and the final three
     will be considered the vector components, in the order ``x,y,z``.
 
@@ -490,30 +473,30 @@ def create_angular_binning_from_vectors(
     -------
     binned_data: numpy.ndarray
         2D histogram of :math:`\\phi,\\theta`. This histogram is
-        a three-sheet :class:`numpy.ndarray`, with dimensions 
-        ``(half_number_of_bins * 2, half_number_of_bins * 2, 3)``. Axis 
-        zero corresponds to :math:`\\phi` and axis one corresponds 
-        to :math:`\\theta`. The last axis is used for indexing the 
+        a three-sheet :class:`numpy.ndarray`, with dimensions
+        ``(half_number_of_bins, half_number_of_bins, 3)``. Axis
+        zero corresponds to :math:`\\phi` and axis one corresponds
+        to :math:`\\theta`. The last axis is used for indexing the
         histogram by the magnitude type (see :class:`MagnitudeType`).
 
     bins: numpy.ndarray
         The bounds of the histogram bins. This array is of shape
-        ``(2, 2 * half_half_number_of_bins + 1)``, where the first row
+        ``(2, half_half_number_of_bins + 1)``, where the first row
         represents the bins for :math:`\\phi` and the second represents
         the bins for :math:`\\theta` (see :class:`AngularIndex`).
 
     See Also
     --------
-    remove_zero_vectors: 
+    remove_zero_vectors:
         First step in this function, removes vectors of zero magnitude.
 
     compute_vector_orientation_angles:
         Second step, computes the :math:`\\phi` and :math:`\\theta` angles
         for all vectors provided.
-    
+
     compute_vector_magnitudes:
         Next step, computes the 3D and in-plane magnitudes for the vectors.
-    
+
     create_binned_orientation:
         Final step, performs the binning based on the computed orientations
         and magnitudes to produce a 2D angular histogram.

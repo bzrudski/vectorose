@@ -169,10 +169,9 @@ def produce_phi_theta_1d_histogram_data(
     ----------
     binned_data
         NumPy array containing the binned :math:`\\phi,\\theta` histogram.
-        This array should have shape ``(2n, 2n, 3)`` where ``n`` is the
-        half-number of histogram bins. See
-        :func:`.create_binned_orientation` for a detailed explanation of
-        the format.
+        This array should have shape ``(n, n, 3)`` where ``n`` is the
+        number of histogram bins. See :func:`.create_binned_orientation`
+        for a detailed explanation of the format.
 
     weight_by_magnitude
         Indicate whether the 1D histograms should be weighted by magnitude.
@@ -181,7 +180,7 @@ def produce_phi_theta_1d_histogram_data(
     Returns
     -------
     numpy.ndarray
-        NumPy array of shape ``(2, 2n)`` containing the marginal
+        NumPy array of shape ``(2, n)`` containing the marginal
         :math:`\\phi,\\theta` histograms. The first axis is used to
         determine the angle (see :class:`AngularIndex`) while the second
         axis corresponds to the histogram bin index.
@@ -216,7 +215,7 @@ def prepare_two_dimensional_histogram(binned_data: np.ndarray) -> np.ndarray:
     """
     Prepare the binned data for plotting as a spherical histogram.
 
-    This function takes the 2D binned data of shape ``(2n, 2n)`` and
+    This function takes the 2D binned data of shape ``(n, n)`` and
     returns the binned histogram data to plot on a sphere, having shape
     ``(n, 2n)``, where ``n`` corresponds to the half-number of bins. In
     the final array that is returned, the ``n`` rows correspond to the
@@ -232,7 +231,7 @@ def prepare_two_dimensional_histogram(binned_data: np.ndarray) -> np.ndarray:
     Parameters
     ----------
     binned_data
-        Binned 2D histogram data of shape ``(2n, 2n)``. Note that only a
+        Binned 2D histogram data of shape ``(n, n)``. Note that only a
         single sheet is passed to this function. The input may be
         magnitude-weighted or count weighted.
 
@@ -248,20 +247,13 @@ def prepare_two_dimensional_histogram(binned_data: np.ndarray) -> np.ndarray:
 
     """
 
-    number_of_bins = binned_data.shape[0]
-    half_number_of_bins = number_of_bins // 2
-
     # This first array corresponds to the mirrored angles on the
     # back of the sphere
-    sphere_intensity_data_first_half: np.ndarray = binned_data[
-        :half_number_of_bins, :half_number_of_bins
-    ]
+    sphere_intensity_data_first_half: np.ndarray = binned_data
 
     # This second array corresponds to the values on the
     # front half of the sphere
-    sphere_intensity_data_second_half: np.ndarray = binned_data[
-        half_number_of_bins:, half_number_of_bins:
-    ]
+    sphere_intensity_data_second_half: np.ndarray = binned_data.copy()
 
     # Combine the two arrays together
     sphere_intensity_data_first_half: np.ndarray = np.flip(
@@ -341,7 +333,7 @@ def produce_spherical_histogram_plot(
 
     histogram_data
         Binned data to plot. This data should have
-        the shape ``(2n, 2n)`` where ``n`` represents the half-number of
+        the shape ``(n, n)`` where ``n`` represents the half-number of
         histogram bins. We currently assume that the half-number of bins
         is the **same** in both :math:`\\phi` and :math:`\\theta`. This
         function separates the data to plot half of it on the sphere.
@@ -432,7 +424,6 @@ def produce_spherical_histogram_plot(
         A reference to the added ``Colorbar`` (or ``None`` if no
         colour bar is plotted).
 
-
     Warnings
     --------
     The provided axes must have the projection set to 3D
@@ -441,6 +432,19 @@ def produce_spherical_histogram_plot(
     The histogram data provided must occupy the entire sphere. No
     manipulations will be performed in this function to get the face
     colours to match the number of faces.
+
+    See Also
+    --------
+    .prepare_two_dimensional_histogram:
+        Prepare the 2D histogram data to be plotted on a sphere.
+
+    Notes
+    -----
+    The data provided to this function is stored as a square array of shape
+    ``(n, n)``. To generate the sphere colouring data, we duplicate the
+    data and invert it with respect to the ``phi`` axis. The copying
+    provides the values for :math:`\\theta \\in [-180^\\circ, 0^\\circ]`.
+    We then invert the array to correct the ``phi`` values.
     """
 
     # Get the data to plot on the sphere. We must determine if we want
@@ -456,7 +460,6 @@ def produce_spherical_histogram_plot(
 
     half_number_of_bins, number_of_bins = cleaned_histogram_data.shape
 
-    # Now, the age-old question... What do we want the bounds to be...
     # Well, we want to have the phi go from zero to 180 only! But, we
     # want theta to go from -180 to +180. So, we're going to do just
     # that (but remember, we're in radians, so it'll be 0 to pi for phi
@@ -700,6 +703,7 @@ def produce_polar_histogram_plot(
     axis_ticks: np.ndarray = np.arange(0, 360, 30),
     axis_ticks_unit: AngularUnits = AngularUnits.DEGREES,
     colour: str = "blue",
+    mirror_histogram: bool = True,
 ) -> matplotlib.projections.polar.PolarAxes:
     """Produce 1D polar histogram.
 
@@ -746,6 +750,10 @@ def produce_polar_histogram_plot(
         Colour used for the histogram bars. Must be a valid matplotlib
         colour [#f1]_.
 
+    mirror_histogram
+        Indicate whether the histogram should be mirrored to plot data on
+        the complete circle.
+
     Returns
     -------
 
@@ -771,6 +779,22 @@ def produce_polar_histogram_plot(
     ax.set_theta_zero_location(zero_position.value)
     ax.set_title(plot_title)
     ax.axes.yaxis.set_ticklabels([])
+
+    # Prepare the data for plotting, mirroring if necessary
+    if mirror_histogram:
+        # Duplicate the bins and the data.
+        mirrored_bins = bins.copy()
+        mirrored_data = data.copy()
+
+        # Offset the mirrored bins and flip the signs
+        mirrored_bins = - (mirrored_bins + bin_width)
+
+        # Flip the mirrored bins, but NOT the data
+        mirrored_bins = np.flip(mirrored_bins)
+
+        # Tack the bins and values onto the respective arrays
+        bins = np.concatenate([mirrored_bins, bins])
+        data = np.concatenate([mirrored_data, data])
 
     if label_axis:
         # start, end = ax.get_xlim()
@@ -813,13 +837,13 @@ def produce_polar_histogram_plot_from_2d_bins(
         :class:``AngularIndex`` for details.
 
     data
-        2D histogram binned data of shape ``(2n, 2n, 3)`` where
+        2D histogram binned data of shape ``(n, n, 3)`` where
         ``n`` is the half-number of bins used in the binning process.
 
     bins
         Bounds of the bins used to construct the histograms. If
         the array is 2D, then the angular indexing will be used to
-        extract the phi bin boundaries. If ``2n + 1`` entries are
+        extract the phi bin boundaries. If ``n + 1`` entries are
         present, the last value is removed to ensure that only the lower
         bound of each bin is kept.
 
@@ -891,6 +915,7 @@ def produce_histogram_plots(
     colour_map: str = "gray",
     plot_title: Optional[str] = None,
     weight_by_magnitude: bool = True,
+    mirror_polar_plots: bool = True,
     **kwargs: Dict[str, Any],
 ):
     """Produce and show the vector rose histograms.
@@ -910,14 +935,14 @@ def produce_histogram_plots(
     ----------
     binned_data
         The binned histogram data for the :math:`\\phi,\\theta` plane. This
-        NumPy array should have size ``(2n, 2n, 3)`` where ``n`` is the
+        NumPy array should have size ``(n, n, 3)`` where ``n`` is the
         half-number of histogram bins used to construct the histogram.
         See :func:`.create_binned_orientation` for more details. See
         :class:`MagnitudeType` for the indexing rules along the last axis.
 
     bins
         The boundaries of the bins. This array should be of size
-        ``(2, 2n + 1)`` where ``n`` represents the half-number of bins.
+        ``(2, n + 1)`` where ``n`` represents the half-number of bins.
         See :class:`AngularIndex` for the indexing rules along the first
         axis.
 
@@ -946,6 +971,10 @@ def produce_histogram_plots(
 
     weight_by_magnitude
         Indicate whether plots should be weighted by magnitude or by count.
+
+    mirror_polar_plots
+        Indicate whether the polar histogram data should be mirrored to
+        fill the complete plot.
 
     **kwargs
         Extra keyword arguments for the sphere plotting. See
@@ -1013,6 +1042,7 @@ def produce_histogram_plots(
         zero_position=zero_position_2d,
         rotation_direction=rotation_direction,
         plot_title=r"$\theta$ (Angle in $XY$)",
+        mirror_histogram=mirror_polar_plots
     )
 
     # Construct the phi polar plot
@@ -1024,6 +1054,7 @@ def produce_histogram_plots(
         zero_position=zero_position_2d,
         rotation_direction=rotation_direction,
         plot_title=r"$\phi$ (Angle from $+Z$)",
+        mirror_histogram=mirror_polar_plots
     )
 
     # Show the plots
@@ -1131,10 +1162,7 @@ def animate_sphere_plot(
     """
 
     # Determine the sign of the angle increment
-    if rotation_direction is RotationDirection.CLOCKWISE:
-        angle_increment = abs(angle_increment)
-    else:
-        angle_increment = - abs(angle_increment)
+    angle_increment = - rotation_direction.value * abs(angle_increment)
 
     # Create the function that will update the frame.
     update_angle_func = functools.partial(
