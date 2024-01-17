@@ -512,6 +512,7 @@ def produce_spherical_histogram_plot(
         cstride=1,
         facecolors=sphere_face_colours,
         alpha=sphere_alpha,
+        shade=False
     )
     # surface.set_edgecolor("white")
     # surface.set_linewidth(0.25)
