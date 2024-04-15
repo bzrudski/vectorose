@@ -22,7 +22,7 @@ def construct_spherical_histogram(
     vectors: np.ndarray,
     radius: float = 1,
     subdivisions: int = 3,
-    normalise_vector_lengths: bool = False,
+    weight_by_magnitude: bool = False,
 ) -> Tuple[trimesh.primitives.Sphere, np.ndarray]:
     """Construct a spherical histogram.
 
@@ -43,9 +43,8 @@ def construct_spherical_histogram(
         ensure that they fit the sphere with this radius.
     subdivisions
         Number of subdivisions when constructing the icosphere.
-    normalise_vector_lengths
-        Indicate whether the vector lengths should be normalised to unit
-        length.
+    weight_by_magnitude
+        Indicate whether to weight the histogram by 3D magnitude.
 
     Returns
     -------
@@ -56,11 +55,8 @@ def construct_spherical_histogram(
         the order of the faces defined by the mesh.
     """
 
-    # First, normalise the vectors if necessary
-    if normalise_vector_lengths:
-        normalised_vectors = vectorose.normalise_vectors(vectors)
-    else:
-        normalised_vectors = vectors.copy()
+    # First, normalise the vectors and compute their magnitudes
+    normalised_vectors, magnitudes = vectorose.normalise_vectors(vectors)
 
     # Now, multiply by the radius
     normalised_vectors *= radius
@@ -78,7 +74,63 @@ def construct_spherical_histogram(
 
     # We need to populate this array with the counts for each face.
     for i in face_indices:
-        counts_array[i] += 1
+        if weight_by_magnitude:
+            counts_array[i] += magnitudes[i]
+        else:
+            counts_array[i] += 1
 
     # Finally, we return both the sphere and the array of counts
     return sphere, counts_array
+
+
+def run_spherical_histogram_pipeline(
+    vector_field: np.ndarray,
+    radius: float = 1,
+    subdivisions: int = 3,
+    weight_by_magnitude: bool = False,
+) -> Tuple[trimesh.primitives.Sphere, np.ndarray]:
+    """Run the complete triangle-based spherical histogram construction.
+
+    Construct a spherical histogram using a triangle-based mesh. This
+    function performs preprocessing, as well as the sphere construction.
+
+    Parameters
+    ----------
+    vector_field
+        NumPy array of shape ``(n, 3)`` or ``(n, 6)`` containing the
+        vectors to use to construct the histogram. If the array contains 6
+        columns, the last 3 are assumed to be the vector components.
+    radius
+        Sphere radius, by default 1.
+    subdivisions
+        Sphere subdivision number, by default 3. Increasing this value
+        provides more faces, and thus more detail, at a higher
+        computational cost.
+    weight_by_magnitude
+        Indicate whether to weight the histogram by 3D magnitude. If
+        `False`, the histogram will be weighted by count.
+
+    Returns
+    -------
+    sphere : trimesh.primitives.Sphere
+        The :class:`trimesh.primitives.Sphere` object used to construct the
+        histogram.
+    face_weights : numpy.ndarray
+        Array containing the face weights.
+    """
+
+    # Extract the components
+    vectors = vector_field[:, -3:]
+
+    # Remove the non-zero vectors
+    vectors = vectorose.remove_zero_vectors(vectors)
+
+    # Construct the histogram
+    sphere, face_values = construct_spherical_histogram(
+        vectors=vectors,
+        radius=radius,
+        subdivisions=subdivisions,
+        weight_by_magnitude=weight_by_magnitude,
+    )
+
+    return sphere, face_values

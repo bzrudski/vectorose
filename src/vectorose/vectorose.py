@@ -92,7 +92,7 @@ def remove_zero_vectors(vectors: np.ndarray) -> np.ndarray:
     return non_zero_vectors
 
 
-def normalise_vectors(vectors: np.ndarray) -> np.ndarray:
+def normalise_vectors(vectors: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """Normalise an array of vectors.
 
     Rescale a series of vectors to ensure that all have unit length. All
@@ -107,9 +107,11 @@ def normalise_vectors(vectors: np.ndarray) -> np.ndarray:
 
     Returns
     -------
-    numpy.ndarray
+    normalised_vectors : numpy.ndarray
         Array of the same shape as `vectors`, but with all vector
         components rescaled to ensure that the vectors have unit length.
+    magnitudes : numpy.ndarray
+        Array of shape ``(n,)`` containing the magnitud of each vector.
 
     Notes
     -----
@@ -141,7 +143,7 @@ def normalise_vectors(vectors: np.ndarray) -> np.ndarray:
     else:
         normalised_vectors = normalised_components
 
-    return normalised_vectors
+    return normalised_vectors, vector_magnitudes
 
 
 def convert_spherical_to_cartesian_coordinates(
