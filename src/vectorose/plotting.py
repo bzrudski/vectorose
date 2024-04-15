@@ -18,12 +18,14 @@ from typing import Any, Dict, Iterable, Optional, Tuple
 import matplotlib.animation
 import matplotlib.cm
 import matplotlib.colorbar
+import matplotlib.colors
 import matplotlib.figure
 import matplotlib.projections
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d
 import numpy
 import numpy as np
+import trimesh
 
 from .vectorose import (
     AngularIndex,
@@ -512,7 +514,7 @@ def produce_spherical_histogram_plot(
         cstride=1,
         facecolors=sphere_face_colours,
         alpha=sphere_alpha,
-        shade=False
+        shade=False,
     )
     # surface.set_edgecolor("white")
     # surface.set_linewidth(0.25)
@@ -592,9 +594,9 @@ def produce_spherical_histogram_plot(
 
         spherical_coordinates_of_phi_labels = np.zeros((number_of_phi_labels, 2))
         spherical_coordinates_of_phi_labels[:, AngularIndex.PHI] = phi_label_positions
-        spherical_coordinates_of_phi_labels[
-            :, AngularIndex.THETA
-        ] = theta_position_for_phi_labels
+        spherical_coordinates_of_phi_labels[:, AngularIndex.THETA] = (
+            theta_position_for_phi_labels
+        )
 
         phi_label_positions_cartesian = convert_spherical_to_cartesian_coordinates(
             angular_coordinates=spherical_coordinates_of_phi_labels,
@@ -639,13 +641,13 @@ def produce_spherical_histogram_plot(
 
         spherical_coordinates_of_theta_labels = np.zeros((number_of_theta_labels, 2))
 
-        spherical_coordinates_of_theta_labels[
-            :, AngularIndex.THETA
-        ] = theta_label_positions
+        spherical_coordinates_of_theta_labels[:, AngularIndex.THETA] = (
+            theta_label_positions
+        )
 
-        spherical_coordinates_of_theta_labels[
-            :, AngularIndex.PHI
-        ] = phi_position_for_theta_labels
+        spherical_coordinates_of_theta_labels[:, AngularIndex.PHI] = (
+            phi_position_for_theta_labels
+        )
 
         theta_label_positions_cartesian = convert_spherical_to_cartesian_coordinates(
             angular_coordinates=spherical_coordinates_of_theta_labels,
@@ -788,7 +790,7 @@ def produce_polar_histogram_plot(
         mirrored_data = data.copy()
 
         # Offset the mirrored bins and flip the signs
-        mirrored_bins = - (mirrored_bins + bin_width)
+        mirrored_bins = -(mirrored_bins + bin_width)
 
         # Flip the mirrored bins, but NOT the data
         mirrored_bins = np.flip(mirrored_bins)
@@ -1043,7 +1045,7 @@ def produce_histogram_plots(
         zero_position=zero_position_2d,
         rotation_direction=rotation_direction,
         plot_title=r"$\theta$ (Angle in $XY$)",
-        mirror_histogram=mirror_polar_plots
+        mirror_histogram=mirror_polar_plots,
     )
 
     # Construct the phi polar plot
@@ -1055,7 +1057,7 @@ def produce_histogram_plots(
         zero_position=zero_position_2d,
         rotation_direction=rotation_direction,
         plot_title=r"$\phi$ (Angle from $+Z$)",
-        mirror_histogram=mirror_polar_plots
+        mirror_histogram=mirror_polar_plots,
     )
 
     # Show the plots
@@ -1163,7 +1165,7 @@ def animate_sphere_plot(
     """
 
     # Determine the sign of the angle increment
-    angle_increment = - rotation_direction.value * abs(angle_increment)
+    angle_increment = -rotation_direction.value * abs(angle_increment)
 
     # Create the function that will update the frame.
     update_angle_func = functools.partial(
@@ -1188,3 +1190,114 @@ def animate_sphere_plot(
     )
 
     return animation
+
+
+def produce_3d_triangle_sphere_plot(
+    ax: mpl_toolkits.mplot3d.axes3d.Axes3D,
+    sphere: trimesh.primitives.Sphere,
+    face_counts: np.ndarray,
+    colour_map: str = "viridis",
+    limits_factor: float = 1.1,
+    sphere_projection: SphereProjection = SphereProjection.ORTHOGRAPHIC,
+    hide_cartesian_axes: bool = True,
+    hide_cartesian_axis_labels: bool = False,
+    hide_cartesian_axis_ticks: bool = True,
+    plot_colourbar: bool = False,
+    # colour_bar_location: ColourBarLocation = ColourBarLocation.LEFT
+) -> mpl_toolkits.mplot3d.axes3d.Axes3D:
+    """Produce a 3D sphere plot based on a triangle mesh.
+
+    Using the provided axes, plot a sphere with face colours corresponding
+    to the provided values. This sphere has constant radius.
+
+    Parameters
+    ----------
+    ax
+        Axes on which to plot the sphere.
+    sphere
+        Mesh of type :class:`trimesh.primitives.Sphere` to plot.
+    face_counts
+        Values assigned to each face in the `sphere`.
+    colour_map
+        Colour map used to colour the sphere, by default "viridis".
+    limits_factor
+        Factor used to add padding to the sphere, by default 1.1. The same
+        factor is used along all axes, and is multiplied by the radius of
+        the sphere to define the axis bounds.
+    sphere_projection
+        Projection used to plot the sphere, by default
+        :attr:`SphereProjection.ORTHOGRAPHIC`.
+    hide_cartesian_axes
+        Indicate whether to hide the Cartesian axes, by default True.
+    hide_cartesian_axis_labels
+        Indicate whether to hide the Cartesian axis labels, by default
+        False. This has no effect if `hide_cartesian_axes` is True.
+    hide_cartesian_axis_ticks
+        Indicate whether to hide the Cartesian axis ticks, by default True.
+    plot_colourbar
+        Indicate whether to plot the colour bar, by default False.
+
+    Returns
+    -------
+    mpl_toolkits.mplot3d.axes3d.Axes3D
+        The axes on which the provided sphere is plotted.
+    """
+
+    # Get the face colours
+    normaliser = matplotlib.colors.Normalize(
+        vmin=face_counts.min(), vmax=face_counts.max()
+    )
+
+    scalar_mapper = matplotlib.cm.ScalarMappable(norm=normaliser, cmap=colour_map)
+
+    face_colours = scalar_mapper.to_rgba(face_counts)
+
+    # Now, prepare the sphere for plotting
+    vertices: np.ndarray = sphere.vertices
+    x_coordinates = vertices[:, 0]
+    y_coordinates = vertices[:, 1]
+    z_coordinates = vertices[:, 2]
+
+    triangles = sphere.faces
+
+    # Plot the sphere
+    ax.plot_trisurf(
+        x_coordinates,
+        y_coordinates,
+        z_coordinates,
+        triangles=triangles,
+        facecolor=face_colours,
+    )
+
+    # Now, configure the axes
+    sphere_bounds = sphere.bounds
+    min_location = sphere_bounds.min()
+    max_location = sphere_bounds.max()
+
+    min_bound = limits_factor * min_location
+    max_bound = limits_factor * max_location
+
+    ax.set_xlim(min_bound, max_bound)
+    ax.set_ylim(min_bound, max_bound)
+    ax.set_zlim(min_bound, max_bound)
+
+    if hide_cartesian_axis_ticks:
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_zticks([])
+
+    if not hide_cartesian_axis_labels:
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.set_zlabel("z")
+
+    if hide_cartesian_axes:
+        ax.set_axis_off()
+
+    ax.set_proj_type(sphere_projection.value)
+    ax.set_aspect("equal")
+
+    if plot_colourbar:
+        plt.colorbar(mappable=scalar_mapper, ax=ax)
+
+    return ax
