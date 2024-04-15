@@ -56,6 +56,7 @@ intersphinx_mapping = {
     'numpy': ('https://numpy.org/doc/stable/', None),
     'matplotlib': ('https://matplotlib.org/stable/', None),
     'pandas': ('https://pandas.pydata.org/docs', None),
+    'trimesh': ('https://trimesh.org/', None),
 }
 
 # -- Options for todo --------------------------------------------------------
