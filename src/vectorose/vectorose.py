@@ -67,8 +67,7 @@ def remove_zero_vectors(vectors: np.ndarray) -> np.ndarray:
 
     Parameters
     ----------
-
-    vectors:
+    vectors
         ``n`` by 6 or ``n`` by 3 array of vectors. If the array has 6
         columns, *the last 3 are assumed to be the vector components*.
 
@@ -91,6 +90,58 @@ def remove_zero_vectors(vectors: np.ndarray) -> np.ndarray:
     non_zero_vectors = vectors[~np.all(vectors[:, vector_columns] == 0, axis=1)]
 
     return non_zero_vectors
+
+
+def normalise_vectors(vectors: np.ndarray) -> np.ndarray:
+    """Normalise an array of vectors.
+
+    Rescale a series of vectors to ensure that all have unit length. All
+    zero-vectors should be removed before using this function.
+
+    Parameters
+    ----------
+    vectors
+        ``n`` by 6 or ``n`` by 3 array of vectors. If the array has 6
+        columns, *the last 3 are assumed to be the vector components*.
+        This array must contain **no zero-vectors**.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array of the same shape as `vectors`, but with all vector
+        components rescaled to ensure that the vectors have unit length.
+
+    Notes
+    -----
+    This function does not modify the original array. A new array is
+    created and returned.
+
+    The 3D magnitude is used to perform the normalisation. This magnitude
+    is computed as
+
+    .. math::
+
+        \\|\\vec{v}\\| = \\sqrt{v_x^2 + v_y^2 + v_z^2}
+
+    where :math:`v_i` refers to the component of :math:`\\vec{v}` along
+    the *i*-th axis.
+    """
+
+    # Compute the vector magnitudes
+    vector_components = vectors[:, -3:]
+    vector_magnitudes = np.sqrt(np.sum(vector_components * vector_components, axis=-1))
+
+    # Divide by the magnitudes
+    normalised_components = vector_components / vector_magnitudes
+
+    # Create a new array with the modified components if necessary
+    if normalised_components.shape != vectors.shape:
+        normalised_vectors = normalised_components.copy()
+        normalised_vectors[:, -3:] = normalised_components
+    else:
+        normalised_vectors = normalised_components
+
+    return normalised_vectors
 
 
 def convert_spherical_to_cartesian_coordinates(
