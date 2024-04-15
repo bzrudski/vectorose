@@ -132,7 +132,7 @@ def normalise_vectors(vectors: np.ndarray) -> np.ndarray:
     vector_magnitudes = np.sqrt(np.sum(vector_components * vector_components, axis=-1))
 
     # Divide by the magnitudes
-    normalised_components = vector_components / vector_magnitudes
+    normalised_components = vector_components / vector_magnitudes[:, None]
 
     # Create a new array with the modified components if necessary
     if normalised_components.shape != vectors.shape:
