@@ -32,6 +32,7 @@ class AngularIndex(enum.IntEnum):
         Angle theta (:math:`\\theta`), representing the angle of incline
         with respect to the positive :math:`z`-axis. Index 1 in all arrays.
     """
+
     PHI = 0
     THETA = 1
 
@@ -144,6 +145,80 @@ def normalise_vectors(vectors: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         normalised_vectors = normalised_components
 
     return normalised_vectors, vector_magnitudes
+
+
+def convert_vectors_to_axes(vectors: np.ndarray) -> np.ndarray:
+    """Convert vectors to axes.
+
+    Reflect all vectors so that they are oriented in the four octants that
+    have positive z-values. These correspond to the axes conventionally
+    used in directional statistics (see the book by Fisher, Lewis and
+    Embleton [#fisher-lewis-embleton]_).
+
+    Parameters
+    ----------
+    vectors
+        NumPy array of shape ``(n, 3)`` or ``(n, 6)`` containing the
+        vectors.
+
+    Returns
+    -------
+    numpy.ndarray
+        NumPy array of the same shape as the original, but with all vectors
+        oriented towards a non-negative Z value.
+
+    References
+    ----------
+    .. [#fisher-lewis-embleton] Fisher, N. I., Lewis, T., & Embleton, B. J.
+       J. (1993). Statistical analysis of spherical data ([New ed.], 1.
+       paperback ed). Cambridge Univ. Press.
+    """
+
+    # Get the vector components
+    vector_components = vectors[:, -3:]
+
+    # Invert the vectors with z component below zero
+    indices_to_flip = vector_components[:, -1] < 0
+    vector_components[indices_to_flip] = -vector_components[indices_to_flip]
+
+    # Assign the axes to the positions, if necessary.
+    axes = vectors.copy()
+    axes[:, -3:] = vector_components
+
+    return axes
+
+
+def create_symmetric_vectors_from_axes(axes: np.ndarray) -> np.ndarray:
+    """Create a set of symmetric vectors from axes.
+
+    Duplicate a collection of axes to produce vectors pointing in both
+    directions corresponding to each orientation.
+
+    Parameters
+    ----------
+    axes
+        NumPy array of shape ``(n, 3)`` containing the axes. All entries in
+        this array should have a positive Z-value.
+
+    Returns
+    -------
+    numpy.ndarray
+        NumPy array of shape ``(2n, 3)`` containing the vectors along each
+        direction. The inverted vectors appear in the same order as the
+        axes **after the non-inverted vectors**.
+
+    Warnings
+    --------
+    The inverted vectors, having negative z-values, are appended after the
+    non-inverted vectors. Corresponding vectors are **not** interleaved.
+    """
+
+    upward_vectors = axes.copy()
+    downward_vectors = -upward_vectors
+
+    vectors = np.concatenate([upward_vectors, downward_vectors], axis=0)
+
+    return vectors
 
 
 def convert_spherical_to_cartesian_coordinates(
@@ -478,7 +553,9 @@ def create_binned_orientation(
     theta_bin_indices = np.digitize(theta, theta_histogram_bins) - 1
 
     # Now, to prepare the histogram array:
-    angular_histogram_2d = np.zeros((number_of_bins, number_of_bins, len(MagnitudeType)))
+    angular_histogram_2d = np.zeros(
+        (number_of_bins, number_of_bins, len(MagnitudeType))
+    )
 
     # Now, for the iterations. We set all the magnitudes simultaneously.
     for i in range(number_of_vectors):

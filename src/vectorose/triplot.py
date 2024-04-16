@@ -5,9 +5,8 @@
 
 """Triangle-based Sphere Plotting.
 
-This module provides the functions necessary to produce and plot a triangle
-mesh of a sphere, with face colours corresponding to the point count in
-each face.
+This module provides the functions necessary to produce a triangle mesh of
+a sphere, with face colours corresponding to the point count in each face.
 """
 
 from typing import Tuple
@@ -88,6 +87,7 @@ def run_spherical_histogram_pipeline(
     radius: float = 1,
     subdivisions: int = 3,
     weight_by_magnitude: bool = False,
+    is_axial_data: bool = False,
 ) -> Tuple[trimesh.primitives.Sphere, np.ndarray]:
     """Run the complete triangle-based spherical histogram construction.
 
@@ -109,6 +109,10 @@ def run_spherical_histogram_pipeline(
     weight_by_magnitude
         Indicate whether to weight the histogram by 3D magnitude. If
         `False`, the histogram will be weighted by count.
+    is_axial_data
+        Indicate whether the data correspond to axial data. If `True`, then
+        the sphere will be symmetric across a 45° plane going through all
+        three axes.
 
     Returns
     -------
@@ -124,6 +128,11 @@ def run_spherical_histogram_pipeline(
 
     # Remove the non-zero vectors
     vectors = vectorose.remove_zero_vectors(vectors)
+
+    # Mirror the data, if axial data
+    if is_axial_data:
+        axes = vectorose.convert_vectors_to_axes(vectors)
+        vectors = vectorose.create_symmetric_vectors_from_axes(axes)
 
     # Construct the histogram
     sphere, face_values = construct_spherical_histogram(
