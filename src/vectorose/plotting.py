@@ -290,6 +290,276 @@ class SphereProjection(enum.Enum):
     PERSPECTIVE = "persp"
 
 
+def produce_labelled_3d_plot(
+    ax: mpl_toolkits.mplot3d.axes3d.Axes3D,
+    radius: float,
+    limits_factor: float = 1.1,
+    plot_title: Optional[str] = None,
+    sphere_projection: SphereProjection = SphereProjection.ORTHOGRAPHIC,
+    sphere_alpha: float = 1.0,
+    plot_phi_axis: bool = True,
+    plot_theta_axis: bool = True,
+    label_phi_axis: bool = True,
+    label_theta_axis: bool = True,
+    phi_label_positions: np.ndarray = np.arange(0, np.pi + 1e-2, np.pi / 6),
+    theta_label_positions: np.ndarray = np.arange(0, 2 * np.pi, np.pi / 6),
+    phi_axis_colour: str = "black",
+    theta_axis_colour: str = "black",
+    hide_cartesian_axes: bool = True,
+    hide_cartesian_axis_labels: bool = False,
+    hide_cartesian_axis_ticks: bool = True,
+    plot_colourbar: bool = False,
+    minimum_value: Optional[float] = None,
+    maximum_value: Optional[float] = None,
+    cmap: str = "viridis",
+    colour_bar_kwargs: Optional[dict[str, Any]] = None,
+axis_label_factor=1.4, axis_tick_factor=1.6) -> mpl_toolkits.mplot3d.axes3d.Axes3D:
+    """Modify a 3D plot to label it with spherical axes.
+
+    Modify existing axes to add spherical phi and theta axes, as well as
+    labels and a colour bar.
+
+    Parameters
+    ----------
+    ax
+        Axes to modify. These must be 3D axes.
+    radius
+        Radius of the 3D plot. This value is multiplied by
+        the `limits_factor` to obtain the radius of the spherical axes.
+    limits_factor
+        Factor used to add padding to the sphere, by default 1.1. The same
+        factor is used along all axes, and is multiplied by the radius of
+        the sphere to define the axis bounds.
+    plot_title
+        Title of the plot produced (optional).
+    sphere_projection
+        Projection used to plot the sphere, by default
+        :attr:`SphereProjection.ORTHOGRAPHIC`
+    sphere_alpha
+        Opacity of the sphere.
+    plot_phi_axis
+        Indicate whether the phi axis should be plotted in 3D.
+    plot_theta_axis
+        Indicate whether the theta axis should be plotted in 3D.
+    label_phi_axis
+        Indicate whether to label the phi axis.
+    label_theta_axis
+        Indicate whether to label the theta axis.
+    phi_label_positions
+        Indicate angular positions for the labels for phi along its
+        circular axis.
+    theta_label_positions
+        Indicate angular positions for the labels for theta along its
+        circular axis.
+    phi_axis_colour
+        Colour for the phi axis.
+    theta_axis_colour
+        Colour for the theta axis..
+    hide_cartesian_axes
+        Indicate whether to hide the Cartesian axes, by default True.
+    hide_cartesian_axis_labels
+        Indicate whether to hide the Cartesian axis labels, by default
+        False. This has no effect if `hide_cartesian_axes` is True.
+    hide_cartesian_axis_ticks
+        Indicate whether to hide the Cartesian axis ticks, by default True.
+    plot_colourbar
+        Indicate whether to plot the colour bar, by default False.
+    minimum_value
+        Minimum data value. Required if plotting the colour bar.
+    maximum_value
+        Maximum data value. Required if plotting the colour bar.
+    cmap
+        Colour map for the colour bar.
+    colour_bar_kwargs
+        Keyword arguments for the colour bar.
+
+    Returns
+    -------
+    mpl_toolkits.mplot3d.axes3d.Axes3D
+        The same axes as `ax`, with the new elements added.
+    """
+
+    ax.set_proj_type(sphere_projection.value)
+    ax.set_aspect("equal")
+
+    bound = limits_factor * radius
+
+    ax.set_xlim(-bound, bound)
+    ax.set_ylim(-bound, bound)
+    ax.set_zlim(-bound, bound)
+
+    ax.set_title(plot_title)
+
+    # Hide the 3D axis
+    if hide_cartesian_axis_ticks:
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_zticks([])
+
+    if not hide_cartesian_axis_labels:
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.set_zlabel("z")
+
+    if hide_cartesian_axes:
+        ax.set_axis_off()
+
+    if plot_phi_axis:
+        phi_axis_positions = np.linspace(0, np.pi)
+        phi_position_theta = np.ones_like(phi_axis_positions) * np.pi / 2
+
+        phi_axis_polar_positions = np.stack(
+            [phi_axis_positions, phi_position_theta], axis=-1
+        )
+
+        phi_axis_cartesian = convert_spherical_to_cartesian_coordinates(
+            phi_axis_polar_positions, radius=axis_label_factor * radius
+        )
+
+        ax.plot(
+            phi_axis_cartesian[:, 0],
+            phi_axis_cartesian[:, 1],
+            phi_axis_cartesian[:, 2],
+            ":",
+            linewidth=0.5,
+            color=phi_axis_colour,
+        )
+
+    if plot_theta_axis:
+        theta_axis_positions = np.linspace(0, 2 * np.pi)
+        theta_position_phi = np.ones_like(theta_axis_positions) * np.pi / 2
+        theta_axis_polar_positions = np.stack(
+            [theta_position_phi, theta_axis_positions], axis=-1
+        )
+
+        theta_axis_cartesian = convert_spherical_to_cartesian_coordinates(
+            theta_axis_polar_positions, radius=axis_label_factor * radius
+        )
+
+        ax.plot(
+            theta_axis_cartesian[:, 0],
+            theta_axis_cartesian[:, 1],
+            theta_axis_cartesian[:, 2],
+            ":",
+            linewidth=0.5,
+            color=theta_axis_colour,
+        )
+
+    # Add the spherical axis labels
+    if label_phi_axis:
+        # Now, let's also make the axis labels for the 3D plot. We'll
+        # have them at a distance of radius * 1.6
+        if label_theta_axis:
+            # Remove pi/2 (overlap between both rings)
+            phi_label_positions = phi_label_positions[phi_label_positions != np.pi / 2]
+
+        number_of_phi_labels = len(phi_label_positions)
+        theta_position_for_phi_labels = np.ones(number_of_phi_labels) * np.pi / 2
+
+        spherical_coordinates_of_phi_labels = np.zeros((number_of_phi_labels, 2))
+        spherical_coordinates_of_phi_labels[:, AngularIndex.PHI] = phi_label_positions
+        spherical_coordinates_of_phi_labels[
+            :, AngularIndex.THETA
+        ] = theta_position_for_phi_labels
+
+        phi_label_positions_cartesian = convert_spherical_to_cartesian_coordinates(
+            angular_coordinates=spherical_coordinates_of_phi_labels,
+            radius=axis_tick_factor * radius,
+        )
+
+        phi_label_angles_degrees = np.degrees(phi_label_positions)
+
+        ax.text3D(
+            0,
+            0,
+            1.2 * radius,
+            r"$\phi$",
+            fontsize="large",
+            clip_on=True,
+            alpha=0.5,
+            ha="center",
+        )
+
+        for i in range(number_of_phi_labels):
+            phi_in_degrees = phi_label_angles_degrees[i]
+            phi_label_text = f"{phi_in_degrees:.01f}\u00b0"
+            label_position = phi_label_positions_cartesian[i]
+            label_x = label_position[0]
+            label_y = label_position[1]
+            label_z = label_position[2]
+
+            ax.text3D(
+                label_x,
+                label_y,
+                label_z,
+                phi_label_text,
+                ha="center",
+                alpha=0.5,
+                clip_on=True,
+            )
+
+    if label_theta_axis:
+        # Same thing as for the phi axis
+        number_of_theta_labels = len(theta_label_positions)
+        phi_position_for_theta_labels = np.ones(number_of_theta_labels) * np.pi / 2
+
+        spherical_coordinates_of_theta_labels = np.zeros((number_of_theta_labels, 2))
+
+        spherical_coordinates_of_theta_labels[
+            :, AngularIndex.THETA
+        ] = theta_label_positions
+
+        spherical_coordinates_of_theta_labels[
+            :, AngularIndex.PHI
+        ] = phi_position_for_theta_labels
+
+        theta_label_positions_cartesian = convert_spherical_to_cartesian_coordinates(
+            angular_coordinates=spherical_coordinates_of_theta_labels,
+            radius=axis_tick_factor * radius,
+        )
+
+        theta_label_angles_degrees = np.degrees(theta_label_positions)
+
+        ax.text3D(
+            0,
+            1.2 * radius,
+            0,
+            r"$\theta$",
+            fontsize="large",
+            clip_on=True,
+            alpha=0.5,
+            ha="center",
+        )
+        for i in range(number_of_theta_labels):
+            theta_in_degrees = theta_label_angles_degrees[i]
+            theta_label_text = f"{theta_in_degrees:.01f}\u00b0"
+            label_position = theta_label_positions_cartesian[i]
+
+            label_x = label_position[0]
+            label_y = label_position[1]
+            label_z = label_position[2]
+
+            ax.text3D(
+                label_x,
+                label_y,
+                label_z,
+                theta_label_text,
+                ha="center",
+                alpha=0.5,
+                clip_on=True,
+            )
+
+    colour_bar: Optional[matplotlib.colorbar.Colorbar] = None
+
+    if plot_colourbar:
+        norm = plt.Normalize(vmin=minimum_value, vmax=maximum_value)
+        scalar_mappable = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
+        if colour_bar_kwargs is None:
+            colour_bar_kwargs = {}
+
+        colour_bar = plt.colorbar(mappable=scalar_mappable, ax=ax, **colour_bar_kwargs)
+
+
 def produce_spherical_histogram_plot(
     ax: mpl_toolkits.mplot3d.axes3d.Axes3D,
     sphere_radius: float,
@@ -596,9 +866,9 @@ def produce_spherical_histogram_plot(
 
         spherical_coordinates_of_phi_labels = np.zeros((number_of_phi_labels, 2))
         spherical_coordinates_of_phi_labels[:, AngularIndex.PHI] = phi_label_positions
-        spherical_coordinates_of_phi_labels[:, AngularIndex.THETA] = (
-            theta_position_for_phi_labels
-        )
+        spherical_coordinates_of_phi_labels[
+            :, AngularIndex.THETA
+        ] = theta_position_for_phi_labels
 
         phi_label_positions_cartesian = convert_spherical_to_cartesian_coordinates(
             angular_coordinates=spherical_coordinates_of_phi_labels,
@@ -643,13 +913,13 @@ def produce_spherical_histogram_plot(
 
         spherical_coordinates_of_theta_labels = np.zeros((number_of_theta_labels, 2))
 
-        spherical_coordinates_of_theta_labels[:, AngularIndex.THETA] = (
-            theta_label_positions
-        )
+        spherical_coordinates_of_theta_labels[
+            :, AngularIndex.THETA
+        ] = theta_label_positions
 
-        spherical_coordinates_of_theta_labels[:, AngularIndex.PHI] = (
-            phi_position_for_theta_labels
-        )
+        spherical_coordinates_of_theta_labels[
+            :, AngularIndex.PHI
+        ] = phi_position_for_theta_labels
 
         theta_label_positions_cartesian = convert_spherical_to_cartesian_coordinates(
             angular_coordinates=spherical_coordinates_of_theta_labels,
@@ -1267,6 +1537,8 @@ def produce_3d_triangle_sphere_plot(
         Indicate whether to hide the Cartesian axis ticks, by default True.
     plot_colourbar
         Indicate whether to plot the colour bar, by default False.
+    colour_bar_kwargs
+        Keyword arguments for the colour bar.
 
     Returns
     -------
@@ -1314,6 +1586,7 @@ def produce_3d_triangle_sphere_plot(
         z_coordinates,
         triangles=triangles,
         facecolor=face_colours,
+        alpha=sphere_alpha
     )
 
     # Now, configure the axes
@@ -1400,9 +1673,9 @@ def produce_3d_triangle_sphere_plot(
 
         spherical_coordinates_of_phi_labels = np.zeros((number_of_phi_labels, 2))
         spherical_coordinates_of_phi_labels[:, AngularIndex.PHI] = phi_label_positions
-        spherical_coordinates_of_phi_labels[:, AngularIndex.THETA] = (
-            theta_position_for_phi_labels
-        )
+        spherical_coordinates_of_phi_labels[
+            :, AngularIndex.THETA
+        ] = theta_position_for_phi_labels
 
         phi_label_positions_cartesian = convert_spherical_to_cartesian_coordinates(
             angular_coordinates=spherical_coordinates_of_phi_labels,
@@ -1447,13 +1720,13 @@ def produce_3d_triangle_sphere_plot(
 
         spherical_coordinates_of_theta_labels = np.zeros((number_of_theta_labels, 2))
 
-        spherical_coordinates_of_theta_labels[:, AngularIndex.THETA] = (
-            theta_label_positions
-        )
+        spherical_coordinates_of_theta_labels[
+            :, AngularIndex.THETA
+        ] = theta_label_positions
 
-        spherical_coordinates_of_theta_labels[:, AngularIndex.PHI] = (
-            phi_position_for_theta_labels
-        )
+        spherical_coordinates_of_theta_labels[
+            :, AngularIndex.PHI
+        ] = phi_position_for_theta_labels
 
         theta_label_positions_cartesian = convert_spherical_to_cartesian_coordinates(
             angular_coordinates=spherical_coordinates_of_theta_labels,
