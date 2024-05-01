@@ -72,11 +72,11 @@ def construct_spherical_histogram(
     counts_array = np.zeros(number_of_faces)
 
     # We need to populate this array with the counts for each face.
-    for i in face_indices:
+    for vector_index, face_index in enumerate(face_indices):
         if weight_by_magnitude:
-            counts_array[i] += magnitudes[i]
+            counts_array[face_index] += magnitudes[vector_index]
         else:
-            counts_array[i] += 1
+            counts_array[face_index] += 1
 
     # Finally, we return both the sphere and the array of counts
     return sphere, counts_array
