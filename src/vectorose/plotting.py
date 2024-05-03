@@ -296,7 +296,6 @@ def produce_labelled_3d_plot(
     limits_factor: float = 1.1,
     plot_title: Optional[str] = None,
     sphere_projection: SphereProjection = SphereProjection.ORTHOGRAPHIC,
-    sphere_alpha: float = 1.0,
     plot_phi_axis: bool = True,
     plot_theta_axis: bool = True,
     label_phi_axis: bool = True,
@@ -313,7 +312,9 @@ def produce_labelled_3d_plot(
     maximum_value: Optional[float] = None,
     cmap: str = "viridis",
     colour_bar_kwargs: Optional[dict[str, Any]] = None,
-axis_label_factor=1.4, axis_tick_factor=1.6) -> mpl_toolkits.mplot3d.axes3d.Axes3D:
+    axis_label_factor=1.4,
+    axis_tick_factor=1.6,
+) -> mpl_toolkits.mplot3d.axes3d.Axes3D:
     """Modify a 3D plot to label it with spherical axes.
 
     Modify existing axes to add spherical phi and theta axes, as well as
@@ -557,7 +558,9 @@ axis_label_factor=1.4, axis_tick_factor=1.6) -> mpl_toolkits.mplot3d.axes3d.Axes
         if colour_bar_kwargs is None:
             colour_bar_kwargs = {}
 
-        colour_bar = plt.colorbar(mappable=scalar_mappable, ax=ax, **colour_bar_kwargs)
+        plt.colorbar(mappable=scalar_mappable, ax=ax, **colour_bar_kwargs)
+
+    return ax
 
 
 def produce_spherical_histogram_plot(
@@ -565,28 +568,14 @@ def produce_spherical_histogram_plot(
     sphere_radius: float,
     histogram_data: np.ndarray,
     weight_by_magnitude: bool,
-    plot_title: Optional[str] = None,
     minimum_value: Optional[float] = None,
     maximum_value: Optional[float] = None,
     colour_map: str = "viridis",
     sphere_projection: SphereProjection = SphereProjection.ORTHOGRAPHIC,
+    norm: Optional[plt.Normalize] = None,
     sphere_alpha: float = 1.0,
-    plot_phi_axis: bool = True,
-    plot_theta_axis: bool = True,
-    label_phi_axis: bool = True,
-    label_theta_axis: bool = True,
-    phi_label_positions: np.ndarray = np.arange(0, np.pi + 1e-2, np.pi / 6),
-    theta_label_positions: np.ndarray = np.arange(0, 2 * np.pi, np.pi / 6),
-    phi_axis_colour: str = "black",
-    theta_axis_colour: str = "black",
-    axes_x_limits: Tuple[float, float] = (-2.2, 2.2),
-    axes_y_limits: Tuple[float, float] = (-2.2, 2.2),
-    axes_z_limits: Tuple[float, float] = (-2.2, 2.2),
-    hide_cartesian_axis_labels: bool = False,
-    hide_cartesian_axis_ticks: bool = True,
-    plot_colourbar: bool = False,
-    colour_bar_kwargs: dict[str, Any] = {},
-) -> Tuple[mpl_toolkits.mplot3d.axes3d.Axes3D, Optional[matplotlib.colorbar.Colorbar]]:
+    **kwargs: Optional[dict[str, Any]],
+) -> mpl_toolkits.mplot3d.axes3d.Axes3D:
     """Produce a spherical histogram plot on the provided axes.
 
     Using the provided axes, produce a spherical plot of provided 2D
@@ -599,102 +588,42 @@ def produce_spherical_histogram_plot(
     ax
         Matplotlib :class:`Axes3D` on which to plot the 3D spherical
         histogram. The projection of these axes **must** be 3D.
-
     sphere_radius
         Radius of the sphere to plot.
-
     histogram_data
         Binned data to plot. This data should have
         the shape ``(n, n)`` where ``n`` represents the half-number of
         histogram bins. We currently assume that the half-number of bins
         is the **same** in both :math:`\\phi` and :math:`\\theta`. This
         function separates the data to plot half of it on the sphere.
-
     weight_by_magnitude
         Indicate whether plots should be weighted by magnitude or by count.
-
-    plot_title
-        Title of the plot produced (optional).
-
     minimum_value
         Minimum value for data normalisation. If not specified, the minimum
         of the data is automatically used instead.
-
     maximum_value
         Maximum value for data normalisation. If not specified, the maximum
         of the data is automatically used instead.
-
     colour_map
         Name of the Matplotlib colour map to be used for colouring the
         histogram data.
-
+    norm
+        Optional :class:`matplotlib.colors.Normalize` object to use to
+        normalise the colours.
     sphere_projection
         3D projection method to be used for the spherical figure. Options
         are orthographic and perspective projection.
         See :class:`SphereProjection`.
-
     sphere_alpha
         Opacity of the sphere.
-
-    plot_phi_axis
-        Indicate whether the :math:`\\phi` axis should be plotted in 3D.
-
-    plot_theta_axis
-        Indicate whether the :math:`\\theta` axis should be plotted in 3D.
-
-    label_phi_axis
-        Indicate whether to label the :math:`\\phi` axis.
-
-    label_theta_axis
-        Indicate whether to label the :math:`\\theta` axis.
-
-    phi_label_positions
-        Indicate angular positions for the labels for :math:`\\phi` along
-        its circular axis.
-
-    theta_label_positions
-        Indicate angular positions for the labels for :math:`\\theta` along
-        its circular axis.
-
-    phi_axis_colour
-        Colour for the phi axis.
-
-    theta_axis_colour
-        Colour for the theta axis.
-
-    axes_x_limits
-        Figure size limits along the ``x``-axis.
-
-    axes_y_limits
-        Figure size limits along the ``y``-axis.
-
-    axes_z_limits
-        Figure size limits along the ``z``-axis.
-
-    hide_cartesian_axis_labels
-        Indicate whether to hide the axis labels for the cartesian axes.
-        If this is set to ``True``, then the axes themselves will also
-        be hidden.
-
-    hide_cartesian_axis_ticks
-        Indicate whether to hide the axis ticks for the cartesian axes.
-
-    plot_colourbar
-        Indicate whether to include a colour bar on the plot.
-
-    colour_bar_kwargs
-        Keyword arguments for the colour bar, passed as a dictionary. For
-        details on the available keyword arguments,
-        see :class:`matplotlib.colorbar.Colorbar`.
+    **kwargs
+        Keyword arguments for the plot labelling.
+        See :func:`.produce_labelled_3d_plot` for options.
 
     Returns
     -------
     mpl_toolkits.mplot3d.axes3d.Axes3D
         A reference to the :class:`Axes3D` object passed in as ``ax``.
-
-    matplotlib.colorbar.Colorbar
-        A reference to the added ``Colorbar`` (or ``None`` if no
-        colour bar is plotted).
 
     Warnings
     --------
@@ -709,6 +638,8 @@ def produce_spherical_histogram_plot(
     --------
     .prepare_two_dimensional_histogram:
         Prepare the 2D histogram data to be plotted on a sphere.
+    .produce_labelled_3d_plot:
+        Label the axes of the 3D plot.
     .produce_3d_triangle_sphere_plot:
         Similar function for an icosphere.
 
@@ -771,8 +702,13 @@ def produce_spherical_histogram_plot(
     except ValueError:
         mpl_colour_map = plt.get_cmap("gray")
 
-    normaliser = plt.Normalize(vmin=minimum_value, vmax=maximum_value)
-    normalised_sphere_intensities = normaliser(cleaned_histogram_data)
+    if norm is None:
+        norm = plt.Normalize(vmin=minimum_value, vmax=maximum_value)
+    else:
+        norm.vmax = maximum_value or norm.vmax
+        norm.vmin = minimum_value or norm.vmin
+
+    normalised_sphere_intensities = norm(cleaned_histogram_data)
     sphere_face_colours = mpl_colour_map(normalised_sphere_intensities)
 
     # Construct the 3D plot
@@ -791,180 +727,11 @@ def produce_spherical_histogram_plot(
     # surface.set_edgecolor("white")
     # surface.set_linewidth(0.25)
 
-    # Set the aspect ratio so that all axes are the same.
+    ax = produce_labelled_3d_plot(ax=ax, radius=sphere_radius, **kwargs)
+
     ax.set_aspect("equal")
-    ax.set_box_aspect((1, 1, 1))
-    ax.set_xlim(*axes_x_limits)
-    ax.set_ylim(*axes_y_limits)
-    ax.set_zlim(*axes_z_limits)
-    ax.set_title(plot_title, fontsize=14)
 
-    # Hide the 3D axis
-    if hide_cartesian_axis_ticks:
-        ax.set_xticks([])
-        ax.set_yticks([])
-        ax.set_zticks([])
-
-    if hide_cartesian_axis_labels:
-        ax.set_axis_off()
-    else:
-        ax.set_xlabel("x")
-        ax.set_ylabel("y")
-        ax.set_zlabel("z")
-
-    if plot_phi_axis:
-        phi_axis_positions = np.linspace(0, np.pi)
-        phi_position_theta = np.ones_like(phi_axis_positions) * np.pi / 2
-
-        phi_axis_polar_positions = np.stack(
-            [phi_axis_positions, phi_position_theta], axis=-1
-        )
-
-        phi_axis_cartesian = convert_spherical_to_cartesian_coordinates(
-            phi_axis_polar_positions, radius=1.4 * sphere_radius
-        )
-
-        ax.plot(
-            phi_axis_cartesian[:, 0],
-            phi_axis_cartesian[:, 1],
-            phi_axis_cartesian[:, 2],
-            ":",
-            linewidth=0.5,
-            color=phi_axis_colour,
-        )
-
-    if plot_theta_axis:
-        theta_axis_positions = np.linspace(0, 2 * np.pi)
-        theta_position_phi = np.ones_like(theta_axis_positions) * np.pi / 2
-        theta_axis_polar_positions = np.stack(
-            [theta_position_phi, theta_axis_positions], axis=-1
-        )
-
-        theta_axis_cartesian = convert_spherical_to_cartesian_coordinates(
-            theta_axis_polar_positions, radius=1.4 * sphere_radius
-        )
-
-        ax.plot(
-            theta_axis_cartesian[:, 0],
-            theta_axis_cartesian[:, 1],
-            theta_axis_cartesian[:, 2],
-            ":",
-            linewidth=0.5,
-            color=theta_axis_colour,
-        )
-
-    # Add the spherical axis labels
-    if label_phi_axis:
-        # Now, let's also make the axis labels for the 3D plot. We'll
-        # have them at a distance of radius * 1.6
-        if label_theta_axis:
-            # Remove pi/2 (overlap between both rings)
-            phi_label_positions = phi_label_positions[phi_label_positions != np.pi / 2]
-
-        number_of_phi_labels = len(phi_label_positions)
-        theta_position_for_phi_labels = np.ones(number_of_phi_labels) * np.pi / 2
-
-        spherical_coordinates_of_phi_labels = np.zeros((number_of_phi_labels, 2))
-        spherical_coordinates_of_phi_labels[:, AngularIndex.PHI] = phi_label_positions
-        spherical_coordinates_of_phi_labels[
-            :, AngularIndex.THETA
-        ] = theta_position_for_phi_labels
-
-        phi_label_positions_cartesian = convert_spherical_to_cartesian_coordinates(
-            angular_coordinates=spherical_coordinates_of_phi_labels,
-            radius=1.6 * sphere_radius,
-        )
-
-        phi_label_angles_degrees = np.degrees(phi_label_positions)
-
-        ax.text3D(
-            0,
-            0,
-            1.2 * sphere_radius,
-            r"$\phi$",
-            fontsize="large",
-            clip_on=True,
-            alpha=0.5,
-            ha="center",
-        )
-
-        for i in range(number_of_phi_labels):
-            phi_in_degrees = phi_label_angles_degrees[i]
-            phi_label_text = f"{phi_in_degrees:.01f}\u00b0"
-            label_position = phi_label_positions_cartesian[i]
-            label_x = label_position[0]
-            label_y = label_position[1]
-            label_z = label_position[2]
-
-            ax.text3D(
-                label_x,
-                label_y,
-                label_z,
-                phi_label_text,
-                ha="center",
-                alpha=0.5,
-                clip_on=True,
-            )
-
-    if label_theta_axis:
-        # Same thing as for the phi axis
-        number_of_theta_labels = len(theta_label_positions)
-        phi_position_for_theta_labels = np.ones(number_of_theta_labels) * np.pi / 2
-
-        spherical_coordinates_of_theta_labels = np.zeros((number_of_theta_labels, 2))
-
-        spherical_coordinates_of_theta_labels[
-            :, AngularIndex.THETA
-        ] = theta_label_positions
-
-        spherical_coordinates_of_theta_labels[
-            :, AngularIndex.PHI
-        ] = phi_position_for_theta_labels
-
-        theta_label_positions_cartesian = convert_spherical_to_cartesian_coordinates(
-            angular_coordinates=spherical_coordinates_of_theta_labels,
-            radius=1.6 * sphere_radius,
-        )
-
-        theta_label_angles_degrees = np.degrees(theta_label_positions)
-
-        ax.text3D(
-            0,
-            1.2 * sphere_radius,
-            0,
-            r"$\theta$",
-            fontsize="large",
-            clip_on=True,
-            alpha=0.5,
-            ha="center",
-        )
-        for i in range(number_of_theta_labels):
-            theta_in_degrees = theta_label_angles_degrees[i]
-            theta_label_text = f"{theta_in_degrees:.01f}\u00b0"
-            label_position = theta_label_positions_cartesian[i]
-            label_x = label_position[0]
-            label_y = label_position[1]
-            label_z = label_position[2]
-
-            ax.text3D(
-                label_x,
-                label_y,
-                label_z,
-                theta_label_text,
-                ha="center",
-                alpha=0.5,
-                clip_on=True,
-            )
-
-    colour_bar: Optional[matplotlib.colorbar.Colorbar] = None
-
-    if plot_colourbar:
-        scalar_mappable = matplotlib.cm.ScalarMappable(
-            norm=normaliser, cmap=mpl_colour_map
-        )
-        colour_bar = plt.colorbar(mappable=scalar_mappable, ax=ax, **colour_bar_kwargs)
-
-    return ax, colour_bar
+    return ax
 
 
 def produce_polar_histogram_plot(
@@ -1469,22 +1236,9 @@ def produce_3d_triangle_sphere_plot(
     sphere: trimesh.primitives.Sphere,
     face_counts: np.ndarray,
     colour_map: str = "viridis",
-    limits_factor: float = 1.1,
-    sphere_projection: SphereProjection = SphereProjection.ORTHOGRAPHIC,
     sphere_alpha: float = 1.0,
-    plot_phi_axis: bool = True,
-    plot_theta_axis: bool = True,
-    label_phi_axis: bool = True,
-    label_theta_axis: bool = True,
-    phi_label_positions: np.ndarray = np.arange(0, np.pi + 1e-2, np.pi / 6),
-    theta_label_positions: np.ndarray = np.arange(0, 2 * np.pi, np.pi / 6),
-    phi_axis_colour: str = "black",
-    theta_axis_colour: str = "black",
-    hide_cartesian_axes: bool = True,
-    hide_cartesian_axis_labels: bool = False,
-    hide_cartesian_axis_ticks: bool = True,
-    plot_colourbar: bool = False,
-    colour_bar_kwargs: dict[str, Any] = {},
+    norm: Optional[plt.Normalize] = None,
+    **kwargs: Optional[dict[str, Any]],
 ) -> mpl_toolkits.mplot3d.axes3d.Axes3D:
     """Produce a 3D sphere plot based on a triangle mesh.
 
@@ -1501,44 +1255,15 @@ def produce_3d_triangle_sphere_plot(
         Values assigned to each face in the `sphere`.
     colour_map
         Colour map used to colour the sphere, by default "viridis".
-    limits_factor
-        Factor used to add padding to the sphere, by default 1.1. The same
-        factor is used along all axes, and is multiplied by the radius of
-        the sphere to define the axis bounds.
-    sphere_projection
-        Projection used to plot the sphere, by default
-        :attr:`SphereProjection.ORTHOGRAPHIC`
+    norm
+        Optional :class:`matplotlib.colors.Normalize` object to use to
+        normalise the colours.
     sphere_alpha
         Opacity of the sphere.
-    plot_phi_axis
-        Indicate whether the phi axis should be plotted in 3D.
-    plot_theta_axis
-        Indicate whether the theta axis should be plotted in 3D.
-    label_phi_axis
-        Indicate whether to label the phi axis.
-    label_theta_axis
-        Indicate whether to label the theta axis.
-    phi_label_positions
-        Indicate angular positions for the labels for phi along its
-        circular axis.
-    theta_label_positions
-        Indicate angular positions for the labels for theta along its
-        circular axis.
-    phi_axis_colour
-        Colour for the phi axis.
-    theta_axis_colour
-        Colour for the theta axis..
-    hide_cartesian_axes
-        Indicate whether to hide the Cartesian axes, by default True.
-    hide_cartesian_axis_labels
-        Indicate whether to hide the Cartesian axis labels, by default
-        False. This has no effect if `hide_cartesian_axes` is True.
-    hide_cartesian_axis_ticks
-        Indicate whether to hide the Cartesian axis ticks, by default True.
-    plot_colourbar
-        Indicate whether to plot the colour bar, by default False.
-    colour_bar_kwargs
-        Keyword arguments for the colour bar.
+    **kwargs
+        Keyword arguments for the plot labelling.
+        See :func:`.produce_labelled_3d_plot` for options.
+
 
     Returns
     -------
@@ -1558,16 +1283,21 @@ def produce_3d_triangle_sphere_plot(
     --------
     vectorose.triplot.run_spherical_histogram_pipeline:
         Produce a sphere and histogram labellings to pass to this function.
+    .produce_labelled_3d_plot:
+        Label the axes of the 3D plot.
     .produce_spherical_histogram_plot:
         Similar function for a UV sphere.
     """
 
     # Get the face colours
-    normaliser = matplotlib.colors.Normalize(
-        vmin=face_counts.min(), vmax=face_counts.max()
-    )
+    if norm is None:
+        norm = matplotlib.colors.Normalize(
+            vmin=face_counts.min(), vmax=face_counts.max()
+        )
+    else:
+        norm.autoscale(face_counts)
 
-    scalar_mapper = matplotlib.cm.ScalarMappable(norm=normaliser, cmap=colour_map)
+    scalar_mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap=colour_map)
 
     face_colours = scalar_mapper.to_rgba(face_counts)
 
@@ -1586,7 +1316,8 @@ def produce_3d_triangle_sphere_plot(
         z_coordinates,
         triangles=triangles,
         facecolor=face_colours,
-        alpha=sphere_alpha
+        alpha=sphere_alpha,
+        shade=False
     )
 
     # Now, configure the axes
@@ -1594,176 +1325,12 @@ def produce_3d_triangle_sphere_plot(
     min_location = sphere_bounds.min()
     max_location = sphere_bounds.max()
 
-    sphere_radius = max_location / 2
+    sphere_radius = (max_location - min_location) / 2
 
-    min_bound = limits_factor * min_location
-    max_bound = limits_factor * max_location
+    print(f"Sphere has radius {sphere_radius}...")
 
-    ax.set_xlim(min_bound, max_bound)
-    ax.set_ylim(min_bound, max_bound)
-    ax.set_zlim(min_bound, max_bound)
+    ax = produce_labelled_3d_plot(ax=ax, radius=sphere_radius, **kwargs)
 
-    if hide_cartesian_axis_ticks:
-        ax.set_xticks([])
-        ax.set_yticks([])
-        ax.set_zticks([])
-
-    if not hide_cartesian_axis_labels:
-        ax.set_xlabel("x")
-        ax.set_ylabel("y")
-        ax.set_zlabel("z")
-
-    if hide_cartesian_axes:
-        ax.set_axis_off()
-
-    ax.set_proj_type(sphere_projection.value)
     ax.set_aspect("equal")
-
-    if plot_phi_axis:
-        phi_axis_positions = np.linspace(0, np.pi)
-        phi_position_theta = np.ones_like(phi_axis_positions) * np.pi / 2
-
-        phi_axis_polar_positions = np.stack(
-            [phi_axis_positions, phi_position_theta], axis=-1
-        )
-
-        phi_axis_cartesian = convert_spherical_to_cartesian_coordinates(
-            phi_axis_polar_positions, radius=1.4 * sphere_radius
-        )
-
-        ax.plot(
-            phi_axis_cartesian[:, 0],
-            phi_axis_cartesian[:, 1],
-            phi_axis_cartesian[:, 2],
-            ":",
-            linewidth=0.5,
-            color=phi_axis_colour,
-        )
-
-    if plot_theta_axis:
-        theta_axis_positions = np.linspace(0, 2 * np.pi)
-        theta_position_phi = np.ones_like(theta_axis_positions) * np.pi / 2
-        theta_axis_polar_positions = np.stack(
-            [theta_position_phi, theta_axis_positions], axis=-1
-        )
-
-        theta_axis_cartesian = convert_spherical_to_cartesian_coordinates(
-            theta_axis_polar_positions, radius=1.4 * sphere_radius
-        )
-
-        ax.plot(
-            theta_axis_cartesian[:, 0],
-            theta_axis_cartesian[:, 1],
-            theta_axis_cartesian[:, 2],
-            ":",
-            linewidth=0.5,
-            color=theta_axis_colour,
-        )
-
-    # Add the spherical axis labels
-    if label_phi_axis:
-        # Now, let's also make the axis labels for the 3D plot. We'll
-        # have them at a distance of radius * 1.6
-        if label_theta_axis:
-            # Remove pi/2 (overlap between both rings)
-            phi_label_positions = phi_label_positions[phi_label_positions != np.pi / 2]
-
-        number_of_phi_labels = len(phi_label_positions)
-        theta_position_for_phi_labels = np.ones(number_of_phi_labels) * np.pi / 2
-
-        spherical_coordinates_of_phi_labels = np.zeros((number_of_phi_labels, 2))
-        spherical_coordinates_of_phi_labels[:, AngularIndex.PHI] = phi_label_positions
-        spherical_coordinates_of_phi_labels[
-            :, AngularIndex.THETA
-        ] = theta_position_for_phi_labels
-
-        phi_label_positions_cartesian = convert_spherical_to_cartesian_coordinates(
-            angular_coordinates=spherical_coordinates_of_phi_labels,
-            radius=1.6 * sphere_radius,
-        )
-
-        phi_label_angles_degrees = np.degrees(phi_label_positions)
-
-        ax.text3D(
-            0,
-            0,
-            1.2 * sphere_radius,
-            r"$\phi$",
-            fontsize="large",
-            clip_on=True,
-            alpha=0.5,
-            ha="center",
-        )
-
-        for i in range(number_of_phi_labels):
-            phi_in_degrees = phi_label_angles_degrees[i]
-            phi_label_text = f"{phi_in_degrees:.01f}\u00b0"
-            label_position = phi_label_positions_cartesian[i]
-            label_x = label_position[0]
-            label_y = label_position[1]
-            label_z = label_position[2]
-
-            ax.text3D(
-                label_x,
-                label_y,
-                label_z,
-                phi_label_text,
-                ha="center",
-                alpha=0.5,
-                clip_on=True,
-            )
-
-    if label_theta_axis:
-        # Same thing as for the phi axis
-        number_of_theta_labels = len(theta_label_positions)
-        phi_position_for_theta_labels = np.ones(number_of_theta_labels) * np.pi / 2
-
-        spherical_coordinates_of_theta_labels = np.zeros((number_of_theta_labels, 2))
-
-        spherical_coordinates_of_theta_labels[
-            :, AngularIndex.THETA
-        ] = theta_label_positions
-
-        spherical_coordinates_of_theta_labels[
-            :, AngularIndex.PHI
-        ] = phi_position_for_theta_labels
-
-        theta_label_positions_cartesian = convert_spherical_to_cartesian_coordinates(
-            angular_coordinates=spherical_coordinates_of_theta_labels,
-            radius=1.6 * sphere_radius,
-        )
-
-        theta_label_angles_degrees = np.degrees(theta_label_positions)
-
-        ax.text3D(
-            0,
-            1.2 * sphere_radius,
-            0,
-            r"$\theta$",
-            fontsize="large",
-            clip_on=True,
-            alpha=0.5,
-            ha="center",
-        )
-        for i in range(number_of_theta_labels):
-            theta_in_degrees = theta_label_angles_degrees[i]
-            theta_label_text = f"{theta_in_degrees:.01f}\u00b0"
-            label_position = theta_label_positions_cartesian[i]
-            label_x = label_position[0]
-            label_y = label_position[1]
-            label_z = label_position[2]
-
-            ax.text3D(
-                label_x,
-                label_y,
-                label_z,
-                theta_label_text,
-                ha="center",
-                alpha=0.5,
-                clip_on=True,
-            )
-
-    if plot_colourbar:
-        plt.colorbar(mappable=scalar_mapper, ax=ax, **colour_bar_kwargs)
 
     return ax
