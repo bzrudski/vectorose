@@ -12,7 +12,7 @@ binning the orientations.
 """
 
 import enum
-from typing import Tuple, Union
+from typing import Any, List, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -303,7 +303,7 @@ def compute_vector_orientation_angles(
 
     The unit for the angles is *radians* unless ``use_degrees`` is set
     to ``True``. The returned angles are in the range of 0
-    to :math:`\\pi` (180\u00b0) for :math:`\\phi` and 0 to :math:`\\pi`
+    to :math:`\\pi` (180\u00b0) for :math:`\\phi` and 0 to :math:`2\\pi`
     (180\u00b0) for :math:`\\theta`. The first column in the returned array
     corresponds to :math:`\\phi` and the second to :math:`\\theta`. See
     :class:`AngularIndex` for more details about the ordering of the
@@ -366,8 +366,8 @@ def compute_vector_orientation_angles(
     n = len(vectors)
 
     # Ensure that all vectors are in octants with positive x.
-    vectors = np.copy(vectors)
-    vectors[vectors[:, 0] < 0] = -vectors[vectors[:, 0] < 0]
+    # vectors = np.copy(vectors)
+    # vectors[vectors[:, 0] < 0] = -vectors[vectors[:, 0] < 0]
 
     x: np.ndarray = vectors[:, 0]
     y: np.ndarray = vectors[:, 1]
@@ -377,12 +377,12 @@ def compute_vector_orientation_angles(
     phi = np.arctan2(np.sqrt(x**2 + y**2), z)
     theta = np.arctan2(x, y)
 
-    # Now, we need to fix the angles so that we keep them in the appropriate ranges of zero to pi
-    phi = np.where(phi < 0, phi + np.pi, phi)
-    phi[phi == np.pi] = 0
+    # Now, we need to fix the angles
+    phi = np.where(phi < 0, phi + 2 * np.pi, phi)
+    # phi[phi == np.pi] = 0
 
-    theta = np.where(theta < 0, theta + np.pi, theta)
-    theta[theta == np.pi] = 0
+    theta = np.where(theta < 0, theta + 2 * np.pi, theta)
+    # theta[theta == np.pi] = 0
 
     # Convert to degrees if necessary
     if use_degrees:
@@ -454,7 +454,7 @@ def create_binned_orientation(
     vector_magnitudes: np.ndarray,
     half_number_of_bins: int = 16,
     use_degrees: bool = True,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, List[np.ndarray]]:
     """Bin the vector orientation data.
 
     Construct an array containing the histogram data obtained by binning
@@ -495,7 +495,7 @@ def create_binned_orientation(
         to :math:`\\theta`. The last axis is used for indexing the
         histogram by the magnitude type (see :class:`MagnitudeType`).
 
-    bins: numpy.ndarray
+    bins: list[numpy.ndarray]
         The bounds of the histogram bins. This array is of shape
         ``(2, half_half_number_of_bins + 1)``, where the first row
         represents the bins for :math:`\\phi` and the second represents
@@ -504,8 +504,8 @@ def create_binned_orientation(
     Warnings
     --------
     The input angles must be in the range :math:`0 \\leq \\phi < \\pi`
-    and :math:`0 \\leq \\theta < \\pi` in radians, or
-    :math:`0 \\leq \\phi < 180` and :math:`0 \\leq \\theta < 180` in
+    and :math:`0 \\leq \\theta < 2\\pi` in radians, or
+    :math:`0 \\leq \\phi < 180` and :math:`0 \\leq \\theta < 360` in
     degrees. There **cannot** be any other orientations included, as
     these will be overwritten.
 
@@ -532,20 +532,22 @@ def create_binned_orientation(
     phi = vector_orientations[:, AngularIndex.PHI]
     theta = vector_orientations[:, AngularIndex.THETA]
 
-    number_of_bins = half_number_of_bins
+    number_of_bins = 2 * half_number_of_bins
 
     if use_degrees:
         minimum_angle = 0
-        maximum_angle = 180
+        maximum_phi_angle = 180
+        maximum_theta_angle = 360
     else:
         minimum_angle = 0
-        maximum_angle = np.pi
+        maximum_phi_angle = np.pi
+        maximum_theta_angle = 2 * np.pi
 
     phi_histogram_bins = np.histogram_bin_edges(
-        phi, bins=number_of_bins, range=(minimum_angle, maximum_angle)
+        phi, bins=half_number_of_bins, range=(minimum_angle, maximum_phi_angle)
     )
     theta_histogram_bins = np.histogram_bin_edges(
-        theta, bins=number_of_bins, range=(minimum_angle, maximum_angle)
+        theta, bins=number_of_bins, range=(minimum_angle, maximum_theta_angle)
     )
 
     # Digitize returns indices which are off-by-one
@@ -554,7 +556,7 @@ def create_binned_orientation(
 
     # Now, to prepare the histogram array:
     angular_histogram_2d = np.zeros(
-        (number_of_bins, number_of_bins, len(MagnitudeType))
+        (half_number_of_bins, number_of_bins, len(MagnitudeType))
     )
 
     # Now, for the iterations. We set all the magnitudes simultaneously.
@@ -565,7 +567,7 @@ def create_binned_orientation(
 
     # Create an array that contains both the phi and theta
     # histogram boundaries.
-    bin_boundaries = np.stack([phi_histogram_bins, theta_histogram_bins])
+    bin_boundaries = [phi_histogram_bins, theta_histogram_bins]
 
     return angular_histogram_2d, bin_boundaries
 
@@ -574,7 +576,8 @@ def create_angular_binning_from_vectors(
     vectors: np.ndarray,
     half_number_of_bins: int = 18,
     use_degrees: bool = True,
-) -> Tuple[np.ndarray, np.ndarray]:
+    consider_axial_data: bool = True,
+) -> Tuple[np.ndarray, List[np.ndarray]]:
     """Run the complete binning procedure on a list of vectors.
 
     Construct a 2D angular histogram from a 2D array of vectors with either
@@ -599,6 +602,11 @@ def create_angular_binning_from_vectors(
         in degrees. If ``True``, all angles will be stored in degrees
         (default). Otherwise, all angles will be stored in radians.
 
+    consider_axial_data
+        Indicates whether the vectors should be considered as axial data.
+        If `True`, vectors with a negative Z-component are inverted, and
+        the data are copied to create a symmetric pair.
+
     Returns
     -------
     binned_data: numpy.ndarray
@@ -609,7 +617,7 @@ def create_angular_binning_from_vectors(
         to :math:`\\theta`. The last axis is used for indexing the
         histogram by the magnitude type (see :class:`MagnitudeType`).
 
-    bins: numpy.ndarray
+    bins: list[numpy.ndarray]
         The bounds of the histogram bins. This array is of shape
         ``(2, half_half_number_of_bins + 1)``, where the first row
         represents the bins for :math:`\\phi` and the second represents
@@ -631,6 +639,12 @@ def create_angular_binning_from_vectors(
         Final step, performs the binning based on the computed orientations
         and magnitudes to produce a 2D angular histogram.
 
+    convert_vectors_to_axes:
+        Convert vectors to orientation axial data.
+
+    create_symmetric_vectors_from_axes:
+        Convert axial data into symmetric vector data.
+
     """
 
     # First, check the size of the vector array. Only keep the
@@ -640,6 +654,11 @@ def create_angular_binning_from_vectors(
 
     # Remove the zero-magnitude vectors
     non_zero_vectors = remove_zero_vectors(vectors)
+
+    # If axial data, perform the mirroring
+    if consider_axial_data:
+        non_zero_vectors = convert_vectors_to_axes(non_zero_vectors)
+        non_zero_vectors = create_symmetric_vectors_from_axes(non_zero_vectors)
 
     # Compute the angles
     vector_angles = compute_vector_orientation_angles(
