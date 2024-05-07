@@ -680,3 +680,49 @@ def create_angular_binning_from_vectors(
     )
 
     return binned_data, bins
+
+
+def perform_binary_search(
+    seq: Union[Sequence, np.ndarray], item: Any, lower_bound: int = 0
+) -> int:
+    """Perform a binary search.
+
+    Find the index of a specified item, or of the greatest item less than
+    the desired item.
+
+    Parameters
+    ----------
+    seq
+        Sequence to search.
+    item
+        Item to locate.
+    lower_bound
+        Start index of the sequence.
+
+    Returns
+    -------
+    int
+        Index of the requested item, or of the greatest item less than the
+        requested one.
+
+    """
+    # Check the list length - return the current index if only one or no values.
+    if len(seq) == 1:
+        return lower_bound
+
+    # Get the middle index
+    middle_index = np.floor(len(seq) / 2).astype(int)
+    middle_value = seq[middle_index]
+
+    print(f"Considering the item {middle_value} at index {middle_index}")
+
+    if item == middle_value:
+        return lower_bound + middle_index
+    elif item < middle_value:
+        # Recurse left
+        return perform_binary_search(seq[:middle_index], item, lower_bound=lower_bound)
+    elif item > middle_value:
+        # Recurse right
+        return perform_binary_search(
+            seq[middle_index:], item, lower_bound=lower_bound + middle_index
+        )
