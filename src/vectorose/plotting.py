@@ -312,8 +312,9 @@ def produce_labelled_3d_plot(
     maximum_value: Optional[float] = None,
     cmap: str = "viridis",
     colour_bar_kwargs: Optional[dict[str, Any]] = None,
-    axis_label_factor=1.4,
-    axis_tick_factor=1.6,
+    axis_label_factor: float = 1.4,
+    axis_tick_factor: float = 1.6,
+    norm: Optional[matplotlib.colors.Normalize] = None
 ) -> mpl_toolkits.mplot3d.axes3d.Axes3D:
     """Modify a 3D plot to label it with spherical axes.
 
@@ -373,6 +374,8 @@ def produce_labelled_3d_plot(
         Colour map for the colour bar.
     colour_bar_kwargs
         Keyword arguments for the colour bar.
+    norm
+        Normaliser to use for the colour bar (if applicable)
 
     Returns
     -------
@@ -553,7 +556,8 @@ def produce_labelled_3d_plot(
     colour_bar: Optional[matplotlib.colorbar.Colorbar] = None
 
     if plot_colourbar:
-        norm = plt.Normalize(vmin=minimum_value, vmax=maximum_value)
+        if norm is None:
+            norm = plt.Normalize(vmin=minimum_value, vmax=maximum_value)
         scalar_mappable = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
         if colour_bar_kwargs is None:
             colour_bar_kwargs = {}
@@ -659,10 +663,13 @@ def produce_spherical_histogram_plot(
     else:
         original_intensity_data = histogram_data[..., MagnitudeType.COUNT]
 
-    cleaned_histogram_data = prepare_two_dimensional_histogram(
-        binned_data=original_intensity_data
-    )
+    # cleaned_histogram_data = prepare_two_dimensional_histogram(
+    #     binned_data=original_intensity_data
+    # )
 
+    cleaned_histogram_data = original_intensity_data
+
+    # half_number_of_bins, number_of_bins = cleaned_histogram_data.shape
     half_number_of_bins, number_of_bins = cleaned_histogram_data.shape
 
     # Well, we want to have the phi go from zero to 180 only! But, we
@@ -727,7 +734,7 @@ def produce_spherical_histogram_plot(
     # surface.set_edgecolor("white")
     # surface.set_linewidth(0.25)
 
-    ax = produce_labelled_3d_plot(ax=ax, radius=sphere_radius, **kwargs)
+    ax = produce_labelled_3d_plot(ax=ax, radius=sphere_radius, norm=norm, **kwargs)
 
     ax.set_aspect("equal")
 
@@ -1329,7 +1336,7 @@ def produce_3d_triangle_sphere_plot(
 
     print(f"Sphere has radius {sphere_radius}...")
 
-    ax = produce_labelled_3d_plot(ax=ax, radius=sphere_radius, **kwargs)
+    ax = produce_labelled_3d_plot(ax=ax, radius=sphere_radius, norm=norm, **kwargs)
 
     ax.set_aspect("equal")
 
