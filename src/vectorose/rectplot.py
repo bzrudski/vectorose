@@ -52,14 +52,22 @@ class TregenzaSphere:
         # Define the almucantar angles (phi rings)
         almucantar_angles = [0.00, 1.50, 4.00]
 
-        for i in range(1, 25):  # Adds almucantars for remaining upper bounds of phi
+        # Add almucantars for remaining upper bounds of phi
+        for i in range(1, 25):
             new_almucantar_angle = 4.00 + i * 3.44
             almucantar_angles.append(new_almucantar_angle)
 
-        self.phi_values = np.array(almucantar_angles)
+        top_phi_values = np.array(almucantar_angles)
+        bottom_phi_values = 180 - np.flip(top_phi_values[1:])
+
+        phi_values = np.concatenate([top_phi_values, [90], bottom_phi_values])
+
+        # self.phi_values = np.array(almucantar_angles)
+        self.phi_values = phi_values
 
         # Define the patch count
-        self.patch_count = np.array(
+        # self.patch_count = np.array(
+        top_patch_count = np.array(
             [
                 1,
                 6,
@@ -90,6 +98,11 @@ class TregenzaSphere:
                 173,
             ]
         )
+
+        bottom_patch_count = np.flip(top_patch_count)
+
+        self.patch_count = np.concatenate([top_patch_count, bottom_patch_count])
+        # self.patch_count = top_patch_count
 
         # Define the theta bins within each ring
         number_of_rings = len(self.patch_count)
@@ -176,7 +189,10 @@ class TregenzaSphere:
         return phi_ring, theta_bin
 
     def construct_spherical_histogram(
-        self, angular_coordinates: np.ndarray, use_radians: bool = False
+        self,
+        angular_coordinates: np.ndarray,
+        use_radians: bool = False,
+        magnitudes: Optional[np.ndarray] = None,
     ) -> List[np.ndarray]:
         """Construct a histogram using the Tregenza sphere.
 
@@ -186,6 +202,9 @@ class TregenzaSphere:
             Orientations from which to construct the histogram.
         use_radians
             Indicate whether the orientations are in radians.
+        magnitudes
+            Optional vector magnitudes. If `None`, the resulting histogram
+            is weighted by counts. Otherwise, it is weighted by magnitude.
 
         Returns
         -------
@@ -216,17 +235,22 @@ class TregenzaSphere:
         ]
 
         # And now, to build up the histogram
-        for phi_ring, theta_bin in orientations:
-            histogram[phi_ring][theta_bin] += 1
+        for i, (phi_ring, theta_bin) in enumerate(orientations):
+            if magnitudes is not None:
+                histogram[phi_ring][theta_bin] += magnitudes[i]
+            else:
+                histogram[phi_ring][theta_bin] += 1
 
         # And finally, to return the histogram
         return histogram
 
     def create_tregenza_plot(
-        self, ax: Optional[mpl_toolkits.mplot3d.Axes3D] = None,
+        self,
+        ax: Optional[mpl_toolkits.mplot3d.Axes3D] = None,
         face_data: Optional[List[np.ndarray]] = None,
         cmap: str = "viridis",
-        norm: Optional[matplotlib.colors.Normalize] = None
+        norm: Optional[matplotlib.colors.Normalize] = None,
+        weight_by_area: bool = False
     ) -> mpl_toolkits.mplot3d.Axes3D:
         """Create a plot of the current Tregenza sphere.
 
@@ -242,6 +266,8 @@ class TregenzaSphere:
         norm
             Normaliser to use for the face colours. If `None`, then a
             linear normaliser is used.
+        weight_by_area
+            Indicate whether to weight the face counts by the face areas.
 
         Returns
         -------
@@ -255,13 +281,22 @@ class TregenzaSphere:
 
         if face_data is not None:
             # Flatten the face data for easier processing.
+            if weight_by_area:
+                ring_weights = self.compute_weights()
+                weighted_face_data = [
+                    face_data[i] * ring_weights[i] for i in range(self.number_of_rings)
+                ]
+                face_data = weighted_face_data
+
             flattened_face_data = np.concatenate(face_data)
 
             if norm is None:
                 # Find the maximum and minimum counts
                 min_face_count = flattened_face_data.min()
                 max_face_count = flattened_face_data.max()
-                norm = matplotlib.colors.Normalize(vmin=min_face_count, vmax=max_face_count)
+                norm = matplotlib.colors.Normalize(
+                    vmin=min_face_count, vmax=max_face_count
+                )
             else:
                 norm.autoscale(flattened_face_data)
 
@@ -270,6 +305,15 @@ class TregenzaSphere:
 
             face_colours: np.ndarray = scalar_mapper.to_rgba(flattened_face_data)
 
+            print("Face colours are:")
+            print(face_colours)
+
+            normalised_data = norm(flattened_face_data)
+            print(
+                f"Maximum normalised data: {normalised_data.max()}\nMinimum normalised data: "
+                f"{normalised_data.min()}"
+            )
+
             # for ring in face_data:
             #     face_colours.append(scalar_mapper.to_rgba(ring))
         else:
@@ -277,6 +321,10 @@ class TregenzaSphere:
 
         if ax is None:
             ax: mpl_toolkits.mplot3d.Axes3D = plt.axes(projection="3d")
+
+        ax.set_xlim3d(-1, 1)
+        ax.set_ylim3d(-1, 1)
+        ax.set_zlim3d(-1, 1)
 
         # Define the patches we'll plot
         all_patch_vertices: list[np.ndarray] = []
@@ -288,8 +336,10 @@ class TregenzaSphere:
         phi_upper_second_row = np.ones(thetas_second_row.shape) * phi_upper
         top_cap_vertices = np.stack([phi_upper_second_row, thetas_second_row], axis=-1)
 
-        top_cap_vertices_cartesian = vectorose.vectorose.convert_spherical_to_cartesian_coordinates(
-            np.radians(top_cap_vertices)
+        top_cap_vertices_cartesian = (
+            vectorose.vectorose.convert_spherical_to_cartesian_coordinates(
+                np.radians(top_cap_vertices)
+            )
         )
 
         all_patch_vertices.append(top_cap_vertices_cartesian)
@@ -297,12 +347,13 @@ class TregenzaSphere:
         # Now, let's go with the remaining rings
         number_of_rings = self.number_of_rings
 
-        phi_rings = np.append(self.phi_values, 90)
+        # phi_rings = np.append(self.phi_values, 90)
+        phi_rings = self.phi_values
 
-        for i in range(1, number_of_rings):
+        for i in range(1, number_of_rings - 1):
             # Get the current phi ring and the next phi ring
             upper_phi = phi_rings[i]
-            lower_phi = phi_rings[i+1]
+            lower_phi = phi_rings[i + 1]
 
             # Get the current theta bounds
             current_thetas = np.append(self.theta_values[i], 360)
@@ -310,13 +361,15 @@ class TregenzaSphere:
             # Get the number of faces in the ring
             number_of_faces = len(current_thetas) - 1
 
+            # print(f"Considering ring {i} which contains {number_of_faces + 1} faces")
+
             # Now, for each face, we need to construct a rectangle with
             # four vertices, which are related to the bounds.
             # current_row_faces: list[np.ndarray] = []
 
             for j in range(number_of_faces):
                 lower_theta = current_thetas[j]
-                upper_theta = current_thetas[j+1]
+                upper_theta = current_thetas[j + 1]
 
                 # Define the vertices
                 v1 = (upper_phi, lower_theta)
@@ -324,9 +377,7 @@ class TregenzaSphere:
                 v3 = (lower_phi, upper_theta)
                 v4 = (lower_phi, lower_theta)
 
-                face_vertices = np.array([
-                    v1, v2, v3, v4
-                ])
+                face_vertices = np.array([v1, v2, v3, v4])
 
                 face_vertices_cartesian = (
                     vectorose.vectorose.convert_spherical_to_cartesian_coordinates(
@@ -336,8 +387,111 @@ class TregenzaSphere:
 
                 all_patch_vertices.append(face_vertices_cartesian)
 
-        patch_collection = mpl_toolkits.mplot3d.art3d.Poly3DCollection(all_patch_vertices)
-        patch_collection.set_color(face_colours)
+        # And finally, the bottom patch
+        phi_value = self.phi_values[-1]
+        thetas_second_last_row = self.theta_values[-2]
+
+        phi_value_bottom_row = np.ones(thetas_second_last_row.shape) * phi_value
+        bottom_cap_vertices = np.stack(
+            [phi_value_bottom_row, thetas_second_last_row], axis=-1
+        )
+
+        bottom_cap_vertices_cartesian = (
+            vectorose.vectorose.convert_spherical_to_cartesian_coordinates(
+                np.radians(bottom_cap_vertices)
+            )
+        )
+
+        all_patch_vertices.append(bottom_cap_vertices_cartesian)
+        #
+        # fake_colours = np.array([[1.0, 0.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0]])
+        # total_number_of_faces = np.sum(self.patch_count)
+        # fake_colours = np.tile(fake_colours, (int(total_number_of_faces / 2), 1))
+        #
+        # fake_colours = np.concatenate([
+        #     np.array([0.0, 0.0, 1.0, 1.0])[None], fake_colours
+        # ], axis=0)
+
+        # print(f"Fake colours has shape {fake_colours.shape}")
+
+        patch_collection = mpl_toolkits.mplot3d.art3d.Poly3DCollection(
+            all_patch_vertices,
+            facecolors=face_colours,
+            shade=False,
+            linewidths=0,
+        )
+
+        print(
+            f"There are {len(all_patch_vertices)} patches and {len(face_colours)} face colours."
+        )
+
+        # patch_collection.set_color(face_colours)
+        # patch_collection.set_color("#ff0000")
+
+        # patch_collection.set_color(fake_colours)
+        # patch_collection.set_facecolor(face_colours)
         ax.add_collection3d(patch_collection)
 
+        # if face_data is not None:
+        #     plt.colorbar(scalar_mapper, ax=ax, )
+
         return ax
+
+    def compute_weights(self) -> np.ndarray:
+        """Compute the weights for each ring.
+
+        Compute the weights for each ring to account for deviations from
+        equal area.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of shape ``(r,)`` where ``r`` is the number of rings in
+            the sphere. These weights reflect the deviation from equal
+            area.
+
+        Notes
+        -----
+        The weights are computed in the following manner. For each ring,
+        the area of the spherical cap up to the bottom of the ring is
+        calculated as
+
+        .. math::
+
+            A_{\\textup{cap}}(r) = 2\\pi (1 - \\cos(\\phi_{r+1}))
+
+        where :math:`\\phi_{r+1}` is the almucantar angle at the bottom of
+        the ring with index ``r`` in **radians**.
+
+        The area of the ring is obtained by subtracting the areas of the
+        previous rings from the total cap area. For the first and last
+        rings, which correspond to the spherical caps, the ring area is
+        equal to the cap area.
+
+        The area of each Tregenza patch is then computed by dividing the
+        total ring area by the number of patches in that ring.
+
+        Finally, the smallest patch, corresponding to the polar cap, is
+        used to determine the weights. The weight for each row corresponds
+        to the ratio between the areas of the smallest patch and the
+        respective row patch. These values should all be between 0 and 1.
+        """
+
+        # Determine the cumulative spherical cap areas
+        end_angles = np.roll(self.phi_values, -1)
+        end_angles[-1] = 180
+
+        cumulative_areas = 2 * np.pi * (1 - np.cos(np.radians(end_angles)))
+
+        preceding_areas = np.roll(cumulative_areas, 1)
+        preceding_areas[0] = 0
+        ring_areas = cumulative_areas - preceding_areas
+
+        patch_areas = ring_areas / self.patch_count
+
+        smallest_area = patch_areas.min()
+
+        weights = smallest_area / patch_areas
+
+        return weights
+
