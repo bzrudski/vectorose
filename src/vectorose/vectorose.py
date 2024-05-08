@@ -714,7 +714,7 @@ def perform_binary_search(
     middle_index = np.floor(len(seq) / 2).astype(int)
     middle_value = seq[middle_index]
 
-    print(f"Considering the item {middle_value} at index {middle_index}")
+    # print(f"Considering the item {middle_value} at index {middle_index}")
 
     if item == middle_value:
         return lower_bound + middle_index
