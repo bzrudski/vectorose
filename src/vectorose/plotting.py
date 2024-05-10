@@ -13,7 +13,7 @@ of orientation/vector fields.
 
 import enum
 import functools
-from typing import Any, Dict, Iterable, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import matplotlib.animation
 import matplotlib.cm
@@ -32,6 +32,8 @@ from .vectorose import (
     MagnitudeType,
     convert_spherical_to_cartesian_coordinates,
 )
+
+from .rectplot import TregenzaSphereBase
 
 
 class CardinalDirection(str, enum.Enum):
@@ -1337,6 +1339,82 @@ def produce_3d_triangle_sphere_plot(
     print(f"Sphere has radius {sphere_radius}...")
 
     ax = produce_labelled_3d_plot(ax=ax, radius=sphere_radius, norm=norm, **kwargs)
+
+    ax.set_aspect("equal")
+
+    return ax
+
+
+def produce_3d_tregenza_sphere_plot(
+    ax: mpl_toolkits.mplot3d.axes3d.Axes3D,
+    tregenza_sphere: TregenzaSphereBase,
+    histogram_data: List[np.ndarray],
+    sphere_alpha: float = 1.0,
+    colour_map: str = "viridis",
+    norm: Optional[plt.Normalize] = None,
+    correct_area_weighting: bool = True,
+    **kwargs: Optional[dict[str, Any]],
+) -> mpl_toolkits.mplot3d.axes3d.Axes3D:
+    """Produce a 3D sphere plot based on a Tregenza sphere.
+
+    Using the provided axes, plot a Tregenza sphere with face colours
+    corresponding to the provided histogram values.
+
+    Parameters
+    ----------
+    ax
+        Axes on which to plot the sphere.
+    tregenza_sphere
+        Tregenza sphere on which to plot the values.
+    histogram_data
+        Histogram data to plot. The length of this list must correspond to
+        the number of rings in the `tregenza_sphere` and the length of each
+        entry must correspond to the respective patch count.
+    sphere_alpha
+        Opacity of the sphere.
+    colour_map
+        Colour map to use when plotting the sphere, by default "viridis".
+    norm
+        Optional :class:`matplotlib.colors.Normalize` object to use to
+        normalise the colours.
+    correct_area_weighting
+        Indicate whether to correct for area weighting in the face colours.
+    **kwargs
+        Keyword arguments for the plot labelling.
+        See :func:`.produce_labelled_3d_plot` for options.
+
+    Returns
+    -------
+    mpl_toolkits.mplot3d.axes3d.Axes3D
+        The axes on which the provided sphere is plotted.
+
+    Warnings
+    --------
+    The histogram data must have a size matching the provided Tregenza
+    sphere.
+
+    """
+
+    # Get the plot on the axes
+    flattened_histogram_data = np.concatenate(histogram_data)
+
+    if norm is None:
+        norm = matplotlib.colors.Normalize()
+
+    norm.autoscale(flattened_histogram_data)
+
+    ax = tregenza_sphere.create_tregenza_plot(
+        ax=ax, face_data=histogram_data, cmap=colour_map, norm=norm,
+        sphere_alpha=sphere_alpha
+    )
+
+    # Define the sphere radius
+    sphere_radius = 1
+
+    # Add the labels to the plot
+    ax = produce_labelled_3d_plot(
+        ax=ax, radius=sphere_radius, norm=norm, **kwargs
+    )
 
     ax.set_aspect("equal")
 
