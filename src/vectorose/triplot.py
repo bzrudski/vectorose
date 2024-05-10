@@ -34,9 +34,7 @@ def construct_spherical_histogram(
     vectors
         NumPy array containing the 3D vector components in the order
         ``(x, y, z)``. This array should have shape ``(n, 3)`` where ``n``
-        is the number of vectors. If `normalise_vector_lengths` is set to
-        `False`, then the vectors are assumed to be of unit length.
-        Otherwise, the vectors are normalised.
+        is the number of vectors.
     radius
         Radius of the sphere. The vector components are multiplied to
         ensure that they fit the sphere with this radius.
