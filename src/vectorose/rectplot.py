@@ -18,19 +18,19 @@ References
    45(7), 275-283. https://doi.org/10.1016/j.comgeo.2012.01.011
 
 """
-from typing import Any, List, Optional, Sequence, Tuple, Union
+from typing import List, Optional, Tuple
 
-import numpy as np
+import matplotlib.colors
+import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d
 import mpl_toolkits.mplot3d.art3d
-import matplotlib.pyplot as plt
-import matplotlib.colors
+import numpy as np
 
 import vectorose.vectorose
 from vectorose.vectorose import perform_binary_search
 
 
-class TregenzaSphere:
+class TregenzaSphereBase:
     """Representation of a Tregenza Sphere.
 
     Represent and interact with a Tregenza Sphere, similar to those in the
@@ -48,78 +48,15 @@ class TregenzaSphere:
         return len(self.patch_count)
 
     # Define the constructor...
-    def __init__(self):
-        # Define the almucantar angles (phi rings)
-        almucantar_angles = [0.00, 1.50, 4.00]
-
-        # Add almucantars for remaining upper bounds of phi
-        for i in range(1, 25):
-            new_almucantar_angle = 4.00 + i * 3.44
-            almucantar_angles.append(new_almucantar_angle)
-
-        top_phi_values = np.array(almucantar_angles)
-        bottom_phi_values = 180 - np.flip(top_phi_values[1:])
-
-        phi_values = np.concatenate([top_phi_values, [90], bottom_phi_values])
-
-        # self.phi_values = np.array(almucantar_angles)
+    def __init__(
+        self,
+        patch_count: np.ndarray,
+        phi_values: np.ndarray,
+        theta_values: List[np.ndarray],
+    ):
+        self.patch_count = patch_count
         self.phi_values = phi_values
-
-        # Define the patch count
-        # self.patch_count = np.array(
-        top_patch_count = np.array(
-            [
-                1,
-                6,
-                17,
-                27,
-                38,
-                48,
-                58,
-                68,
-                77,
-                87,
-                96,
-                104,
-                112,
-                120,
-                128,
-                135,
-                141,
-                147,
-                152,
-                157,
-                161,
-                165,
-                168,
-                171,
-                173,
-                173,
-                173,
-            ]
-        )
-
-        bottom_patch_count = np.flip(top_patch_count)
-
-        self.patch_count = np.concatenate([top_patch_count, bottom_patch_count])
-        # self.patch_count = top_patch_count
-
-        # Define the theta bins within each ring
-        number_of_rings = len(self.patch_count)
-        theta_bounds: List[np.ndarray] = []
-
-        for i in range(number_of_rings):
-            # Get the number of patches in the current ring
-            number_of_patches = self.patch_count[i]
-
-            # Get the angular spacing for the ring in degrees
-            row_theta_bounds = np.linspace(
-                start=0, stop=360, num=number_of_patches, endpoint=False
-            )
-
-            theta_bounds.append(row_theta_bounds)
-
-        self.theta_values = theta_bounds
+        self.theta_values = theta_values
 
     def get_closest_phi_ring(self, phi: float) -> int:
         """Find the index of the closest phi ring for a specified angle.
@@ -244,13 +181,41 @@ class TregenzaSphere:
         # And finally, to return the histogram
         return histogram
 
+    def correct_histogram_by_area(
+        self, histogram: List[np.ndarray]
+    ) -> List[np.ndarray]:
+        """Correct histogram by face area.
+
+        Weight histogram values by face areas to compensate for slight
+        deviations from equal area.
+
+        Parameters
+        ----------
+        histogram
+            Histogram values to correct.
+
+        Returns
+        -------
+        list[numpy.ndarray]
+            Corrected histogram values. Same shape as `histogram`.
+
+        """
+
+        # Compute the weights
+        ring_weights = self.compute_weights()
+        weighted_face_data = [
+            histogram[i] * ring_weights[i] for i in range(self.number_of_rings)
+        ]
+
+        return weighted_face_data
+
     def create_tregenza_plot(
         self,
         ax: Optional[mpl_toolkits.mplot3d.Axes3D] = None,
         face_data: Optional[List[np.ndarray]] = None,
         cmap: str = "viridis",
         norm: Optional[matplotlib.colors.Normalize] = None,
-        weight_by_area: bool = False
+        sphere_alpha: float = 1.0,
     ) -> mpl_toolkits.mplot3d.Axes3D:
         """Create a plot of the current Tregenza sphere.
 
@@ -266,8 +231,8 @@ class TregenzaSphere:
         norm
             Normaliser to use for the face colours. If `None`, then a
             linear normaliser is used.
-        weight_by_area
-            Indicate whether to weight the face counts by the face areas.
+        sphere_alpha
+            Sphere opacity.
 
         Returns
         -------
@@ -281,13 +246,6 @@ class TregenzaSphere:
 
         if face_data is not None:
             # Flatten the face data for easier processing.
-            if weight_by_area:
-                ring_weights = self.compute_weights()
-                weighted_face_data = [
-                    face_data[i] * ring_weights[i] for i in range(self.number_of_rings)
-                ]
-                face_data = weighted_face_data
-
             flattened_face_data = np.concatenate(face_data)
 
             if norm is None:
@@ -327,7 +285,7 @@ class TregenzaSphere:
         ax.set_zlim3d(-1, 1)
 
         # Define the patches we'll plot
-        all_patch_vertices: list[np.ndarray] = []
+        all_patch_vertices: List[np.ndarray] = []
 
         # So, let's start with the top row by starting with the second row.
         phi_upper = self.phi_values[1]
@@ -403,37 +361,16 @@ class TregenzaSphere:
         )
 
         all_patch_vertices.append(bottom_cap_vertices_cartesian)
-        #
-        # fake_colours = np.array([[1.0, 0.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0]])
-        # total_number_of_faces = np.sum(self.patch_count)
-        # fake_colours = np.tile(fake_colours, (int(total_number_of_faces / 2), 1))
-        #
-        # fake_colours = np.concatenate([
-        #     np.array([0.0, 0.0, 1.0, 1.0])[None], fake_colours
-        # ], axis=0)
-
-        # print(f"Fake colours has shape {fake_colours.shape}")
 
         patch_collection = mpl_toolkits.mplot3d.art3d.Poly3DCollection(
             all_patch_vertices,
             facecolors=face_colours,
             shade=False,
             linewidths=0,
+            alpha=sphere_alpha,
         )
 
-        print(
-            f"There are {len(all_patch_vertices)} patches and {len(face_colours)} face colours."
-        )
-
-        # patch_collection.set_color(face_colours)
-        # patch_collection.set_color("#ff0000")
-
-        # patch_collection.set_color(fake_colours)
-        # patch_collection.set_facecolor(face_colours)
         ax.add_collection3d(patch_collection)
-
-        # if face_data is not None:
-        #     plt.colorbar(scalar_mapper, ax=ax, )
 
         return ax
 
@@ -495,3 +432,252 @@ class TregenzaSphere:
 
         return weights
 
+
+class FineTregenzaSphere(TregenzaSphereBase):
+    def __init__(self):
+        # Define the almucantar angles (phi rings)
+        almucantar_angles = [0.00, 1.50, 4.00]
+
+        # Add almucantars for remaining upper bounds of phi
+        for i in range(1, 25):
+            new_almucantar_angle = 4.00 + i * 3.44
+            almucantar_angles.append(new_almucantar_angle)
+
+        top_phi_values = np.array(almucantar_angles)
+        bottom_phi_values = 180 - np.flip(top_phi_values[1:])
+
+        phi_values = np.concatenate([top_phi_values, [90], bottom_phi_values])
+
+        # Define the patch count
+        top_patch_count = np.array(
+            [
+                1,
+                6,
+                17,
+                27,
+                38,
+                48,
+                58,
+                68,
+                77,
+                87,
+                96,
+                104,
+                112,
+                120,
+                128,
+                135,
+                141,
+                147,
+                152,
+                157,
+                161,
+                165,
+                168,
+                171,
+                173,
+                173,
+                173,
+            ]
+        )
+
+        bottom_patch_count = np.flip(top_patch_count)
+
+        patch_count = np.concatenate([top_patch_count, bottom_patch_count])
+
+        # Define the theta bins within each ring
+        number_of_rings = len(patch_count)
+        theta_bounds: List[np.ndarray] = []
+
+        for i in range(number_of_rings):
+            # Get the number of patches in the current ring
+            number_of_patches = patch_count[i]
+
+            # Get the angular spacing for the ring in degrees
+            row_theta_bounds = np.linspace(
+                start=0, stop=360, num=number_of_patches, endpoint=False
+            )
+
+            theta_bounds.append(row_theta_bounds)
+
+        theta_values = theta_bounds
+
+        super().__init__(patch_count, phi_values, theta_values)
+
+
+class UltraFineTregenzaSphere(TregenzaSphereBase):
+    def __init__(self):
+        # Define the almucantar angles (phi rings)
+        almucantar_angles = [0.00, 0.60, 1.80]
+
+        # Add almucantars for remaining upper bounds of phi
+        for i in range(1, 60):
+            new_almucantar_angle = 1.80 + i * 1.47
+            almucantar_angles.append(new_almucantar_angle)
+
+        top_phi_values = np.array(almucantar_angles)
+        bottom_phi_values = 180 - np.flip(top_phi_values[1:])
+
+        phi_values = np.concatenate([top_phi_values, [90], bottom_phi_values])
+
+        # Define the patch count
+        top_patch_count = np.array(
+            [
+                1,
+                8,
+                21,
+                33,
+                45,
+                57,
+                69,
+                81,
+                93,
+                105,
+                117,
+                128,
+                140,
+                152,
+                163,
+                175,
+                186,
+                197,
+                208,
+                219,
+                230,
+                240,
+                251,
+                261,
+                271,
+                281,
+                291,
+                300,
+                309,
+                319,
+                327,
+                336,
+                345,
+                353,
+                361,
+                369,
+                376,
+                384,
+                391,
+                397,
+                404,
+                410,
+                416,
+                422,
+                427,
+                432,
+                437,
+                442,
+                446,
+                450,
+                454,
+                457,
+                460,
+                463,
+                466,
+                468,
+                470,
+                471,
+                472,
+                473,
+                474,
+                474,
+            ]
+        )
+
+        bottom_patch_count = np.flip(top_patch_count)
+
+        patch_count = np.concatenate([top_patch_count, bottom_patch_count])
+
+        # Define the theta bins within each ring
+        number_of_rings = len(patch_count)
+        theta_bounds: List[np.ndarray] = []
+
+        for i in range(number_of_rings):
+            # Get the number of patches in the current ring
+            number_of_patches = patch_count[i]
+
+            # Get the angular spacing for the ring in degrees
+            row_theta_bounds = np.linspace(
+                start=0, stop=360, num=number_of_patches, endpoint=False
+            )
+
+            theta_bounds.append(row_theta_bounds)
+
+        theta_values = theta_bounds
+
+        super().__init__(patch_count, phi_values, theta_values)
+
+
+def run_tregenza_histogram_pipeline(
+    vectors: np.ndarray,
+    sphere: TregenzaSphereBase,
+    weight_by_magnitude: bool = False,
+    is_axial: bool = False,
+    remove_zero_vectors: bool = True,
+    correct_area_weighting: bool = True,
+) -> List[np.ndarray]:
+    """Run the complete histogram construction for the Tregenza sphere.
+
+    Construct a spherical histogram based on a provided Tregenza sphere for
+    the supplied vectors.
+
+    Parameters
+    ----------
+    vectors
+        NumPy array containing the 3D vector components in the order
+        ``(x, y, z)``. This array should have shape ``(n, 3)`` where ``n``
+        is the number of vectors.
+    sphere
+        Tregenza sphere to use for histogram construction.
+    weight_by_magnitude
+        Indicate whether to weight the histogram by 3D magnitude. If
+        `False`, then the histogram will be weighted by count.
+    is_axial
+        Indicate whether the vectors are axial. If `True`, symmetric
+        vectors will be created based on the dataset.
+    remove_zero_vectors
+        Indicate whether to remove zero-vectors. This parameter should be
+        `True` unless the vector list contains no zero-vectors.
+    correct_area_weighting
+        Indicate whether the histogram values should be corrected using the
+        area weights.
+
+    Returns
+    -------
+    list[numpy.ndarray]
+        List of histogram counts for each ring. The list has the same
+        length as the number of rings in the provided Tregenza sphere,
+        and the length of each list entry corresponds to the respective
+        patch count.
+
+    """
+
+    # Perform vector pre-processing
+    if remove_zero_vectors:
+        vectors = vectorose.vectorose.remove_zero_vectors(vectors)
+
+    if is_axial:
+        vectors = vectorose.vectorose.convert_vectors_to_axes(vectors)
+        vectors = vectorose.vectorose.create_symmetric_vectors_from_axes(vectors)
+
+    angular_coordinates = vectorose.vectorose.compute_vector_orientation_angles(
+        vectors, use_degrees=True
+    )
+
+    if weight_by_magnitude:
+        _, magnitudes = vectorose.vectorose.normalise_vectors(vectors)
+    else:
+        magnitudes = None
+
+    histogram = sphere.construct_spherical_histogram(
+        angular_coordinates=angular_coordinates, magnitudes=magnitudes
+    )
+
+    if correct_area_weighting:
+        histogram = sphere.correct_histogram_by_area(histogram)
+
+    return histogram
