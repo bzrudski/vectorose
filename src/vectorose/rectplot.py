@@ -18,7 +18,8 @@ References
    45(7), 275-283. https://doi.org/10.1016/j.comgeo.2012.01.011
 
 """
-from typing import List, Optional, Tuple
+import enum
+from typing import List, Optional, Tuple, Type
 
 import matplotlib.colors
 import matplotlib.pyplot as plt
@@ -681,3 +682,52 @@ def run_tregenza_histogram_pipeline(
         histogram = sphere.correct_histogram_by_area(histogram)
 
     return histogram
+
+
+class TregenzaSphereDetailLevel(enum.Enum):
+    """Detail level for Tregenza Sphere."""
+
+    FINE = "Fine"
+    """Fine-detail Tregenza sphere, with 27 rings per hemisphere,
+    represented by :class:`FineTregenzaSphere`."""
+
+    ULTRA_FINE = "Ultra-fine"
+    """Ultra-fine-detail Tregenza sphere, with 62 rings per hemisphere,
+    represented by :class:`UltraFineTregenzaSphere`."""
+
+    def get_tregenza_class(self) -> Type[TregenzaSphereBase]:
+        """Get the class for the specified level of detail.
+
+        Returns
+        -------
+        Type[TregenzaSphereBase]
+            Class inheriting from :class:`TregenzaSphereBase` which
+            captures the correct level of detail.
+
+        Warnings
+        --------
+        This method returns a **type**, not an object. The returned type
+        can be used to instantiate a Tregenza sphere object. To instantiate
+        an object directly, call :meth:`create_tregenza_sphere`.
+        """
+
+        if self == TregenzaSphereDetailLevel.FINE:
+            return FineTregenzaSphere
+        elif self == TregenzaSphereDetailLevel.ULTRA_FINE:
+            return UltraFineTregenzaSphere
+
+    def create_tregenza_sphere(self) -> TregenzaSphereBase:
+        """Create a Tregenza sphere for the specified detail level.
+
+        Returns
+        -------
+        TregenzaSphereBase
+            Object of the correct subclass of :class:`TregenzaSphereBase`
+            representing the desired level of detail.
+        """
+
+        tregenza_sphere_type = self.get_tregenza_class()
+
+        tregenza_sphere: TregenzaSphereBase = tregenza_sphere_type()
+
+        return tregenza_sphere
