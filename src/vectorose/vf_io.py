@@ -238,6 +238,7 @@ def import_vector_field(
     sheet_name: Optional[str] = None,
     location_columns: Optional[Sequence[int]] = DEFAULT_LOCATION_COLUMNS,
     component_columns: Sequence[int] = DEFAULT_COMPONENT_COLUMNS,
+    silence_exceptions: bool = True,
 ) -> Optional[np.ndarray]:
     """Import a vector field.
 
@@ -274,6 +275,11 @@ def import_vector_field(
         ``(vx, vy, vz)``. By default, the last three columns
         ``(-3, -2, -1)`` are assumed to be the ``(vx, vy, vz)``.
 
+    silence_exceptions
+        Indicate whether to silence exceptions. If `True`, then `None` will
+        be returned if an error is encountered. Otherwise, any exceptions
+        will be raised to the calling code.
+
     Returns
     -------
     numpy.ndarray or None
@@ -283,6 +289,13 @@ def import_vector_field(
         of the location (if available), followed by ``(vx, vy, vz)``
         components. If the filetype cannot be properly inferred,
         a value of ``None`` is returned instead.
+
+    Raises
+    ------
+    OSError
+        The requested file does not exist.
+    ValueError
+        The requested file cannot be parsed.
     """
 
     # First, infer the file type from the filename
@@ -297,6 +310,9 @@ def import_vector_field(
             vector_field: np.ndarray = np.load(filepath)
         except (OSError, ValueError):
             # Invalid NumPy array, so return None.
+            if not silence_exceptions:
+                raise
+
             return None
 
     # Use Pandas in the other cases
@@ -314,6 +330,8 @@ def import_vector_field(
                 return None
             vector_field = vector_field_dataframe.to_numpy()
         except (OSError, ValueError):
+            if not silence_exceptions:
+                raise
             return None
 
     n, d = vector_field.shape
