@@ -30,7 +30,7 @@ import trimesh
 from .vectorose import MagnitudeType, produce_phi_theta_1d_histogram_data
 from .util import AngularIndex, convert_spherical_to_cartesian_coordinates
 
-from .rectplot import TregenzaSphereBase
+from .tregenza_sphere import TregenzaSphereBase
 
 
 class CardinalDirection(str, enum.Enum):
