@@ -15,7 +15,7 @@ from typing import Sequence, Union
 import numpy as np
 from scipy.stats import vonmises_fisher
 
-from .vectorose import convert_spherical_to_cartesian_coordinates
+from .util import convert_spherical_to_cartesian_coordinates
 
 
 def create_vectors_with_primary_orientation(

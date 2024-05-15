@@ -27,11 +27,8 @@ import numpy
 import numpy as np
 import trimesh
 
-from .vectorose import (
-    AngularIndex,
-    MagnitudeType,
-    convert_spherical_to_cartesian_coordinates,
-)
+from .vectorose import MagnitudeType
+from .util import AngularIndex, convert_spherical_to_cartesian_coordinates
 
 from .rectplot import TregenzaSphereBase
 

@@ -27,8 +27,9 @@ import mpl_toolkits.mplot3d
 import mpl_toolkits.mplot3d.art3d
 import numpy as np
 
+import vectorose.util
 import vectorose.vectorose
-from vectorose.vectorose import perform_binary_search
+from vectorose.util import perform_binary_search
 
 
 class TregenzaSphereBase:
@@ -296,7 +297,7 @@ class TregenzaSphereBase:
         top_cap_vertices = np.stack([phi_upper_second_row, thetas_second_row], axis=-1)
 
         top_cap_vertices_cartesian = (
-            vectorose.vectorose.convert_spherical_to_cartesian_coordinates(
+            vectorose.util.convert_spherical_to_cartesian_coordinates(
                 np.radians(top_cap_vertices)
             )
         )
@@ -339,7 +340,7 @@ class TregenzaSphereBase:
                 face_vertices = np.array([v1, v2, v3, v4])
 
                 face_vertices_cartesian = (
-                    vectorose.vectorose.convert_spherical_to_cartesian_coordinates(
+                    vectorose.util.convert_spherical_to_cartesian_coordinates(
                         np.radians(face_vertices)
                     )
                 )
@@ -356,7 +357,7 @@ class TregenzaSphereBase:
         )
 
         bottom_cap_vertices_cartesian = (
-            vectorose.vectorose.convert_spherical_to_cartesian_coordinates(
+            vectorose.util.convert_spherical_to_cartesian_coordinates(
                 np.radians(bottom_cap_vertices)
             )
         )
@@ -659,18 +660,18 @@ def run_tregenza_histogram_pipeline(
 
     # Perform vector pre-processing
     if remove_zero_vectors:
-        vectors = vectorose.vectorose.remove_zero_vectors(vectors)
+        vectors = vectorose.util.remove_zero_vectors(vectors)
 
     if is_axial:
-        vectors = vectorose.vectorose.convert_vectors_to_axes(vectors)
-        vectors = vectorose.vectorose.create_symmetric_vectors_from_axes(vectors)
+        vectors = vectorose.util.convert_vectors_to_axes(vectors)
+        vectors = vectorose.util.create_symmetric_vectors_from_axes(vectors)
 
-    angular_coordinates = vectorose.vectorose.compute_vector_orientation_angles(
+    angular_coordinates = vectorose.util.compute_vector_orientation_angles(
         vectors, use_degrees=True
     )
 
     if weight_by_magnitude:
-        _, magnitudes = vectorose.vectorose.normalise_vectors(vectors)
+        _, magnitudes = vectorose.util.normalise_vectors(vectors)
     else:
         magnitudes = None
 

@@ -14,7 +14,7 @@ from typing import Tuple
 import numpy as np
 import trimesh
 
-from . import vectorose
+from . import util
 
 
 def construct_spherical_histogram(
@@ -53,7 +53,7 @@ def construct_spherical_histogram(
     """
 
     # First, normalise the vectors and compute their magnitudes
-    normalised_vectors, magnitudes = vectorose.normalise_vectors(vectors)
+    normalised_vectors, magnitudes = util.normalise_vectors(vectors)
 
     # Now, multiply by the radius
     normalised_vectors *= radius
@@ -125,12 +125,12 @@ def run_spherical_histogram_pipeline(
     vectors = vector_field[:, -3:]
 
     # Remove the non-zero vectors
-    vectors = vectorose.remove_zero_vectors(vectors)
+    vectors = util.remove_zero_vectors(vectors)
 
     # Mirror the data, if axial data
     if is_axial_data:
-        axes = vectorose.convert_vectors_to_axes(vectors)
-        vectors = vectorose.create_symmetric_vectors_from_axes(axes)
+        axes = util.convert_vectors_to_axes(vectors)
+        vectors = util.create_symmetric_vectors_from_axes(axes)
 
     # Construct the histogram
     sphere, face_values = construct_spherical_histogram(
