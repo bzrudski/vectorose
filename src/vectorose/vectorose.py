@@ -17,6 +17,7 @@ from typing import List, Tuple
 import numpy as np
 
 from . import util
+from .util import AngularIndex
 
 
 class MagnitudeType(enum.IntEnum):
@@ -101,7 +102,7 @@ def create_binned_orientation(
     vector_magnitudes: np.ndarray,
     half_number_of_bins: int = 16,
     use_degrees: bool = True,
-) -> Tuple[np.ndarray, List[np.ndarray]]:
+) -> Tuple[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
     """Bin the vector orientation data.
 
     Construct an array containing the histogram data obtained by binning
@@ -212,9 +213,8 @@ def create_binned_orientation(
         theta_bin = theta_bin_indices[i]
         angular_histogram_2d[phi_bin, theta_bin] += vector_magnitudes[i]
 
-    # Create an array that contains both the phi and theta
-    # histogram boundaries.
-    bin_boundaries = [phi_histogram_bins, theta_histogram_bins]
+    # Create a tuple that contains the phi and theta histogram boundaries.
+    bin_boundaries = (phi_histogram_bins, theta_histogram_bins)
 
     return angular_histogram_2d, bin_boundaries
 
@@ -224,7 +224,7 @@ def create_angular_binning_from_vectors(
     half_number_of_bins: int = 18,
     use_degrees: bool = True,
     consider_axial_data: bool = True,
-) -> Tuple[np.ndarray, List[np.ndarray]]:
+) -> Tuple[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
     """Run the complete binning procedure on a list of vectors.
 
     Construct a 2D angular histogram from a 2D array of vectors with either
@@ -327,3 +327,126 @@ def create_angular_binning_from_vectors(
     )
 
     return binned_data, bins
+
+
+def produce_phi_theta_1d_histogram_data(
+    binned_data: np.ndarray,
+    weight_by_magnitude: bool = True,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Return the marginal 1D :math:`\\phi,\\theta` histogram arrays.
+
+    This function computes the marginal histograms for
+    :math:`\\phi, \\theta`. The histogram is calculated differently
+    depending on the value of ``weight_by_magnitude``. If
+    ``weight_by_magnitude`` is set to ``True``, then the :math:`\\phi`
+    histogram relies on the **3D magnitude** while the :math:`\\theta`
+    histogram relies on the **in-plane magnitude**. Otherwise, the non-
+    weighted count-based data are used for both one-dimensional histograms.
+
+    In both cases, the :math:`\\phi` histogram is obtained by summing the
+    binned values along the :math:`\\theta` axis, while the :math:`\\theta`
+    histogram is obtained by summing the binned values along
+    the :math:`\\phi` axis.
+
+    Parameters
+    ----------
+    binned_data
+        NumPy array containing the binned :math:`\\phi,\\theta` histogram.
+        This array should have shape ``(n, n, 3)`` where ``n`` is the
+        number of histogram bins. See :func:`.create_binned_orientation`
+        for a detailed explanation of the format.
+
+    weight_by_magnitude
+        Indicate whether the 1D histograms should be weighted by magnitude.
+        If ``False``, the produced histograms will be weighted by count.
+
+    Returns
+    -------
+    phi_values : numpy.ndarray
+        NumPy array of shape ``(n,)`` containing the marginal phi histogram,
+        going from 0° to 180° (or 0 to pi radians).
+    theta_values : numpy.ndarray
+        NumPy array of shape ``(2n,)`` containing the marginal theta
+        histogram, going from 0° to 360° (or 0 to 2 * pi radians).
+
+    See Also
+    --------
+    .create_binned_orientation:
+        Create the 2D histogram to pass to this function.
+    """
+    # Sum along an axis to compute the marginals
+    if weight_by_magnitude:
+        phi_histogram = np.sum(
+            binned_data[..., MagnitudeType.THREE_DIMENSIONAL], axis=AngularIndex.THETA
+        )
+        theta_histogram = np.sum(
+            binned_data[..., MagnitudeType.IN_PLANE], axis=AngularIndex.PHI
+        )
+    else:
+        phi_histogram = np.sum(
+            binned_data[..., MagnitudeType.COUNT], axis=AngularIndex.THETA
+        )
+        theta_histogram = np.sum(
+            binned_data[..., MagnitudeType.COUNT], axis=AngularIndex.PHI
+        )
+
+    # one_dimensional_histograms = np.stack([phi_histogram, theta_histogram])
+
+    # return one_dimensional_histograms
+    return phi_histogram, theta_histogram
+
+
+def prepare_two_dimensional_histogram(binned_data: np.ndarray) -> np.ndarray:
+    """
+    Prepare the binned data for plotting as a spherical histogram.
+
+    This function takes the 2D binned data of shape ``(n, n)`` and
+    returns the binned histogram data to plot on a sphere, having shape
+    ``(n, 2n)``, where ``n`` corresponds to the half-number of bins. In
+    the final array that is returned, the ``n`` rows correspond to the
+    ``n`` histogram bins in :math:`\\phi` going from :math:`0` to
+    :math:`\\pi/2`, while the ``2n`` columns represent the bins in
+    :math:`\\theta`, going from :math:`-\\pi` to :math:`\\pi`. To
+    prepare for wrapping around the sphere, the first ``n`` columns are
+    row-inverted with respect to the last ``n`` columns. This is done
+    to correspond to the "negative" values of :math:`\\phi`` (which do
+    not actually exist, but are used as a convenience to plot the full
+    sphere).
+
+    Parameters
+    ----------
+    binned_data
+        Binned 2D histogram data of shape ``(n, n)``. Note that only a
+        single sheet is passed to this function. The input may be
+        magnitude-weighted or count weighted.
+
+    Returns
+    -------
+    numpy.ndarray
+        Adjusted histogram data of shape ``(n, 2n)``.
+
+    See Also
+    --------
+    .create_binned_orientation:
+        Create the 2D histogram to pass to this function.
+
+    """
+
+    # This first array corresponds to the mirrored angles on the
+    # back of the sphere
+    sphere_intensity_data_first_half: np.ndarray = binned_data
+
+    # This second array corresponds to the values on the
+    # front half of the sphere
+    sphere_intensity_data_second_half: np.ndarray = binned_data.copy()
+
+    # Combine the two arrays together
+    sphere_intensity_data_first_half: np.ndarray = np.flip(
+        sphere_intensity_data_first_half, axis=0
+    )
+    sphere_intensity_data = np.concatenate(
+        [sphere_intensity_data_first_half, sphere_intensity_data_second_half], axis=-1
+    )
+
+    return sphere_intensity_data
