@@ -119,11 +119,11 @@ class TregenzaSphereBase:
         # Get the phi ring
         phi_ring = self.get_closest_phi_ring(phi)
 
-        print(f"Found phi {phi} in ring {phi_ring}...")
+        # print(f"Found phi {phi} in ring {phi_ring}...")
 
         # Get the theta bin within this ring
         theta_bin = self.get_closest_theta_bin_in_ring(phi_ring, theta)
-        print(f"Found theta {theta} is in bin {theta_bin}...")
+        # print(f"Found theta {theta} is in bin {theta_bin}...")
 
         return phi_ring, theta_bin
 
@@ -265,14 +265,14 @@ class TregenzaSphereBase:
 
             face_colours: np.ndarray = scalar_mapper.to_rgba(flattened_face_data)
 
-            print("Face colours are:")
-            print(face_colours)
+            # print("Face colours are:")
+            # print(face_colours)
 
-            normalised_data = norm(flattened_face_data)
-            print(
-                f"Maximum normalised data: {normalised_data.max()}\nMinimum normalised data: "
-                f"{normalised_data.min()}"
-            )
+            # normalised_data = norm(flattened_face_data)
+            # print(
+            #     f"Maximum normalised data: {normalised_data.max()}\nMinimum normalised data: "
+            #     f"{normalised_data.min()}"
+            # )
 
             # for ring in face_data:
             #     face_colours.append(scalar_mapper.to_rgba(ring))
