@@ -13,7 +13,7 @@ of orientation/vector fields.
 
 import enum
 import functools
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import matplotlib.animation
 import matplotlib.cm
@@ -185,14 +185,14 @@ def produce_labelled_3d_plot(
     hide_cartesian_axes: bool = True,
     hide_cartesian_axis_labels: bool = False,
     hide_cartesian_axis_ticks: bool = True,
-    plot_colourbar: bool = False,
+    plot_colour_bar: bool = False,
     minimum_value: Optional[float] = None,
     maximum_value: Optional[float] = None,
-    cmap: str = "viridis",
+    colour_map: str = "viridis",
     colour_bar_kwargs: Optional[dict[str, Any]] = None,
     axis_label_factor: float = 1.4,
     axis_tick_factor: float = 1.6,
-    norm: Optional[matplotlib.colors.Normalize] = None
+    norm: Optional[matplotlib.colors.Normalize] = None,
 ) -> mpl_toolkits.mplot3d.axes3d.Axes3D:
     """Modify a 3D plot to label it with spherical axes.
 
@@ -215,8 +215,6 @@ def produce_labelled_3d_plot(
     sphere_projection
         Projection used to plot the sphere, by default
         :attr:`SphereProjection.ORTHOGRAPHIC`
-    sphere_alpha
-        Opacity of the sphere.
     plot_phi_axis
         Indicate whether the phi axis should be plotted in 3D.
     plot_theta_axis
@@ -242,18 +240,24 @@ def produce_labelled_3d_plot(
         False. This has no effect if `hide_cartesian_axes` is True.
     hide_cartesian_axis_ticks
         Indicate whether to hide the Cartesian axis ticks, by default True.
-    plot_colourbar
+    plot_colour_bar
         Indicate whether to plot the colour bar, by default False.
     minimum_value
         Minimum data value. Required if plotting the colour bar.
     maximum_value
         Maximum data value. Required if plotting the colour bar.
-    cmap
+    colour_map
         Colour map for the colour bar.
     colour_bar_kwargs
         Keyword arguments for the colour bar.
     norm
         Normaliser to use for the colour bar (if applicable)
+    axis_tick_factor
+        Multiplicative factor providing the distance from the origin to
+        the plotted axes and axis tick labels, based on the sphere radius.
+    axis_label_factor
+        Multiplicative factor providing the distance from the origin to
+        the plotted axis labels, based on the sphere radius.
 
     Returns
     -------
@@ -433,10 +437,11 @@ def produce_labelled_3d_plot(
 
     colour_bar: Optional[matplotlib.colorbar.Colorbar] = None
 
-    if plot_colourbar:
+    if plot_colour_bar:
         if norm is None:
             norm = plt.Normalize(vmin=minimum_value, vmax=maximum_value)
-        scalar_mappable = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
+        scalar_mappable = matplotlib.cm.ScalarMappable(norm=norm, cmap=colour_map)
+        print(f"Colour bar has colour map {colour_map}.")
         if colour_bar_kwargs is None:
             colour_bar_kwargs = {}
 
@@ -621,7 +626,7 @@ def produce_spherical_histogram_plot(
 
 def produce_polar_histogram_plot(
     ax: matplotlib.projections.polar.PolarAxes,
-    data: numpy.ndarray,
+    data: np.ndarray,
     bins: np.ndarray,
     zero_position: CardinalDirection = CardinalDirection.NORTH,
     rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
@@ -742,7 +747,7 @@ def produce_polar_histogram_plot(
 def produce_polar_histogram_plot_from_2d_bins(
     ax: matplotlib.projections.polar.PolarAxes,
     angle: AngularIndex,
-    data: numpy.ndarray,
+    data: np.ndarray,
     bins: np.ndarray,
     bin_angle_unit: AngularUnits = AngularUnits.DEGREES,
     weight_by_magnitude: bool = True,
@@ -828,6 +833,117 @@ def produce_polar_histogram_plot_from_2d_bins(
     ax = produce_polar_histogram_plot(
         ax=ax, data=selected_histogram_data, bins=bins, **kwargs
     )
+
+    return ax
+
+
+def produce_planar_2d_histogram_plot(
+    ax: plt.Axes,
+    data: np.ndarray,
+    bins: Tuple[np.ndarray, np.ndarray],
+    # bin_angle_unit: AngularUnits = AngularUnits.DEGREES,
+    weight_by_magnitude: bool = True,
+    colour_map: str = "viridis",
+    show_axes: bool = True,
+    phi_axis_ticks: np.ndarray = np.arange(0, 181, 30),
+    theta_axis_ticks: np.ndarray = np.arange(0, 361, 30),
+    norm: Optional[matplotlib.colors.Normalize] = None,
+    show_colour_bar: bool = False,
+    colour_bar_position: str = "right",
+    # axis_ticks_units: AngularUnits = AngularUnits.DEGREES,
+    plot_title: Optional[str] = None,
+) -> plt.Axes:
+    """
+    Produce a 2D planar plot of a flattened phi, theta histogram.
+
+    Produce a 2D histogram of the phi, theta
+
+    Parameters
+    ----------
+    ax
+        Axes on which to plot the 2D histogram.
+    data
+        Histogram data to plot. This array should consist of 2D sheets,
+        with the last axis determining magnitude vs. count.
+    bins
+        Histogram bins for phi and theta, respectively.
+    bin_angle_unit
+        Angular unit for the provided bin boundaries.
+    weight_by_magnitude
+        Indicate whether the histogram should be weighted by magnitude.
+    colour_map
+        Name of the colour map to use to visualise the histogram.
+    show_axes
+        Indicate whether to show the axes.
+    phi_axis_ticks
+        Axis ticks along the vertical phi axis.
+    theta_axis_ticks
+        Axis ticks along the horizontal theta axis.
+    norm
+        Normaliser to change how the data are plotted.
+    show_colour_bar
+        Indicate whether to show a colour bar.
+    colour_bar_position
+        Position of the colour bar with respect to the plot.
+    axis_ticks_units
+        Angular units for the axis ticks.
+    plot_title
+        Optional title for the produced plot.
+
+    Returns
+    -------
+    matplotlib.axes.Axes
+        The axes on which the histogram is plotted. This is the same object
+        as `ax` in the parameters.
+    """
+
+    # First isolate the correct sheet of data
+    histogram_data: np.ndarray
+
+    if weight_by_magnitude:
+        histogram_data = data[..., MagnitudeType.THREE_DIMENSIONAL]
+    else:
+        histogram_data = data[..., MagnitudeType.COUNT]
+
+    # Now, we need to be careful with the extent for the image.
+    phi_bins, theta_bins = bins
+
+    phi_max = phi_bins.max()
+    phi_bin_spacing = phi_bins[1] - phi_bins[0]
+    phi_half_bin = phi_bin_spacing / 2
+
+    theta_max = theta_bins.max()
+    theta_bin_spacing = theta_bins[1] - theta_bins[0]
+    theta_half_bin = theta_bin_spacing / 2
+
+    image_extent = (0, theta_max, phi_max, 0)
+
+    # Plot on the axes
+    ax.imshow(
+        histogram_data,
+        cmap=colour_map,
+        norm=norm,
+        extent=image_extent,
+        interpolation="None"
+    )
+
+    # Deal with the axis ticks
+    if show_axes:
+        ax.set_ylabel(r"$\phi$")
+        ax.set_xlabel(r"$\theta$")
+
+        ax.set_yticks(phi_axis_ticks)
+        ax.set_xticks(theta_axis_ticks)
+    else:
+        ax.axis("off")
+
+    if show_colour_bar:
+        if norm is None:
+            norm = matplotlib.colors.Normalize(vmin=histogram_data.min(), vmax=histogram_data.max())
+        scalar_mappable = plt.cm.ScalarMappable(norm=norm, cmap=colour_map)
+        plt.colorbar(scalar_mappable, ax=ax, location=colour_bar_position)
+
+    ax.set_title(plot_title)
 
     return ax
 
@@ -1202,7 +1318,7 @@ def produce_3d_triangle_sphere_plot(
         triangles=triangles,
         facecolor=face_colours,
         alpha=sphere_alpha,
-        shade=False
+        shade=False,
     )
 
     # Now, configure the axes
@@ -1214,7 +1330,9 @@ def produce_3d_triangle_sphere_plot(
 
     print(f"Sphere has radius {sphere_radius}...")
 
-    ax = produce_labelled_3d_plot(ax=ax, radius=sphere_radius, norm=norm, **kwargs)
+    kwargs["radius"] = sphere_radius
+
+    ax = produce_labelled_3d_plot(ax=ax, norm=norm, colour_map=colour_map, **kwargs)
 
     ax.set_aspect("equal")
 
@@ -1280,17 +1398,20 @@ def produce_3d_tregenza_sphere_plot(
     norm.autoscale(flattened_histogram_data)
 
     ax = tregenza_sphere.create_tregenza_plot(
-        ax=ax, face_data=histogram_data, cmap=colour_map, norm=norm,
-        sphere_alpha=sphere_alpha
+        ax=ax,
+        face_data=histogram_data,
+        cmap=colour_map,
+        norm=norm,
+        sphere_alpha=sphere_alpha,
     )
 
     # Define the sphere radius
     sphere_radius = 1
 
+    kwargs["radius"] = sphere_radius
+
     # Add the labels to the plot
-    ax = produce_labelled_3d_plot(
-        ax=ax, radius=sphere_radius, norm=norm, **kwargs
-    )
+    ax = produce_labelled_3d_plot(ax=ax, norm=norm, colour_map=colour_map, **kwargs)
 
     ax.set_aspect("equal")
 
