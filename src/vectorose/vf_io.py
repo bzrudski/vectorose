@@ -12,7 +12,7 @@ vector fields and vector rose histogram data.
 
 import enum
 import os
-from typing import Any, Dict, List, Optional, Sequence, Type, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, Union
 
 import matplotlib.animation
 import numpy as np
@@ -626,7 +626,7 @@ def export_one_dimensional_histogram(
 
 
 def export_two_dimensional_histogram(
-    histogram_bins: np.ndarray,
+    histogram_bins: Tuple[np.ndarray, np.ndarray],
     histogram_values: np.ndarray,
     filepath: Union[str, pd.ExcelWriter],
     sheet_name: str = "Sheet1",
@@ -644,19 +644,16 @@ def export_two_dimensional_histogram(
 
     Parameters
     ----------
-
     histogram_bins
-        NumPy array containing the histogram bin boundaries. For a
-        histogram of shape ``(n, n)``, this array will have shape
-        ``(2, n + 1)``, where ``n`` is the number of histogram bins.
-        The zero-indexed bins in axis zero correspond to
-        the **rows** of the histogram array, while the one-indexed bins
-        correspond to the **columns** in the histogram array.
+        Tuple of NumPy arrays containing the histogram bin boundaries. For
+        a histogram of shape ``(n, 2n)``, these arrays will have shape
+        ``(n + 1,)`` and ``(2n + 1)``, where ``n`` is the half-number of
+        histogram bins. The first array corresponds to the vertical bins
+        while the second corresponds to the horizontal bins.
 
     histogram_values
         2D NumPy array containing the histogram. This array has shape
-        ``(n, n)`` where ``n`` is the number of histogram bins for each
-        axis.
+        ``(n, 2n)`` where ``n`` is the half-number of histogram bins.
 
     filepath
         String containing path to the output location or
@@ -680,8 +677,10 @@ def export_two_dimensional_histogram(
     padded_histogram = np.pad(histogram_values, ((0, 1), (0, 1)), constant_values=0)
 
     # Get the bin labels
-    row_labels = histogram_bins[0]
-    column_labels = histogram_bins[1]
+    row_labels = list(histogram_bins[0])
+    column_labels = list(histogram_bins[1])
+
+    file_type = file_type or __infer_vector_filetype_from_filename(filepath)
 
     __export_data(
         data=padded_histogram,
@@ -694,14 +693,18 @@ def export_two_dimensional_histogram(
 
     if file_type is VectorFileType.NPY:
         bin_filepath = filepath
-        filename_addition = "_histogram_bins.npy"
+        row_filename_addition = "_histogram_row_bins.npy"
+        column_filename_addition = "_histogram_col_bins.npy"
 
         if bin_filepath.endswith(".npy"):
-            bin_filepath = bin_filepath.replace(".npy", filename_addition)
+            row_bin_filepath = bin_filepath.replace(".npy", row_filename_addition)
+            column_bin_filepath = bin_filepath.replace(".npy", column_filename_addition)
         else:
-            bin_filepath += filename_addition
+            row_bin_filepath = bin_filepath + row_filename_addition
+            column_bin_filepath = bin_filepath + column_filename_addition
 
-        np.save(bin_filepath, arr=histogram_bins)
+        np.save(row_bin_filepath, arr=row_labels)
+        np.save(column_bin_filepath, arr=column_labels)
 
 
 def export_mpl_animation(
@@ -751,5 +754,8 @@ def export_mpl_animation(
 
     if inferred_type is None:
         filename = f"{filename}.{file_type.value}"
+
+    if fps == 0:
+        fps = None
 
     animation.save(filename=filename, fps=fps, dpi=dpi, **export_kwargs)
