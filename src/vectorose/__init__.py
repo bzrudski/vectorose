@@ -7,4 +7,5 @@ from vectorose import tregenza_sphere
 from vectorose import util
 
 from importlib_metadata import version
+
 __version__ = version("vectorose")

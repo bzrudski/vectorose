@@ -441,7 +441,7 @@ def produce_labelled_3d_plot(
         if norm is None:
             norm = plt.Normalize(vmin=minimum_value, vmax=maximum_value)
         scalar_mappable = matplotlib.cm.ScalarMappable(norm=norm, cmap=colour_map)
-        print(f"Colour bar has colour map {colour_map}.")
+        # print(f"Colour bar has colour map {colour_map}.")
         if colour_bar_kwargs is None:
             colour_bar_kwargs = {}
 
@@ -924,7 +924,7 @@ def produce_planar_2d_histogram_plot(
         cmap=colour_map,
         norm=norm,
         extent=image_extent,
-        interpolation="None"
+        interpolation="None",
     )
 
     # Deal with the axis ticks
@@ -939,7 +939,9 @@ def produce_planar_2d_histogram_plot(
 
     if show_colour_bar:
         if norm is None:
-            norm = matplotlib.colors.Normalize(vmin=histogram_data.min(), vmax=histogram_data.max())
+            norm = matplotlib.colors.Normalize(
+                vmin=histogram_data.min(), vmax=histogram_data.max()
+            )
         scalar_mappable = plt.cm.ScalarMappable(norm=norm, cmap=colour_map)
         plt.colorbar(scalar_mappable, ax=ax, location=colour_bar_position)
 
@@ -1328,7 +1330,7 @@ def produce_3d_triangle_sphere_plot(
 
     sphere_radius = (max_location - min_location) / 2
 
-    print(f"Sphere has radius {sphere_radius}...")
+    # print(f"Sphere has radius {sphere_radius}...")
 
     kwargs["radius"] = sphere_radius
 
