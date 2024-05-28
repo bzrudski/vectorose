@@ -10,11 +10,12 @@ Mock vector data creator.
 This module provides tools to create artificial vectors for testing.
 """
 from numbers import Real
-from typing import Sequence, Union
+from typing import List, Sequence, Union
 
 import numpy as np
 from scipy.stats import vonmises_fisher
 
+from . import util
 from .util import convert_spherical_to_cartesian_coordinates
 
 
@@ -41,35 +42,35 @@ def create_vectors_with_primary_orientation(
     ----------
     phi
         Dominant :math:`\\phi` orientation.
-    
+
     theta
         Dominant :math:`\\theta` orientation.
-    
+
     number_of_vectors
         Number of vectors to produce.
-    
+
     phi_std
-        Standard deviation of Gaussian noise applied to the :math:\\`phi` 
+        Standard deviation of Gaussian noise applied to the :math:\\`phi`
         angles.
-    
+
     theta_std
         Standard deviation of Gaussian noise applied to the :math:`\\theta`
         angles.
-    
+
     magnitude
         Average length of the vectors.
-    
+
     magnitude_std
         Standard deviation of Gaussian noise applied to the magnitude.
-    
+
     inversion_prob
         Probability of inverting the sense of the vector, following a
         Bernoulli random variable.
-    
+
     use_degrees
-        Indicate that angles passed for :math:`\\phi` and :math:`\\theta` 
+        Indicate that angles passed for :math:`\\phi` and :math:`\\theta`
         are in degrees.
-    
+
     Returns
     -------
     numpy.ndarray
@@ -80,7 +81,7 @@ def create_vectors_with_primary_orientation(
     See Also
     --------
     .convert_spherical_to_cartesian_coordinates:
-        Function used to convert spherical coordinates in 
+        Function used to convert spherical coordinates in
         :math:`(\\phi, \\theta)` to cartesian :math:`(x,y,z)` coordinates.
     """
 
@@ -151,30 +152,30 @@ def create_vectors_multiple_orientations(
     ----------
     phis
         Collection of dominant :math:`\\phi` orientations.
-    
+
     thetas
         Collection of dominant :math:`\\theta` orientations.
-    
+
     numbers_of_vectors
         Number of vectors to produce for each set of parameters.
-    
+
     phi_stds
         Standard deviation(s) of Gaussian noise applied to the
         :math:`\\phi` angles.
-    
+
     theta_stds
         Standard deviation(s) of Gaussian noise applied to the
         :math:`\\theta` angles.
-    
+
     magnitudes
         Average length of the vectors for each set of parameters.
-    
+
     magnitude_stds
         Standard deviation(s) of Gaussian noise applied to the magnitude.
-    
+
     inversion_probs
         Probability of inverting the sense of the vectors.
-    
+
     use_degrees
         Indicate that angles are in degrees.
 
@@ -251,8 +252,12 @@ def create_vectors_multiple_orientations(
 
 
 def create_vonmises_fisher_vectors_single_direction(
-    phi: float, theta: float, kappa: float, number_of_points: int,
-    magnitude: float = 1.0, magnitude_std: float = 0,
+    phi: float,
+    theta: float,
+    kappa: float,
+    number_of_points: int,
+    magnitude: float = 1.0,
+    magnitude_std: float = 0,
     use_degrees: bool = False,
 ) -> np.ndarray:
     """Create a set of vectors using a von Mises-Fisher distribution.
@@ -334,3 +339,73 @@ def create_vonmises_fisher_vectors_single_direction(
 
     # Return the sampled points
     return sampled_points
+
+
+def generate_watson_distribution(
+    mean_direction: np.ndarray, kappa: float, n: int = 100000
+) -> np.ndarray:
+    """Generate points from a Watson distribution.
+
+    Simulate a orientations from a Watson distribution using the steps
+    presented by Fisher, Lewis and Embleton [#fisher-lewis-embleton]_ in
+    section 3.6.2.
+
+    Parameters
+    ----------
+    mean_direction
+        Cartesian coordinates of the mean direction.
+    kappa
+        Shape parameter of the watson distribution.
+    n
+        Number of points to generate.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array with `n` rows, corresponding to the 3D Cartesian coordinates
+        of the pseudo-randomly generated points.
+    """
+
+    # random_vectors = np.zeros((n, 3))
+
+    random_vector_list: List[np.ndarray] = []
+
+    for _ in range(n):
+        # Check the shape parameter
+        s = 0
+        if kappa > 0:
+            while True:
+                # Construct the bipolar distribution
+                c = 1 / (np.exp(kappa) - 1)
+                u = np.random.default_rng().uniform()
+                v = np.random.default_rng().uniform()
+                s = (1 / kappa) * np.log(u / c + 1)
+                if v <= np.exp(kappa * s * s - kappa * s):
+                    break
+        else:
+            while True:
+                # Construct the girdle distribution
+                c1 = np.sqrt(np.abs(kappa))
+                c2 = np.arctan(c1)
+                u = np.random.default_rng().uniform()
+                v = np.random.default_rng().uniform()
+                s = (1 / c1) * np.tan(c2 * u)
+
+                if v <= (1 - kappa * s * s) * np.exp(kappa * s * s):
+                    break
+
+        # Perform the common steps
+
+        # Compute the colatitude and the longitude - adapt for our definition of phi and theta
+        phi = np.arccos(s)
+        theta = 2 * np.pi * np.random.default_rng().uniform()
+
+        # Add the new vector spherical angles to the list
+        new_vector = np.array([phi, theta])
+        random_vector_list.append(new_vector)
+
+    # Convert all new vectors to cartesian coordinates and rotate to mean
+    random_vectors = np.stack(random_vector_list, axis=0)
+    new_vectors_cartesian = util.convert_spherical_to_cartesian_coordinates(random_vectors)
+    rotated_new_vectors = util.rotate_vectors(new_vectors_cartesian, new_pole=mean_direction)
+    return rotated_new_vectors
