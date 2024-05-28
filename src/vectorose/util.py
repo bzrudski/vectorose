@@ -35,6 +35,35 @@ class AngularIndex(enum.IntEnum):
     THETA = 1
 
 
+def flatten_vector_field(vector_field: np.ndarray) -> np.ndarray:
+    """Flatten a vector field into a 2D vector list.
+
+    Convert an n-dimensional vector image volume into a 2D list of vectors,
+    with rows reflecting vectors and the columns reflecting each component.
+
+    Parameters
+    ----------
+    vector_field
+        Array containing the vector field. If this array is 2D, then the
+        rows are considered to correspond to the vectors, while the columns
+        correspond to the components. If the vector has higher dimension,
+        the last axis is assumed to distinguish between the components.
+
+    Returns
+    -------
+    numpy.ndarray
+        2D array containing the vectors as rows and the components as
+        columns. If the original array was 2D, this original array is
+        returned without copying.
+    """
+
+    if vector_field.ndim > 2:
+        d = vector_field.shape[-1]
+        vector_field = vector_field.reshape(-1, d)
+
+    return vector_field
+
+
 def remove_zero_vectors(vectors: np.ndarray) -> np.ndarray:
     """Prune zero-vectors.
 
@@ -370,6 +399,85 @@ def compute_vector_orientation_angles(
     return angular_coordinates
 
 
+def rotate_vectors(
+    vectors: np.ndarray,
+    new_pole: np.ndarray,
+    roll: float = 0.0
+) -> np.ndarray:
+    """Rotate a set of vectors.
+
+    Rotate vectors so that the top pole of the sphere is rotated to a
+    specified location, as described by Fisher, Lewis and
+    Embleton. [#fisher-lewis-embleton]_
+
+    Parameters
+    ----------
+    vectors
+        Array containing the Cartesian vector components to rotate, of
+        shape ``(n, 3)``, where ``n`` represents the number of 3D vectors.
+    new_pole
+        Vector coordinates corresponding to the new pole position after
+        rotating, also in cartesian coordinates.
+    roll
+        Optional rotation along the polar axis in **radians**.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array of shape ``(n, 3)`` containing the rotated vector components.
+    """
+
+    # Convert the new pole location into phi and theta angles
+    new_pole_spherical_coordinates = compute_vector_orientation_angles(
+        vectors=new_pole[None, :], use_degrees=False
+    )[0]
+
+    # Extract the angular components
+    phi = new_pole_spherical_coordinates[AngularIndex.PHI]
+    theta = new_pole_spherical_coordinates[AngularIndex.THETA]
+    psi = roll
+
+    # Take into account the different definitions of angles in FL&E
+    new_theta = phi
+    new_phi = 2 * np.pi - (theta - np.pi / 2)
+    new_phi = np.where(new_phi > 0, new_phi, new_phi + 2 * np.pi)
+
+    # And now swap the names
+    theta = new_theta
+    phi = new_phi
+
+    # Compute the rotation matrix rows
+    row_1 = [
+        np.cos(theta) * np.cos(phi) * np.cos(psi) - np.sin(phi) * np.sin(psi),
+        np.cos(theta) * np.sin(phi) * np.cos(psi) + np.cos(phi) * np.sin(psi),
+        -np.sin(theta) * np.cos(psi)
+    ]
+
+    row_2 = [
+        -np.cos(theta) * np.cos(phi) * np.sin(psi) - np.sin(phi) * np.cos(psi),
+        -np.cos(theta) * np.sin(phi) * np.sin(psi) + np.cos(phi) * np.cos(psi),
+        np.sin(theta) * np.sin(psi)
+    ]
+
+    row_3 = [
+        np.sin(theta) * np.cos(phi),
+        np.sin(theta) * np.sin(phi),
+        np.cos(theta)
+    ]
+
+    rotation_matrix = np.array([row_1, row_2, row_3])
+
+    # Apply the rotation to all the components
+    # To do this, we want our vectors to be columns, so transpose.
+    # Then, we want the final result to be a stack of row vectors, so we
+    # transpose again.
+    rotated_vectors = (rotation_matrix @ vectors.T).T
+
+    # Return the rotated components
+    return rotated_vectors
+
+
+# Non-vector operations
 def perform_binary_search(
     seq: Union[Sequence, np.ndarray], item: Any, lower_bound: int = 0
 ) -> int:
