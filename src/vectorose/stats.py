@@ -14,15 +14,31 @@ References
        J. (1993). Statistical analysis of spherical data ([New ed.], 1.
        paperback ed). Cambridge Univ. Press.
 """
+import dataclasses
 import functools
-from typing import Optional
+from typing import List, NamedTuple, Optional
 
 from scipy.optimize import NonlinearConstraint, minimize, fsolve
-from scipy.stats import chi2
+from scipy.stats import chi2, vonmises_fisher
 
 from . import util
 
 import numpy as np
+
+
+# Define result holder
+@dataclasses.dataclass
+class HypothesisResult:
+    """Results for hypothesis testing."""
+
+    can_reject_null_hypothesis: bool
+    """Indicate whether the null hypothesis can be rejected."""
+
+    p_value: float
+    """Computed p-value for the test."""
+
+    test_significance: float
+    """Significance level used for the test."""
 
 
 def compute_resultant_vector(
@@ -142,7 +158,7 @@ def compute_orientation_matrix(
 def uniform_vs_unimodal_test(
     vector_field: np.ndarray,
     significance_level: float = 0.05,
-) -> bool:
+) -> HypothesisResult:
     """Uniformity vs. unimodality test.
 
     Apply a test to determine if a distribution is uniform or unimodal, as
@@ -161,9 +177,10 @@ def uniform_vs_unimodal_test(
 
     Returns
     -------
-    bool
-        Value indicating whether the null hypothesis of uniformity can be
-        rejected with the desired significance level.
+    HypothesisResult
+        Results of the hypothesis testing, indicating whether the null
+        hypothesis of uniformity can be rejected, as well as the computed
+        p-value.
 
     Notes
     -----
@@ -199,10 +216,28 @@ def uniform_vs_unimodal_test(
     test_statistic = 3 * squared_resultant / len(vector_field)
 
     # Find the chi-squared value to compare against
-    significant_value = chi2.ppf(1 - significance_level, df=3)
+    # significant_value = chi2.ppf(1 - significance_level, df=3)
 
     # Determine if we can reject the null hypothesis
-    return test_statistic > significant_value
+    # reject_null = test_statistic > significant_value
+
+    # Compute the probability of type I error, i.e. the probability that
+    # the distribution is indeed uniform but that we reject it.
+    p_value = chi2.sf(test_statistic, df=3)
+
+    # We reject the null if the probability of type I error is less than
+    # the significance cutoff.
+    can_reject_null = p_value < significance_level
+
+    # Construct the results
+    test_result = HypothesisResult(
+        can_reject_null_hypothesis=can_reject_null,
+        p_value=p_value,
+        test_significance=significance_level,
+    )
+
+    # Return the result
+    return test_result
 
 
 def _compute_sum_of_arc_lengths(new_vector: np.ndarray, vectors: np.ndarray) -> float:
@@ -600,9 +635,139 @@ def compute_confidence_cone_radius(
     if k >= 5:
         theta_alpha = np.arccos(1 - ((n - r) / r) * ((1 / a) ** (1 / (n - 1)) - 1))
     else:
-        theta_alpha = np.arccos(
-            1 + np.log(a) / (k * r)
-        )
+        theta_alpha = np.arccos(1 + np.log(a) / (k * r))
 
     # Return the arc length of the confidence cone radius
     return theta_alpha
+
+
+def calculate_coplanarity_index(
+    vector_field: np.ndarray,
+    number_of_samples: int = 3,
+) -> float:
+    """Compute co-planarity index for a set of vectors.
+
+    Using random samples from the vector field, compute the co-planarity
+    index using the average scalar triple products.
+
+    Parameters
+    ----------
+    vector_field
+        The vector field to consider, represented as either an array of
+        shape ``(n, d)`` or an ``n+1``-dimensional array containing the
+        components at their spatial locations, with the components present
+        along the *last* axis.
+    number_of_samples
+        Number of sets of three vectors to sample to compute the scalar
+        triple product.
+
+    Returns
+    -------
+    float
+        The average scalar triple product for the sampled vectors.
+
+    Notes
+    -----
+    Sampling is performed without replacement in a given set, and with
+    replacement between sets. The scalar triple product is used to
+    determine co-planarity, as three vectors :math:`v_1, v_2, v_3` are
+    co-planar if:
+
+    .. math::
+        v_1 \\cdot (v_2 \\times v_3) = 0
+
+    The absolute values of the scalar triple produces are summed in order
+    to compute the average. The co-planarity index is taken as:
+
+    .. math::
+        1 - \\left(v_1 \\cdot (v_2 \\times v_3)\\right)
+
+    Values closer to 1 correspond to coplanar vectors and values closer to
+    zero correspond to low co-planarity.
+    """
+
+    # Flatten vector field
+    vector_field = util.flatten_vector_field(vector_field)
+
+    # Normalise the vectors
+    vector_field, _ = util.normalise_vectors(vector_field)
+
+    # Compute the scalar triple products
+    scalar_triple_products: List[float] = []
+
+    for i in range(number_of_samples):
+        # Select the random vectors
+        random_vectors = np.random.default_rng().choice(
+            vector_field, axis=0, size=3, replace=False
+        )
+
+        # Compute the scalar triple product
+        v0 = random_vectors[0]
+        v1 = random_vectors[1]
+        v2 = random_vectors[2]
+
+        scalar_triple_product = np.dot(v0, np.cross(v1, v2))
+
+        # Add to the list
+        scalar_triple_products.append(scalar_triple_product)
+
+    # Compute the average scalar triple product
+    average_scalar_triple = np.sum(np.abs(scalar_triple_products)) / number_of_samples
+
+    coplanarity_index = 1 - average_scalar_triple
+
+    return coplanarity_index
+
+
+@dataclasses.dataclass
+class FisherVonMisesParameters:
+    """Parameters for a Fisher-von Mises distribution."""
+
+    mu: np.ndarray
+    """Mean direction in cartesian coordinates, of shape ``(3, )``."""
+
+    kappa: float
+    """Concentration parameter."""
+
+
+def fit_fisher_vonmises_distribution(
+    vector_field: np.ndarray,
+) -> FisherVonMisesParameters:
+    """Fit a Fisher-von Mises spherical distribution to a vector field.
+
+    Parameters
+    ----------
+    vector_field
+        The vector field to consider, represented as either an array of
+        shape ``(n, d)`` or an ``n+1``-dimensional array containing the
+        components at their spatial locations, with the components present
+        along the *last* axis.
+
+    Returns
+    -------
+    FisherVonMisesParameters
+        Parameters necessary to construct a Fisher-von Mises distribution
+        that fits the vector field.
+
+    See Also
+    --------
+    scipy.stats.vonmises_fisher.fit : Function used to perform the fitting.
+
+    Notes
+    -----
+    The vector field is normalised, so that only the orientations are
+    considered when fitting.
+    """
+
+    # Flatten the vector field
+    vector_field = util.flatten_vector_field(vector_field)
+    vector_field, _ = util.normalise_vectors(vector_field)
+
+    # Perform the fitting
+    mu, kappa = vonmises_fisher.fit(vector_field)
+
+    # Build the parameters
+    parameters = FisherVonMisesParameters(mu=mu, kappa=kappa)
+
+    # And return
+    return parameters
