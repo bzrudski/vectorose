@@ -1466,7 +1466,7 @@ def construct_confidence_cone(
     # Construct the rotation matrix
     if mean_orientation is not None:
         mean_orientation_spherical = compute_vector_orientation_angles(
-            vectors=mean_orientation[:, None]
+            vectors=mean_orientation[None, :]
         )[0]
 
         mean_phi = mean_orientation_spherical[AngularIndex.PHI]

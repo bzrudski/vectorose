@@ -571,7 +571,7 @@ def estimate_concentration_parameter(
 
     kappa_estimate = fsolve(estimator, np.array(initial_guess))
 
-    return kappa_estimate.x
+    return kappa_estimate[0]
 
 
 def compute_confidence_cone_radius(
