@@ -99,8 +99,8 @@ def remove_zero_vectors(vectors: np.ndarray) -> np.ndarray:
 def normalise_vectors(vectors: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """Normalise an array of vectors.
 
-    Rescale a series of vectors to ensure that all have unit length. All
-    zero-vectors should be removed before using this function.
+    Rescale a series of vectors to ensure that all non-zero vectors have
+    unit length.
 
     Parameters
     ----------
@@ -135,10 +135,16 @@ def normalise_vectors(vectors: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
     # Compute the vector magnitudes
     vector_components = vectors[:, -3:]
-    vector_magnitudes = np.sqrt(np.sum(vector_components * vector_components, axis=-1))
+    vector_magnitudes = np.linalg.norm(vector_components, axis=-1)
 
     # Divide by the magnitudes
-    normalised_components = vector_components / vector_magnitudes[:, None]
+    stacked_magnitudes = vector_magnitudes[:, None]
+    non_zero_rows_stacked = ~np.all(vector_components == 0, axis=-1)[:, None]
+
+    normalised_components = np.true_divide(
+        vector_components, stacked_magnitudes,
+        where=non_zero_rows_stacked
+    )
 
     # Create a new array with the modified components if necessary
     if normalised_components.shape != vectors.shape:
