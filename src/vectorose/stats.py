@@ -16,7 +16,7 @@ References
 """
 import dataclasses
 import functools
-from typing import List, NamedTuple, Optional
+from typing import List, Optional
 
 from scipy.optimize import NonlinearConstraint, minimize, fsolve
 from scipy.stats import chi2, vonmises_fisher
@@ -504,6 +504,45 @@ def _kappa_equation(k: float, mean_resultant_length: float) -> float:
         Value of the equation. Should be zero.
     """
     return 1 / np.tanh(k) - 1 / k - mean_resultant_length
+
+
+def compute_mean_unit_direction(vector_field: np.ndarray) -> np.ndarray:
+    """Compute the mean direction as a unit vector.
+
+    Parameters
+    ----------
+    vector_field
+        The vector field to consider, represented as either an array of
+        shape ``(n, d)`` or an ``n+1``-dimensional array containing the
+        components at their spatial locations, with the components present
+        along the *last* axis.
+
+    Returns
+    -------
+    numpy.ndarray
+        Unit vector containing the cartesian coordinates of the mean
+        direction.
+
+    Warnings
+    --------
+    Per Fisher, Lewis and Embleton, [#fisher-lewis-embleton]_ the sample
+    mean corresponds to the maximum likelihood estimate. This may not hold
+    for other distributions.
+    """
+
+    # As usual, flatten the vector field
+    vector_field = util.flatten_vector_field(vector_field)
+
+    # Compute the mean resultant vector
+    mean_resultant_vector = compute_resultant_vector(
+        vector_field=vector_field, compute_mean_resultant=True
+    )
+
+    # Normalise the mean resultant
+    mean_unit_vector = mean_resultant_vector / np.linalg.norm(mean_resultant_vector)
+
+    # Return the unit mean vector
+    return mean_unit_vector
 
 
 def estimate_concentration_parameter(
