@@ -23,12 +23,14 @@ import matplotlib.figure
 import matplotlib.projections
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d
-import numpy
+import mpl_toolkits.mplot3d.art3d
 import numpy as np
 import trimesh
+from scipy.spatial.transform import Rotation
 
 from .vectorose import MagnitudeType, produce_phi_theta_1d_histogram_data
-from .util import AngularIndex, convert_spherical_to_cartesian_coordinates
+from .util import (AngularIndex, convert_spherical_to_cartesian_coordinates,
+                   compute_vector_orientation_angles)
 
 from .tregenza_sphere import TregenzaSphereBase
 
@@ -1414,6 +1416,220 @@ def produce_3d_tregenza_sphere_plot(
 
     # Add the labels to the plot
     ax = produce_labelled_3d_plot(ax=ax, norm=norm, colour_map=colour_map, **kwargs)
+
+    ax.set_aspect("equal")
+
+    return ax
+
+
+def construct_confidence_cone(
+    angular_radius: float,
+    number_of_patches: int = 80,
+    mean_orientation: Optional[np.ndarray] = None,
+    two_sided_cone: bool = True,
+    **kwargs
+) -> List[mpl_toolkits.mplot3d.art3d.Poly3DCollection]:
+    """Construct the patches for a confidence cone.
+
+    Construct the triangular patches for a confidence cone with a specified
+    angular radius, and optionally rotated to a specified mean direction.
+
+    Parameters
+    ----------
+    angular_radius
+        Angular radius for the confidence cone bounds in radians.
+    number_of_patches
+        Number of patches to construct. Increase for a better approximation
+        to a cone.
+    mean_orientation
+        Mean orientation to rotate the confidence cone, in cartesian
+        coordinates. If `None`, then the cone is not rotated and remains
+        vertically oriented.
+    two_sided_cone
+        Indicate whether the cone should be two-sided. If `True`, two cones
+        will be constructed, radiating from the centre. If `False`, then a
+        single cone is created.
+    **kwargs
+        Keyword arguments for the patch construction.
+        See :class:`Poly3DCollection` for details.
+
+    Returns
+    -------
+    list[mpl_toolkits.mplot3d.art3d.Poly3DCollection]
+        List of :class:`Poly3DCollection` representing each patch of the
+        confidence cone. These patches are triangular.
+    """
+
+    # Create a list of patches
+    patches: List[mpl_toolkits.mplot3d.art3d.Poly3DCollection] = []
+
+    # Construct the rotation matrix
+    if mean_orientation is not None:
+        mean_orientation_spherical = compute_vector_orientation_angles(
+            vectors=mean_orientation[:, None]
+        )[0]
+
+        mean_phi = mean_orientation_spherical[AngularIndex.PHI]
+        mean_theta = mean_orientation_spherical[AngularIndex.THETA]
+
+        rotation = Rotation.from_euler("xz", [-mean_phi, -mean_theta])
+    else:
+        rotation = None
+
+    angular_increment = 2 * np.pi / number_of_patches
+
+    origin = np.zeros((1, 3))
+    start_vertex = np.array([angular_radius, 0])
+    increment_array = np.array([0, angular_increment])
+
+    for i in range(number_of_patches):
+        end_vertex = start_vertex + increment_array
+
+        ring_vertices = np.stack([start_vertex, end_vertex], axis=0)
+
+        ring_vertices_cartesian = convert_spherical_to_cartesian_coordinates(
+            ring_vertices
+        )
+
+        patch_vertices = np.concatenate([ring_vertices_cartesian, origin], axis=0)
+
+        if rotation is not None:
+            patch_vertices = rotation.apply(patch_vertices)
+
+        patch = mpl_toolkits.mplot3d.art3d.Poly3DCollection([patch_vertices], **kwargs)
+
+        patches.append(patch)
+
+        if two_sided_cone:
+            inverse_vertices = -patch_vertices
+            inverse_patch = mpl_toolkits.mplot3d.art3d.Poly3DCollection(
+                [inverse_vertices], **kwargs
+            )
+            patches.append(inverse_patch)
+
+        start_vertex = end_vertex
+
+    return patches
+
+
+def construct_uv_sphere(
+    phi_steps: int = 80,
+    theta_steps: int = 160,
+    radius: float = 1
+) -> np.ndarray:
+    """Construct a sphere with rectangular faces.
+
+    Construct a UV sphere where each ring has the same number of faces.
+
+    Parameters
+    ----------
+    phi_steps
+        Number of faces along the phi axis.
+    theta_steps
+        Number of faces along the theta axis, within a ring.
+    radius
+        Sphere radius.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array containing the Cartesian coordinates of the sphere vertices
+        in a format to plot using :meth:`Axes3D.plt_surface`. This array
+        will have shape ``(phi_steps + 1, theta_steps + 1, 3)`` where the
+        last axis corresponds to the ``X, Y, Z`` components.
+
+    Warnings
+    --------
+    This sphere should not be used to plot histograms. It is provided for
+    visualisations that do not involve plotting data on the surface of the
+    sphere.
+
+    Notes
+    -----
+    The coordinates computed using this function can easily be used to plot
+    a sphere using :meth:`Axes3D.plt_surface`. To do so, the X, Y and Z
+    coordinate sheets must be separated by indexing along the last axis.
+
+    """
+
+    # Compute the phi and theta values
+    phi = np.linspace(start=0, stop=np.pi, num=phi_steps + 1, endpoint=True)
+    theta = np.linspace(start=0, stop=2*np.pi, num=theta_steps + 1, endpoint=True)
+
+    # Now, build the 2D spherical coordinates
+    phi_grid, theta_grid = np.meshgrid(phi, theta)
+
+    # Convert to Cartesian coordinates
+    sphere_angles = np.stack([phi_grid, theta_grid], axis=-1)
+
+    sphere_cartesian_coordinates = convert_spherical_to_cartesian_coordinates(
+        angular_coordinates=sphere_angles,
+        radius=radius
+    )
+
+    return sphere_cartesian_coordinates
+
+
+def produce_3d_confidence_cone_plot(
+    ax: mpl_toolkits.mplot3d.axes3d.Axes3D,
+    confidence_cone_patches: List[mpl_toolkits.mplot3d.art3d.Poly3DCollection],
+    sphere_vertices: np.ndarray,
+    sphere_radius: float = 1,
+    sphere_alpha: float = 0.5,
+    sphere_colour: str = "#a8a8a8",
+    **kwargs
+) -> mpl_toolkits.mplot3d.axes3d.Axes3D:
+    """Produce a 3D confidence cone plot.
+
+    Using the provided confidence cone patches and sphere vertices, create
+    a plot containing the confidence cone inside a sphere.
+
+    Parameters
+    ----------
+    ax
+        Axes on which to plot. These must be 3D axes.
+    confidence_cone_patches
+        Patches for the confidence cone.
+    sphere_vertices
+        Vertices for the UV sphere.
+    sphere_radius
+        Radius of the sphere.
+    sphere_alpha
+        Sphere opacity level.
+    sphere_colour
+        Colour of the sphere.
+    **kwargs
+        Arguments passed to :func:`produce_labelled_3d_plot` to alter the
+        labelling of the 3D axes.
+
+    Returns
+    -------
+    mpl_toolkits.mplot3d.axes3d.Axes3D
+        Axes on which the confidence cone has been plotted.
+
+    Warnings
+    --------
+    The provided axes must have been constructed using a 3D projection, by
+    setting ``projection="3d"``.
+
+    See Also
+    --------
+    .construct_confidence_cone : Generate the confidence cone patches.
+    .construct_uv_sphere : Generate vertices for a quad-based sphere.
+    """
+
+    # Plot the confidence cone
+    for patch in confidence_cone_patches:
+        ax.add_collection3d(patch)
+
+    # Plot the sphere
+    xs = sphere_vertices[..., 0]
+    ys = sphere_vertices[..., 1]
+    zs = sphere_vertices[..., 2]
+    ax.plot_surface(xs, ys, zs, color=sphere_colour, alpha=sphere_alpha)
+
+    # Label the plot
+    ax = produce_labelled_3d_plot(ax=ax, radius=sphere_radius, **kwargs)
 
     ax.set_aspect("equal")
 
