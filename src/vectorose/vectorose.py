@@ -202,6 +202,10 @@ def create_binned_orientation(
     phi_bin_indices = np.digitize(phi, phi_histogram_bins) - 1
     theta_bin_indices = np.digitize(theta, theta_histogram_bins) - 1
 
+    # Finally, for any phi values that are exactly vertically down, set
+    # the vectors to the next closest bin.
+    phi_bin_indices[phi_bin_indices == half_number_of_bins] = half_number_of_bins - 1
+
     # Now, to prepare the histogram array:
     angular_histogram_2d = np.zeros(
         (half_number_of_bins, number_of_bins, len(MagnitudeType))
