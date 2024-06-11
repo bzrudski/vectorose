@@ -142,8 +142,7 @@ def normalise_vectors(vectors: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     non_zero_rows_stacked = ~np.all(vector_components == 0, axis=-1)[:, None]
 
     normalised_components = np.true_divide(
-        vector_components, stacked_magnitudes,
-        where=non_zero_rows_stacked
+        vector_components, stacked_magnitudes, where=non_zero_rows_stacked
     )
 
     # Create a new array with the modified components if necessary
@@ -391,6 +390,7 @@ def compute_vector_orientation_angles(
     # phi[phi == np.pi] = 0
 
     theta = np.where(theta < 0, theta + 2 * np.pi, theta)
+    theta = np.where(theta >= 2 * np.pi, theta - 2 * np.pi, theta)
     # theta[theta == np.pi] = 0
 
     # Convert to degrees if necessary
@@ -406,9 +406,7 @@ def compute_vector_orientation_angles(
 
 
 def rotate_vectors(
-    vectors: np.ndarray,
-    new_pole: np.ndarray,
-    roll: float = 0.0
+    vectors: np.ndarray, new_pole: np.ndarray, roll: float = 0.0
 ) -> np.ndarray:
     """Rotate a set of vectors.
 
@@ -456,20 +454,16 @@ def rotate_vectors(
     row_1 = [
         np.cos(theta) * np.cos(phi) * np.cos(psi) - np.sin(phi) * np.sin(psi),
         np.cos(theta) * np.sin(phi) * np.cos(psi) + np.cos(phi) * np.sin(psi),
-        -np.sin(theta) * np.cos(psi)
+        -np.sin(theta) * np.cos(psi),
     ]
 
     row_2 = [
         -np.cos(theta) * np.cos(phi) * np.sin(psi) - np.sin(phi) * np.cos(psi),
         -np.cos(theta) * np.sin(phi) * np.sin(psi) + np.cos(phi) * np.cos(psi),
-        np.sin(theta) * np.sin(psi)
+        np.sin(theta) * np.sin(psi),
     ]
 
-    row_3 = [
-        np.sin(theta) * np.cos(phi),
-        np.sin(theta) * np.sin(phi),
-        np.cos(theta)
-    ]
+    row_3 = [np.sin(theta) * np.cos(phi), np.sin(theta) * np.sin(phi), np.cos(theta)]
 
     rotation_matrix = np.array([row_1, row_2, row_3])
 
