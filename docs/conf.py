@@ -59,5 +59,5 @@ intersphinx_mapping = {
     'trimesh': ('https://trimesh.org/', None),
 }
 
-# -- Options for todo --------------------------------------------------------
+# -- Options for to-do -------------------------------------------------------
 todo_include_todos = True
