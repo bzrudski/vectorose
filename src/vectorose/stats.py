@@ -155,6 +155,43 @@ def compute_orientation_matrix(
     return orientation_matrix
 
 
+def compute_orientation_matrix_eigs(
+    vector_field: np.ndarray,
+    is_axial: bool = False
+) -> np.linalg.linalg.EigResult:
+    """Compute the eigenvectors and eigenvalues of the orientation matrix.
+
+    Compute the eigen-decomposition of the orientation matrix. This
+    function computes the matrix and then performs eigenvector calculation.
+
+    Parameters
+    ----------
+    vector_field
+        The vector field to consider, represented as either an array of
+        shape ``(n, d)`` or an ``n+1``-dimensional array containing the
+        components at their spatial locations, with the components present
+        along the *last* axis.
+    is_axial
+        Indicate whether the data should be considered as axial. In this
+        case, all entries with a negative last dimension will be inverted.
+
+
+    Returns
+    -------
+    numpy.linalg.linalg.EigResult
+        Eigenvectors and eigenvalues of the orientation matrix.
+
+    Notes
+    -----
+    Equivalent to calling :func:`compute_orientation_matrix` and then using
+    NumPy to compute the eigenvectors and eigenvalues.
+    """
+
+    orientation_matrix = compute_orientation_matrix(vector_field, is_axial)
+
+    return np.linalg.eig(orientation_matrix)
+
+
 def uniform_vs_unimodal_test(
     vector_field: np.ndarray,
     significance_level: float = 0.05,
@@ -679,6 +716,8 @@ def compute_confidence_cone_radius(
     # Return the arc length of the confidence cone radius
     return theta_alpha
 
+
+# TODO: Add function to compute the vertex points for the mean confidence cone
 
 def calculate_coplanarity_index(
     vector_field: np.ndarray,
