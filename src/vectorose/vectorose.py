@@ -143,7 +143,7 @@ def create_binned_orientation(
         to :math:`\\theta`. The last axis is used for indexing the
         histogram by the magnitude type (see :class:`MagnitudeType`).
 
-    bins: list[numpy.ndarray]
+    bins: tuple[numpy.ndarray, numpy.ndarray]
         The bounds of the histogram bins. This array is of shape
         ``(2, half_half_number_of_bins + 1)``, where the first row
         represents the bins for :math:`\\phi` and the second represents
@@ -264,7 +264,7 @@ def create_angular_binning_from_vectors(
         to :math:`\\theta`. The last axis is used for indexing the
         histogram by the magnitude type (see :class:`MagnitudeType`).
 
-    bins: list[numpy.ndarray]
+    bins: tuple[numpy.ndarray, numpy.ndarray]
         The bounds of the histogram bins. This array is of shape
         ``(2, half_half_number_of_bins + 1)``, where the first row
         represents the bins for :math:`\\phi` and the second represents
