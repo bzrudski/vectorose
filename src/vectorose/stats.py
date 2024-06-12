@@ -325,7 +325,7 @@ def compute_median_direction(vector_field: np.ndarray) -> np.ndarray:
     Returns
     -------
     numpy.ndarray
-        Spherical coordinates for the estimate of the median direction.
+        Cartesian coordinates for the estimate of the median direction.
     """
 
     vector_field = util.flatten_vector_field(vector_field)
@@ -352,12 +352,9 @@ def compute_median_direction(vector_field: np.ndarray) -> np.ndarray:
     )
 
     # Get the values of x, y, z
-    median_vector_cartesian = np.array([res.x])
+    median_vector_cartesian = np.array(res.x)
 
-    # Convert the result to spherical coordinates
-    median_direction = util.compute_vector_orientation_angles(median_vector_cartesian)
-
-    return median_direction
+    return median_vector_cartesian
 
 
 def compute_elliptical_confidence_cone_points(
