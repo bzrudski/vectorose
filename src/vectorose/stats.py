@@ -654,6 +654,7 @@ def compute_confidence_cone_radius(
     vector_field: np.ndarray,
     kappa_estimate: Optional[float] = None,
     confidence_level: float = 0.01,
+    use_degrees: bool = False,
 ) -> float:
     """Compute confidence cone radius for mean direction estimate.
 
@@ -674,6 +675,8 @@ def compute_confidence_cone_radius(
         computed to determine which estimation approach to use.
     confidence_level
         Desired confidence level for the mean direction estimate.
+    use_degrees
+        Indicate whether the angular radius should be converted to degrees.
 
     Returns
     -------
@@ -714,6 +717,9 @@ def compute_confidence_cone_radius(
         theta_alpha = np.arccos(1 + np.log(a) / (k * r))
 
     # Return the arc length of the confidence cone radius
+    if use_degrees:
+        theta_alpha = np.degrees(theta_alpha)
+
     return theta_alpha
 
 

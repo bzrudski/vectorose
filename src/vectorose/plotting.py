@@ -1427,6 +1427,7 @@ def construct_confidence_cone(
     number_of_patches: int = 80,
     mean_orientation: Optional[np.ndarray] = None,
     two_sided_cone: bool = True,
+    use_degrees: bool = False,
     **kwargs
 ) -> List[mpl_toolkits.mplot3d.art3d.Poly3DCollection]:
     """Construct the patches for a confidence cone.
@@ -1437,7 +1438,8 @@ def construct_confidence_cone(
     Parameters
     ----------
     angular_radius
-        Angular radius for the confidence cone bounds in radians.
+        Angular radius for the confidence cone bounds (in radians, unless
+        the parameter `use_degrees` is `True`).
     number_of_patches
         Number of patches to construct. Increase for a better approximation
         to a cone.
@@ -1449,6 +1451,8 @@ def construct_confidence_cone(
         Indicate whether the cone should be two-sided. If `True`, two cones
         will be constructed, radiating from the centre. If `False`, then a
         single cone is created.
+    use_degrees
+        Indicate whether the provided angular radius is in degrees.
     **kwargs
         Keyword arguments for the patch construction.
         See :class:`Poly3DCollection` for details.
@@ -1459,6 +1463,10 @@ def construct_confidence_cone(
         List of :class:`Poly3DCollection` representing each patch of the
         confidence cone. These patches are triangular.
     """
+
+    # Convert to radians, if necessary
+    if use_degrees:
+        angular_radius = np.radians(angular_radius)
 
     # Create a list of patches
     patches: List[mpl_toolkits.mplot3d.art3d.Poly3DCollection] = []
