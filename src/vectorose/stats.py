@@ -395,12 +395,15 @@ def compute_elliptical_confidence_cone_points(
     eigenvectors = eigen_decomposition.eigenvectors
     eigenvalues = eigen_decomposition.eigenvalues
 
-    # Calculate the g_values
-    g_1 = np.sqrt(constant / eigenvalues[0])
-    g_2 = np.sqrt(constant / eigenvalues[1])
+    # Sort the eigenvalues
+    eigenvalue_order = np.flip(np.argsort(eigenvalues))
 
-    # Get the constants from the eigenvectors
-    e_1 = eigenvectors[:, 0]
+    # Calculate the g_values
+    g_1 = np.sqrt(constant / eigenvalues[eigenvalue_order[0]])
+    g_2 = np.sqrt(constant / eigenvalues[eigenvalue_order[1]])
+
+    # Get the constants from the eigenvectors, using the larger value.
+    e_1 = eigenvectors[:, eigenvalue_order[0]]
     a = e_1[0]
     b = e_1[1]
 
@@ -485,8 +488,8 @@ def compute_confidence_cone_for_median(
         vectors=rotated_vectors
     )
 
-    phi = vectors_spherical_coordinates[util.AngularIndex.PHI]
-    theta = vectors_spherical_coordinates[util.AngularIndex.THETA]
+    phi = vectors_spherical_coordinates[:, util.AngularIndex.PHI]
+    theta = vectors_spherical_coordinates[:, util.AngularIndex.THETA]
 
     # Compute the C matrix entries
     n = len(vectors_spherical_coordinates)
