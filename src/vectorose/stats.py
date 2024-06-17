@@ -484,8 +484,11 @@ def compute_confidence_cone_for_median(
     )
 
     # Convert the rotated vectors to spherical coordinates
-    vectors_spherical_coordinates = util.compute_vector_orientation_angles(
-        vectors=rotated_vectors
+    vectors_spherical_coordinates = util.compute_vector_orientation_angles(rotated_vectors)
+
+    # Convert the angles to match the definition in the book
+    vectors_spherical_coordinates = util.convert_to_math_spherical_coordinates(
+        vectors_spherical_coordinates
     )
 
     phi = vectors_spherical_coordinates[:, util.AngularIndex.PHI]
@@ -519,6 +522,8 @@ def compute_confidence_cone_for_median(
         w_matrix=w_mat, constant=constant, number_of_points=number_of_points
     )
 
+    # TODO: Rotate the ellipse points back to the median
+
     return ellipse_points
 
 
@@ -543,7 +548,10 @@ def _kappa_equation(k: float, mean_resultant_length: float) -> float:
     return 1 / np.tanh(k) - 1 / k - mean_resultant_length
 
 
-def compute_mean_unit_direction(vector_field: np.ndarray) -> np.ndarray:
+def compute_mean_unit_direction(
+    vector_field: np.ndarray,
+    mean_resultant_vector: Optional[np.ndarray] = None
+) -> np.ndarray:
     """Compute the mean direction as a unit vector.
 
     Parameters
@@ -553,6 +561,9 @@ def compute_mean_unit_direction(vector_field: np.ndarray) -> np.ndarray:
         shape ``(n, d)`` or an ``n+1``-dimensional array containing the
         components at their spatial locations, with the components present
         along the *last* axis.
+    mean_resultant_vector
+        Optional mean resultant vector. If provided, this vector is
+        normalised. Otherwise, this vector is computed.
 
     Returns
     -------
@@ -571,9 +582,10 @@ def compute_mean_unit_direction(vector_field: np.ndarray) -> np.ndarray:
     vector_field = util.flatten_vector_field(vector_field)
 
     # Compute the mean resultant vector
-    mean_resultant_vector = compute_resultant_vector(
-        vector_field=vector_field, compute_mean_resultant=True
-    )
+    if mean_resultant_vector is None:
+        mean_resultant_vector = compute_resultant_vector(
+            vector_field=vector_field, compute_mean_resultant=True
+        )
 
     # Normalise the mean resultant
     mean_unit_vector = mean_resultant_vector / np.linalg.norm(mean_resultant_vector)
@@ -584,6 +596,7 @@ def compute_mean_unit_direction(vector_field: np.ndarray) -> np.ndarray:
 
 def estimate_concentration_parameter(
     vector_field: np.ndarray,
+    mean_resultant_vector: Optional[np.ndarray] = None,
     initial_guess: float = 0.5,
 ) -> float:
     """Estimate the concentration parameter.
@@ -600,6 +613,9 @@ def estimate_concentration_parameter(
         shape ``(n, d)`` or an ``n+1``-dimensional array containing the
         components at their spatial locations, with the components present
         along the *last* axis.
+    mean_resultant_vector
+        The mean resultant vector, in cartesian coordinates. If not
+        provided, it will be computed in this function.
     initial_guess
         Initial guess for the concentration parameter.
 
@@ -635,9 +651,10 @@ def estimate_concentration_parameter(
     vector_field = util.flatten_vector_field(vector_field)
 
     # Compute the mean resultant length
-    mean_resultant_vector = compute_resultant_vector(
-        vector_field, compute_mean_resultant=True
-    )
+    if mean_resultant_vector is None:
+        mean_resultant_vector = compute_resultant_vector(
+            vector_field, compute_mean_resultant=True
+        )
     mean_resultant_length = np.linalg.norm(mean_resultant_vector)
 
     # Solve for the concentration parameter

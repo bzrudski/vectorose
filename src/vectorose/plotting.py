@@ -1474,8 +1474,8 @@ def construct_confidence_cone(
     # Construct the rotation matrix
     if mean_orientation is not None:
         mean_orientation_spherical = compute_vector_orientation_angles(
-            vectors=mean_orientation[None, :]
-        )[0]
+            vectors=mean_orientation
+        )
 
         mean_phi = mean_orientation_spherical[AngularIndex.PHI]
         mean_theta = mean_orientation_spherical[AngularIndex.THETA]
@@ -1636,8 +1636,11 @@ def produce_3d_confidence_cone_plot(
     zs = sphere_vertices[..., 2]
     ax.plot_surface(xs, ys, zs, color=sphere_colour, alpha=sphere_alpha)
 
+    # Ensure the radius is only passed once
+    kwargs["radius"] = sphere_radius
+
     # Label the plot
-    ax = produce_labelled_3d_plot(ax=ax, radius=sphere_radius, **kwargs)
+    ax = produce_labelled_3d_plot(ax=ax, **kwargs)
 
     ax.set_aspect("equal")
 

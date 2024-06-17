@@ -371,15 +371,18 @@ def compute_vector_orientation_angles(
     the orientations considered in the current application.
     """
 
-    n = len(vectors)
+    if vectors.ndim > 1:
+        n = len(vectors)
+    else:
+        n = 1
 
     # Ensure that all vectors are in octants with positive x.
     # vectors = np.copy(vectors)
     # vectors[vectors[:, 0] < 0] = -vectors[vectors[:, 0] < 0]
 
-    x: np.ndarray = vectors[:, 0]
-    y: np.ndarray = vectors[:, 1]
-    z: np.ndarray = vectors[:, 2]
+    x: np.ndarray = vectors[..., 0]
+    y: np.ndarray = vectors[..., 1]
+    z: np.ndarray = vectors[..., 2]
 
     # Compute the raw angles using arctan2
     phi = np.arctan2(np.sqrt(x**2 + y**2), z)
@@ -399,10 +402,79 @@ def compute_vector_orientation_angles(
         theta = np.degrees(theta)
 
     angular_coordinates = np.zeros((n, 2))
-    angular_coordinates[:, AngularIndex.PHI] = phi
-    angular_coordinates[:, AngularIndex.THETA] = theta
+    angular_coordinates[..., AngularIndex.PHI] = phi
+    angular_coordinates[..., AngularIndex.THETA] = theta
+
+    # If there is only one vector, squeeze out the extra axis
+    angular_coordinates = np.squeeze(angular_coordinates)
 
     return angular_coordinates
+
+
+def convert_to_math_spherical_coordinates(
+    original_angles: np.ndarray,
+    use_degrees: bool = False
+) -> np.ndarray:
+    """Convert to the mathematical definition of spherical coordinates.
+
+    Directional statistics texts, such as the work by Fisher, Lewis and
+    Embleton, [#fisher-lewis-embleton]_ define the spherical coordinates
+    differently than we do in this code. For compatibility with statistical
+    procedures described in such works, this function converts spherical
+    coordinates in our representation to the standard definition.
+
+    Parameters
+    ----------
+    original_angles
+        Array of shape ``(n, 2)`` containing the phi, theta angles computed
+        using our definition of spherical coordinates, defined in the
+        function :func:`.compute_vector_orientation_angles`.
+    use_degrees
+        Indicate whether the original spherical coordinates are in degrees,
+        and whether the resulting transformed vectors should also be in
+        degrees. If `False`, all angles are assumed to be in radians.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array of the same shape as the input `original_angles`, but with
+        the angles defined following Fisher, Lewis and Embleton's
+        definitions. [#fisher-lewis-embleton]_
+
+
+    Notes
+    -----
+    The polar coordinates in section 2.2 (a) of by Fisher, Lewis and
+    Embleton [#fisher-lewis-embleton]_ define the angle :math:`\\theta` as
+    the angle of inclination from the vertical axis, while the in-plane
+    angle :math:`\\phi` is the counter-clockwise (anticlockwise) angle in
+    the ``xy``-plane, measured with respect to the ``+y`` axis.
+
+    """
+
+    # Convert to radians if necessary
+    if use_degrees:
+        original_angles = np.radians(original_angles)
+
+    # Extract the angular components
+    phi = original_angles[..., AngularIndex.PHI]
+    theta = original_angles[..., AngularIndex.THETA]
+
+    # Take into account the different definitions of angles in FL&E
+    new_theta = phi
+    new_phi = 2 * np.pi - (theta - np.pi / 2)
+    new_phi = np.where(new_phi > 0, new_phi, new_phi + 2 * np.pi)
+
+    # And now define the new array
+    new_angles = np.zeros_like(original_angles)
+    new_angles[..., AngularIndex.PHI] = new_phi
+    new_angles[..., AngularIndex.THETA] = new_theta
+
+    # Convert to degrees, if necessary
+    if use_degrees:
+        new_angles = np.degrees(new_angles)
+
+    return new_angles
 
 
 def rotate_vectors(
@@ -433,22 +505,19 @@ def rotate_vectors(
 
     # Convert the new pole location into phi and theta angles
     new_pole_spherical_coordinates = compute_vector_orientation_angles(
-        vectors=new_pole[None, :], use_degrees=False
-    )[0]
+        vectors=new_pole, use_degrees=False
+    )
+
+    # To use the matrix defined by FL&E, convert to their spherical
+    # coordinate definition.
+    converted_spherical_coordinates = convert_to_math_spherical_coordinates(
+        new_pole_spherical_coordinates
+    )
 
     # Extract the angular components
-    phi = new_pole_spherical_coordinates[AngularIndex.PHI]
-    theta = new_pole_spherical_coordinates[AngularIndex.THETA]
+    phi = converted_spherical_coordinates[AngularIndex.PHI]
+    theta = converted_spherical_coordinates[AngularIndex.THETA]
     psi = roll
-
-    # Take into account the different definitions of angles in FL&E
-    new_theta = phi
-    new_phi = 2 * np.pi - (theta - np.pi / 2)
-    new_phi = np.where(new_phi > 0, new_phi, new_phi + 2 * np.pi)
-
-    # And now swap the names
-    theta = new_theta
-    phi = new_phi
 
     # Compute the rotation matrix rows
     row_1 = [
