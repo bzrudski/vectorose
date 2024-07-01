@@ -25,9 +25,9 @@ pytest-cov = "^4.1.0"
 jupyter = "^1.0.0"
 myst-nb = "^1.0.0"
 sphinx-autoapi = "^3.0.0"
-furo = "^2023.9.10"
 python-semantic-release = "^8.7.0"
 ipympl = "^0.9.4"
+pydata-sphinx-theme = "^0.15.3"
 
 [tool.semantic_release]
 version_toml = [
