@@ -8,6 +8,12 @@
 Mock vector data creator.
 
 This module provides tools to create artificial vectors for testing.
+
+References
+----------
+.. [#fisher-lewis-embleton] Fisher, N. I., Lewis, T., & Embleton, B. J.
+   J. (1993). Statistical analysis of spherical data ([New ed.], 1.
+   paperback ed). Cambridge Univ. Press.
 """
 from numbers import Real
 from typing import List, Sequence, Union
