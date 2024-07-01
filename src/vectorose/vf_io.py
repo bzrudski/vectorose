@@ -235,9 +235,11 @@ def import_vector_field(
     filepath: str,
     default_file_type: VectorFileType = VectorFileType.NPY,
     contains_headers: bool = False,
-    sheet_name: Optional[str] = None,
+    sheet: Optional[Union[str, int]] = None,
     location_columns: Optional[Sequence[int]] = DEFAULT_LOCATION_COLUMNS,
     component_columns: Sequence[int] = DEFAULT_COMPONENT_COLUMNS,
+    component_axis: int = -1,
+    separator: str = "\t",
     silence_exceptions: bool = True,
 ) -> Optional[np.ndarray]:
     """Import a vector field.
@@ -261,8 +263,9 @@ def import_vector_field(
         Indicate whether the file contains headers. This option is only
         considered if the vectors are in a CSV or Excel file.
 
-    sheet_name
-        Name of the sheet to consider if the vectors are in an Excel file.
+    sheet
+        Name or index of the sheet to consider if the vectors are in an
+        Excel file.
 
     location_columns
         Column indices for the vector *spatial coordinates* in the order
@@ -274,6 +277,13 @@ def import_vector_field(
         Column indices referring to the vector *components* in the order
         ``(vx, vy, vz)``. By default, the last three columns
         ``(-3, -2, -1)`` are assumed to be the ``(vx, vy, vz)``.
+
+    component_axis
+        Axis along which the components are defined, in the case of a NumPy
+        array which has more than 2 dimensions.
+
+    separator
+        Column separator to use if the vector field is a CSV file.
 
     silence_exceptions
         Indicate whether to silence exceptions. If `True`, then `None` will
@@ -296,6 +306,12 @@ def import_vector_field(
         The requested file does not exist.
     ValueError
         The requested file cannot be parsed.
+
+    Notes
+    -----
+    If the vector field file passed contains an array with a dimension > 2,
+    then the components are assumed to be along the axis passed in the
+    argument `component_axis` and the array will be flattened to 2D.
     """
 
     # First, infer the file type from the filename
@@ -308,6 +324,16 @@ def import_vector_field(
     if filetype is VectorFileType.NPY:
         try:
             vector_field: np.ndarray = np.load(filepath)
+
+            # Check the dimension of the vector field array
+            if vector_field.ndim > 2:
+                # Get the vector dimension
+                d = vector_field.shape[component_axis]
+
+                # Flatten the array
+                vector_field = np.moveaxis(vector_field, component_axis, -1).reshape(
+                    -1, d
+                )
         except (OSError, ValueError):
             # Invalid NumPy array, so return None.
             if not silence_exceptions:
@@ -321,10 +347,10 @@ def import_vector_field(
         try:
             # Reading function depends on whether CSV or Excel
             if filetype is VectorFileType.CSV:
-                vector_field_dataframe = pd.read_csv(filepath, header=header_row)
+                vector_field_dataframe = pd.read_csv(filepath, header=header_row, sep=separator)
             elif filetype is VectorFileType.EXCEL:
                 vector_field_dataframe = pd.read_excel(
-                    filepath, sheet_name=sheet_name, header=header_row
+                    filepath, sheet_name=sheet, header=header_row
                 )
             else:
                 return None
