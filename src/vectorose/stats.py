@@ -6,7 +6,7 @@ data used to construct the VectoRose plots.
 Notes
 -----
 These statistical tests are largely derived from the work by Fisher, Lewis
-and Embleton. [#fisher-lewis-embleton]
+and Embleton. [#fisher-lewis-embleton]_
 
 References
 ----------
@@ -235,7 +235,7 @@ def uniform_vs_unimodal_test(
 
     References
     ----------
-    See [#fisher-lewish-embleton]_, section 5.3.1(i).
+    See [#fisher-lewis-embleton]_, section 5.3.1(i).
     """
 
     # Check if the vectors
@@ -280,7 +280,7 @@ def uniform_vs_unimodal_test(
 def _compute_sum_of_arc_lengths(new_vector: np.ndarray, vectors: np.ndarray) -> float:
     """Compute the sum of arc lengths from vectors to a specified vector.
 
-    See section 5.3.1(ii) in [#fisher-lewis-embleton]. This function is
+    See section 5.3.1(ii) in [#fisher-lewis-embleton]_. This function is
     used to estimate the spherical median of a sample of vectors.
 
     Parameters
@@ -311,7 +311,7 @@ def compute_median_direction(vector_field: np.ndarray) -> np.ndarray:
     """Compute the median direction for a unimodal distribution.
 
     Using the method described by Fisher, Lewis and
-    Embleton [#fisher-lewis-embleton], compute the median direction for a
+    Embleton [#fisher-lewis-embleton]_, compute the median direction for a
     unimodal directional distribution.
 
     Parameters
@@ -530,7 +530,7 @@ def compute_confidence_cone_for_median(
 def _kappa_equation(k: float, mean_resultant_length: float) -> float:
     """Equation which is satisfied by the concentration parameter.
 
-    See Fisher, Lewis and Embleton, [#fisher-lewis-embleton] section
+    See Fisher, Lewis and Embleton, [#fisher-lewis-embleton]_ section
     5.3.2(iv).
 
     Parameters
