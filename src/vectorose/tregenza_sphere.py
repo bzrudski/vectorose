@@ -258,7 +258,7 @@ class TregenzaSphereBase:
                     vmin=min_face_count, vmax=max_face_count
                 )
             else:
-                norm.autoscale(flattened_face_data)
+                norm.autoscale_None(flattened_face_data)
 
             # Compute the colours
             scalar_mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)

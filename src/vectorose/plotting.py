@@ -1300,7 +1300,7 @@ def produce_3d_triangle_sphere_plot(
             vmin=face_counts.min(), vmax=face_counts.max()
         )
     else:
-        norm.autoscale(face_counts)
+        norm.autoscale_None(face_counts)
 
     scalar_mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap=colour_map)
 
@@ -1351,7 +1351,7 @@ def produce_3d_tregenza_sphere_plot(
     colour_map: str = "viridis",
     norm: Optional[plt.Normalize] = None,
     correct_area_weighting: bool = True,
-    **kwargs: Optional[dict[str, Any]],
+    **kwargs,
 ) -> mpl_toolkits.mplot3d.axes3d.Axes3D:
     """Produce a 3D sphere plot based on a Tregenza sphere.
 
@@ -1399,7 +1399,7 @@ def produce_3d_tregenza_sphere_plot(
     if norm is None:
         norm = matplotlib.colors.Normalize()
 
-    norm.autoscale(flattened_histogram_data)
+    norm.autoscale_None(flattened_histogram_data)
 
     ax = tregenza_sphere.create_tregenza_plot(
         ax=ax,
