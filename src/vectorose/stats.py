@@ -3,6 +3,16 @@
 Statistical tests, analyses and routines for analysing the directional
 data used to construct the VectoRose plots.
 
+Warnings
+--------
+For many of the statistical operations defined here, a set of *unit
+vectors* is required in order for interpretation to be possible. To produce
+a set of normalised vectors, use either :func:`util.normalise_vectors` to
+perform a naive normalisation,
+or :func:`util.generate_representative_unit_vectors` to produce unit
+vectors with orientations appearing at frequencies proportional to their
+original magnitudes.
+
 Notes
 -----
 These statistical tests are largely derived from the work by Fisher, Lewis
@@ -326,12 +336,14 @@ def compute_median_direction(vector_field: np.ndarray) -> np.ndarray:
     -------
     numpy.ndarray
         Cartesian coordinates for the estimate of the median direction.
+
+    Warnings
+    --------
+    The vectors must be normalised to unit length before computing these
+    statistics.
     """
 
     vector_field = util.flatten_vector_field(vector_field)
-
-    # Normalise the vectors
-    vector_field, _ = util.normalise_vectors(vector_field)
 
     # Define the function to minimise
     sum_of_arc_lengths_function = functools.partial(
@@ -767,6 +779,11 @@ def calculate_coplanarity_index(
     float
         The average scalar triple product for the sampled vectors.
 
+    Warnings
+    --------
+    The vectors must be normalised to unit length before computing these
+    statistics.
+
     Notes
     -----
     Sampling is performed without replacement in a given set, and with
@@ -789,9 +806,6 @@ def calculate_coplanarity_index(
 
     # Flatten vector field
     vector_field = util.flatten_vector_field(vector_field)
-
-    # Normalise the vectors
-    vector_field, _ = util.normalise_vectors(vector_field)
 
     # Compute the scalar triple products
     scalar_triple_products: List[float] = []
@@ -850,19 +864,18 @@ def fit_fisher_vonmises_distribution(
         Parameters necessary to construct a Fisher-von Mises distribution
         that fits the vector field.
 
+    Warnings
+    --------
+    The vectors must be normalised to unit length before computing these
+    statistics.
+
     See Also
     --------
     scipy.stats.vonmises_fisher.fit : Function used to perform the fitting.
-
-    Notes
-    -----
-    The vector field is normalised, so that only the orientations are
-    considered when fitting.
     """
 
     # Flatten the vector field
     vector_field = util.flatten_vector_field(vector_field)
-    vector_field, _ = util.normalise_vectors(vector_field)
 
     # Perform the fitting
     mu, kappa = vonmises_fisher.fit(vector_field)

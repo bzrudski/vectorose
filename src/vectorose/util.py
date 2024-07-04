@@ -10,7 +10,7 @@ Cartesian and spherical coordinates.
 """
 
 import enum
-from typing import Any, Sequence, Tuple, Union
+from typing import Any, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -96,6 +96,39 @@ def remove_zero_vectors(vectors: np.ndarray) -> np.ndarray:
     return non_zero_vectors
 
 
+def normalise_array(arr: np.ndarray, axis: Optional[int] = None) -> np.ndarray:
+    """Normalise an array.
+
+    Normalise the provided array so that all entries sum to one along the
+    specified axis.
+
+    Parameters
+    ----------
+    arr
+        The array to normalise. This array can have any shape.
+    axis
+        The axis along which to normalise. If `None`, then overall
+        normalisation is performed.
+
+    Returns
+    -------
+    numpy.ndarray
+        The normalised array, such that the sum of all entries is 1 along
+        the specified axis.
+
+    """
+
+    if axis is None:
+        axis = tuple(np.arange(arr.ndim))
+
+    sums_along_axis = arr.sum(axis=axis)
+    sums_along_axis = np.expand_dims(sums_along_axis, axis)
+
+    normalised_array = arr / sums_along_axis
+
+    return normalised_array
+
+
 def normalise_vectors(vectors: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """Normalise an array of vectors.
 
@@ -133,6 +166,10 @@ def normalise_vectors(vectors: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     the *i*-th axis.
     """
 
+    original_dimensions = vectors.ndim
+
+    vectors = np.atleast_2d(vectors)
+
     # Compute the vector magnitudes
     vector_components = vectors[:, -3:]
     vector_magnitudes = np.linalg.norm(vector_components, axis=-1)
@@ -152,7 +189,74 @@ def normalise_vectors(vectors: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     else:
         normalised_vectors = normalised_components
 
+    if original_dimensions < 2:
+        normalised_vectors = np.squeeze(normalised_vectors)
+
     return normalised_vectors, vector_magnitudes
+
+
+def generate_representative_unit_vectors(
+    vectors: np.ndarray,
+    number_of_samples: Optional[int] = None,
+) -> np.ndarray:
+    """Generate a representative sample of unit vectors.
+
+    Using the magnitudes of a set of non-zero, non-unit vectors as weight,
+    create a sample of unit vectors whose frequency is proportional to the
+    magnitudes.
+
+    Parameters
+    ----------
+    vectors
+        Array of shape ``(n, 3)`` containing non-normalised vectors in
+        Cartesian coordinates.
+    number_of_samples
+        Number of vectors to draw randomly. If `None`, then ceiling of the
+        number of vectors divided by the minimum of the normalised
+        magnitudes is used.
+
+    Returns
+    -------
+    numpy.ndarray
+        The randomly sampled vectors in an array of shape ``(m, 3)`` where
+        ``m`` is either the value of `number_of_samples` or the
+        automatically computed number described above if
+        `number_of_samples` is `None`.
+
+    Notes
+    -----
+    This function is included to allow computing directional statistics on
+    the inputted vector fields. Most described approaches rely on
+    collections of *unit* vectors. Simply normalising the vectors may alter
+    the meaning of the presented data. The rationale behind this function
+    is to sample unit vectors of direction with probability proportional to
+    the respective magnitudes. This process produces a collection of unit
+    vectors whose distribution of orientations matches the weights imposed
+    by the original magnitudes.
+
+    """
+
+    unit_vectors, magnitudes = normalise_vectors(vectors)
+
+    normalised_magnitudes = normalise_array(magnitudes, axis=0)
+
+    if number_of_samples is None:
+        number_of_vectors = len(normalised_magnitudes)
+        number_of_samples = np.ceil(
+            number_of_vectors / normalised_magnitudes.min()
+        )
+
+        number_of_samples = np.min([number_of_samples, 1e7]).astype(int)
+
+    selected_vectors = np.random.default_rng().choice(
+        unit_vectors,
+        size=number_of_samples,
+        replace=True,
+        p=normalised_magnitudes,
+        axis=0,
+    )
+
+    return selected_vectors
 
 
 def convert_vectors_to_axes(vectors: np.ndarray) -> np.ndarray:
@@ -412,8 +516,7 @@ def compute_vector_orientation_angles(
 
 
 def convert_to_math_spherical_coordinates(
-    original_angles: np.ndarray,
-    use_degrees: bool = False
+    original_angles: np.ndarray, use_degrees: bool = False
 ) -> np.ndarray:
     """Convert to the mathematical definition of spherical coordinates.
 
