@@ -211,9 +211,9 @@ def generate_representative_unit_vectors(
         Array of shape ``(n, 3)`` containing non-normalised vectors in
         Cartesian coordinates.
     number_of_samples
-        Number of vectors to draw randomly. If `None`, then ceiling of the
-        number of vectors divided by the minimum of the normalised
-        magnitudes is used.
+        Number of vectors to draw randomly. If `None`, then the minimum of
+        the ceiling of the number of vectors divided by the minimum of the
+        normalised magnitudes, or simple ``10e7`` is used.
 
     Returns
     -------
