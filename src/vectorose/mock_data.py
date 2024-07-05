@@ -17,6 +17,7 @@ References
 """
 from numbers import Real
 from typing import List, Sequence, Union
+from collections.abc import Collection
 
 import numpy as np
 from scipy.stats import vonmises_fisher
@@ -206,35 +207,23 @@ def create_vectors_multiple_orientations(
     # Get the number of vector families
     number_of_families = len(phi_array)
 
-    # Convert the remaining parameters to arrays
-    arguments = {
-        "number_of_vectors": numbers_of_vectors,
-        "phi_std": phi_stds,
-        "theta_std": theta_stds,
-        "magnitude": magnitudes,
-        "magnitude_std": magnitude_stds,
-        "inversion_prob": inversion_probs,
-    }
-
-    corrected_argument_arrays = {}
-
-    for arr_name in arguments:
-        arg = arguments[arr_name]
-
-        if isinstance(arg, Real):
-            corrected_arr = arg * np.ones(number_of_families)
-        else:
-            corrected_arr = arg
-        corrected_argument_arrays[arr_name] = corrected_arr
-
-    numbers_of_vectors_array = corrected_argument_arrays["number_of_vectors"].astype(
-        int
+    # Ensure that all arguments have the correct length
+    (
+        numbers_of_vectors_array,
+        phi_std_array,
+        theta_std_array,
+        magnitude_array,
+        magnitude_std_array,
+        inversion_probs_array,
+    ) = convert_args_to_length(
+        number_of_families,
+        numbers_of_vectors,
+        phi_stds,
+        theta_stds,
+        magnitudes,
+        magnitude_stds,
+        inversion_probs,
     )
-    phi_std_array = corrected_argument_arrays["phi_std"]
-    theta_std_array = corrected_argument_arrays["theta_std"]
-    magnitude_array = corrected_argument_arrays["magnitude"]
-    magnitude_std_array = corrected_argument_arrays["magnitude_std"]
-    inversion_probs_array = corrected_argument_arrays["inversion_prob"]
 
     # And now, we can iterate:
     vector_results = [
@@ -347,6 +336,160 @@ def create_vonmises_fisher_vectors_single_direction(
     return sampled_points
 
 
+def convert_args_to_length(
+    n: int, *args: Union[float, Collection[float]]
+) -> tuple[np.ndarray, ...]:
+    """Standardise the length of all arguments.
+
+    Convert the provided numbers or collections of numbers to NumPy arrays
+    of a specified length.
+
+    Parameters
+    ----------
+    n
+        The length to which all fields will be standardised.
+    *args
+        The arguments to convert to arrays of a specified length. Each must
+        either be a single value (or a collection of length 1) or a
+        collection of length `n`.
+
+    Returns
+    -------
+    tuple of np.ndarray
+        The converted values in the same order they were originally passed.
+        Any NumPy arrays passed will **not be copied** and the original
+        arrays will simply be returned.
+
+    Raises
+    ------
+    ValueError
+        If collections passed in have a length that is not 1 or `n`.
+    """
+
+    converted_arguments: List[np.ndarray] = []
+
+    for arg in args:
+        # Check to see if we have a collection
+        if isinstance(arg, Collection):
+            if isinstance(arg, np.ndarray):
+                converted_arg = arg
+            else:
+                converted_arg = np.array(arg)
+
+                if len(converted_arg) == 1:
+                    converted_arg = np.tile(converted_arg, n)
+
+            if converted_arg.ndim > 1 or len(converted_arg) != n:
+                raise ValueError("The passed arguments must have length 1 or `n`!")
+        else:
+            converted_arg = np.tile(arg, n)
+
+        converted_arguments.append(converted_arg)
+
+    return tuple(converted_arguments)
+
+
+def create_von_mises_fisher_vectors_multiple_directions(
+    phis: Collection[float],
+    thetas: Collection[float],
+    kappas: Collection[float],
+    numbers_of_vectors: Union[int, Collection[int]] = 1000,
+    magnitudes: Union[float, Collection[float]] = 1.0,
+    magnitude_stds: Union[float, Collection[float]] = 0.5,
+    use_degrees: bool = False,
+) -> np.ndarray:
+    """Create vectors drawn from multiple von Mises-Fisher distributions.
+
+    Using the supplied arguments, generate a collection of vectors drawn
+    from multiple von Mises-Fisher distributions. These vectors may have
+    non-unit magnitude, determined using a Gaussian distribution.
+
+    Parameters
+    ----------
+    phis
+        The set of ``phi`` values for the mean direction.
+    thetas
+        The set of ``theta`` values for the mean direction.
+    kappas
+        The set of concentration parameters for the distributions. If a
+        single :class:`float` is passed, the same concentration parameter
+        will be used for each set of vectors.
+    numbers_of_vectors
+        Number of vectors to produce for each parameter set. If a single
+       :class:`int` is passed, the same number of vectors will be generated
+       for each parameter set.
+    magnitudes
+        The average magnitude of the vectors produced for each parameter
+        set. If a single :class:`float` is passed, then the same average
+        magnitude is used for all parameter sets.
+    magnitude_stds
+        The standard deviation of the magnitude for each parameter set. If
+        greater than zero, then the magnitudes are drawn from a normal
+        distribution. If a single :class:`float` is passed, then the same
+        standard deviation is used for all parameter sets.
+    use_degrees
+        Indicate whether the provided angles are in degrees. If `False`,
+        the angles are assumed to be in radians.
+
+    Returns
+    -------
+    numpy.ndarray
+        The generated vectors drawn from different von Mises-Fisher
+        distributions.
+
+    Warnings
+    --------
+    The array-like arguments must **all** have the same length, unless a
+    single value is provided.
+
+    See Also
+    --------
+    create_vonmises_fisher_vectors_single_direction :
+        Function that generates vectors drawn from a single von
+        Mises-Fisher distribution.
+    create_create_vectors_multiple_orientations :
+        Naive, non-directional statistics approach for generating vectors
+        with different directions by applying noise in phi and theta
+        separately.
+
+    """
+
+    # Convert everything to arrays
+    phi_array: np.ndarray = np.array(phis)
+    theta_array: np.ndarray = np.array(thetas)
+    kappa_array: np.ndarray = np.array(kappas)
+
+    # Get the number of vector families
+    number_of_families = len(phi_array)
+
+    # Convert the remaining arguments
+    (
+        number_of_vectors_array,
+        magnitude_array,
+        magnitude_std_array,
+    ) = convert_args_to_length(
+        number_of_families, numbers_of_vectors, magnitudes, magnitude_stds
+    )
+
+    # Now, build up the results
+    vector_results = [
+        create_vonmises_fisher_vectors_single_direction(
+            phi_array[i],
+            theta_array[i],
+            kappa_array[i],
+            number_of_vectors_array[i],
+            magnitude_array[i],
+            magnitude_std_array[i],
+            use_degrees,
+        )
+        for i in range(number_of_families)
+    ]
+
+    all_vectors = np.concatenate(vector_results, axis=0)
+
+    return all_vectors
+
+
 def generate_watson_distribution(
     mean_direction: np.ndarray, kappa: float, n: int = 100000
 ) -> np.ndarray:
@@ -402,7 +545,8 @@ def generate_watson_distribution(
 
         # Perform the common steps
 
-        # Compute the colatitude and the longitude - adapt for our definition of phi and theta
+        # Compute the co-latitude and the longitude - adapt for our
+        # definition of phi and theta
         phi = np.arccos(s)
         theta = 2 * np.pi * np.random.default_rng().uniform()
 
@@ -412,6 +556,10 @@ def generate_watson_distribution(
 
     # Convert all new vectors to cartesian coordinates and rotate to mean
     random_vectors = np.stack(random_vector_list, axis=0)
-    new_vectors_cartesian = util.convert_spherical_to_cartesian_coordinates(random_vectors)
-    rotated_new_vectors = util.rotate_vectors(new_vectors_cartesian, new_pole=mean_direction)
+    new_vectors_cartesian = util.convert_spherical_to_cartesian_coordinates(
+        random_vectors
+    )
+    rotated_new_vectors = util.rotate_vectors(
+        new_vectors_cartesian, new_pole=mean_direction
+    )
     return rotated_new_vectors
