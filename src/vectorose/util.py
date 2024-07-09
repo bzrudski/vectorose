@@ -16,23 +16,16 @@ import numpy as np
 
 
 class AngularIndex(enum.IntEnum):
-    """Angular Index
+    """Angular index definition.
 
     Stores the index of the different angles to avoid ambiguity in code.
-
-    Members
-    -------
-    PHI
-        Angle phi (:math:`\\phi`), representing the angle with respect to
-        the positive :math:`y`-axis. Index 0 in all arrays.
-
-    THETA
-        Angle theta (:math:`\\theta`), representing the angle of incline
-        with respect to the positive :math:`z`-axis. Index 1 in all arrays.
     """
 
     PHI = 0
+    """Angle phi, in-plane with respect to positive ``y``; index 0."""
+
     THETA = 1
+    """Angle theta, incline with respect to positive ``z``; index 1."""
 
 
 def flatten_vector_field(vector_field: np.ndarray) -> np.ndarray:
