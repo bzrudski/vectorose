@@ -563,3 +563,91 @@ def generate_watson_distribution(
         new_vectors_cartesian, new_pole=mean_direction
     )
     return rotated_new_vectors
+
+
+def generate_watson_vectors_multiple_directions(
+    phis: Collection[float],
+    thetas: Collection[float],
+    kappas: Collection[float],
+    numbers_of_vectors: Union[int, Collection[int]] = 1000,
+    use_degrees: bool = False,
+) -> np.ndarray:
+    """Create vectors drawn from multiple von Watson distributions.
+
+    Using the supplied arguments, generate a collection of vectors drawn
+    from multiple Watson distributions.
+
+    Parameters
+    ----------
+    phis
+        The set of ``phi`` values for the mean direction.
+    thetas
+        The set of ``theta`` values for the mean direction.
+    kappas
+        The set of shape parameters for the distributions. If a single
+        :class:`float` is passed, the same shape parameter will be used for
+        each set of vectors.
+    numbers_of_vectors
+        Number of vectors to produce for each parameter set. If a single
+       :class:`int` is passed, the same number of vectors will be generated
+       for each parameter set.
+    use_degrees
+        Indicate whether the provided angles are in degrees. If `False`,
+        the angles are assumed to be in radians.
+
+    Returns
+    -------
+    numpy.ndarray
+        The generated vectors drawn from different Watson distributions.
+
+    Warnings
+    --------
+    The array-like arguments must **all** have the same length, unless a
+    single value is provided.
+
+    See Also
+    --------
+    generate_watson_distribution :
+        Function that generates vectors drawn from a Watson distribution.
+    create_von_mises_fisher_vectors_multiple_directions :
+        Similar function for generating vectors from multiple von
+        Mises-Fisher distributions.
+
+    """
+
+    # Convert everything to arrays
+    phi_array: np.ndarray = np.array(phis)
+    theta_array: np.ndarray = np.array(thetas)
+    kappa_array: np.ndarray = np.array(kappas)
+
+    # Get the number of vector families
+    number_of_families = len(phi_array)
+
+    # Convert the remaining arguments
+    (number_of_vectors_array, ) = convert_args_to_length(
+        number_of_families,
+        numbers_of_vectors,
+    )
+
+    # Convert the phi and theta values to Cartesian coordinates
+    stacked_angles = np.stack([phi_array, theta_array], axis=-1)
+
+    # Convert the angles to radians, if necessary.
+    if use_degrees:
+        stacked_angles = np.radians(stacked_angles)
+
+    mean_directions = util.convert_spherical_to_cartesian_coordinates(stacked_angles)
+
+    # Now, build up the results
+    vector_results = [
+        generate_watson_distribution(
+            mean_directions[i],
+            kappa_array[i],
+            number_of_vectors_array[i],
+        )
+        for i in range(number_of_families)
+    ]
+
+    all_vectors = np.concatenate(vector_results, axis=0)
+
+    return all_vectors
