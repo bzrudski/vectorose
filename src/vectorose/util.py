@@ -13,6 +13,7 @@ import enum
 from typing import Any, Optional, Sequence, Tuple, Union
 
 import numpy as np
+from scipy.spatial.transform import Rotation
 
 
 class AngularIndex(enum.IntEnum):
@@ -560,6 +561,7 @@ def convert_to_math_spherical_coordinates(
     new_theta = phi
     new_phi = 2 * np.pi - (theta - np.pi / 2)
     new_phi = np.where(new_phi > 0, new_phi, new_phi + 2 * np.pi)
+    new_phi = np.where(new_phi >= 2 * np.pi, new_phi % (2 * np.pi), new_phi)
 
     # And now define the new array
     new_angles = np.zeros_like(original_angles)
@@ -579,8 +581,7 @@ def rotate_vectors(
     """Rotate a set of vectors.
 
     Rotate vectors so that the top pole of the sphere is rotated to a
-    specified location, as described by Fisher, Lewis and
-    Embleton. [#fisher-lewis-embleton]_
+    specified location.
 
     Parameters
     ----------
@@ -597,6 +598,13 @@ def rotate_vectors(
     -------
     numpy.ndarray
         Array of shape ``(n, 3)`` containing the rotated vector components.
+
+    Notes
+    -----
+    Although the approach described by Fisher, Lewis and
+    Embleton [#fisher-lewis-embleton]_ was initially used, we replaced it
+    with the :class:`scipy.spatial.transform.Rotation` class present in
+    SciPy.
     """
 
     # Convert the new pole location into phi and theta angles
@@ -604,39 +612,9 @@ def rotate_vectors(
         vectors=new_pole, use_degrees=False
     )
 
-    # To use the matrix defined by FL&E, convert to their spherical
-    # coordinate definition.
-    converted_spherical_coordinates = convert_to_math_spherical_coordinates(
-        new_pole_spherical_coordinates
-    )
+    rotation = Rotation.from_euler("xz", -new_pole_spherical_coordinates)
 
-    # Extract the angular components
-    phi = converted_spherical_coordinates[AngularIndex.PHI]
-    theta = converted_spherical_coordinates[AngularIndex.THETA]
-    psi = roll
-
-    # Compute the rotation matrix rows
-    row_1 = [
-        np.cos(theta) * np.cos(phi) * np.cos(psi) - np.sin(phi) * np.sin(psi),
-        np.cos(theta) * np.sin(phi) * np.cos(psi) + np.cos(phi) * np.sin(psi),
-        -np.sin(theta) * np.cos(psi),
-    ]
-
-    row_2 = [
-        -np.cos(theta) * np.cos(phi) * np.sin(psi) - np.sin(phi) * np.cos(psi),
-        -np.cos(theta) * np.sin(phi) * np.sin(psi) + np.cos(phi) * np.cos(psi),
-        np.sin(theta) * np.sin(psi),
-    ]
-
-    row_3 = [np.sin(theta) * np.cos(phi), np.sin(theta) * np.sin(phi), np.cos(theta)]
-
-    rotation_matrix = np.array([row_1, row_2, row_3])
-
-    # Apply the rotation to all the components
-    # To do this, we want our vectors to be columns, so transpose.
-    # Then, we want the final result to be a stack of row vectors, so we
-    # transpose again.
-    rotated_vectors = (rotation_matrix @ vectors.T).T
+    rotated_vectors = rotation.apply(vectors)
 
     # Return the rotated components
     return rotated_vectors
