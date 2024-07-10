@@ -26,7 +26,7 @@ References
 """
 import dataclasses
 import functools
-from typing import List, Optional
+from typing import List, NamedTuple, Optional
 
 from scipy.optimize import NonlinearConstraint, minimize, fsolve
 from scipy.stats import chi2, vonmises_fisher
@@ -200,6 +200,55 @@ def compute_orientation_matrix_eigs(
     orientation_matrix = compute_orientation_matrix(vector_field, is_axial)
 
     return np.linalg.eig(orientation_matrix)
+
+
+class OrientationMatrixParameters(NamedTuple):
+    """Orientation matrix parameters."""
+
+    shape_parameter: float
+    """Shape parameter, also known as gamma."""
+
+    strength_parameter: float
+    """Strength parameter, also known as zeta."""
+
+
+def compute_orientation_matrix_parameters(eigs: np.ndarray) -> OrientationMatrixParameters:
+    """Compute the orientation matrix parameters.
+
+    Compute the gamma and zeta parameters, defined in Fisher, Lewis and
+    Embleton. [#fisher-lewis-embleton]_
+
+    Parameters
+    ----------
+    eigs
+        The eigenvalues of the orientation matrix.
+
+    Returns
+    -------
+    OrientationMatrixParameters
+        The distribution parameters computed from the orientation matrix
+        eigenvalues.
+
+    Notes
+    -----
+    See section 3.4 of Fisher, Lewis and Embleton [#fisher-lewis-embleton]_
+    for computational details.
+    """
+
+    # Sort the eigenvalues
+    sorted_eigs = np.sort(eigs)
+
+    # Get the eigenvalues
+    t1, t2, t3 = sorted_eigs
+
+    # Compute the shape parameter
+    gamma = np.log(t3 / t2) / np.log(t2 / t1)
+
+    # Compute the strength parameter
+    zeta = np.log(t3 / t1)
+
+    # Return the result
+    return OrientationMatrixParameters(gamma, zeta)
 
 
 def uniform_vs_unimodal_test(
