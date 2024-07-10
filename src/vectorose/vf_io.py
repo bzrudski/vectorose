@@ -373,6 +373,9 @@ def import_vector_field(
         # Squeeze is necessary to not break type safety.
         clean_vector_field = vector_field[:, column_indices]
 
+    # Convert the vector field to have high-precision floating point type
+    clean_vector_field = clean_vector_field.astype(float)
+
     return clean_vector_field
 
 
