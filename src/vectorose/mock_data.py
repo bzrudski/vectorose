@@ -355,7 +355,7 @@ def convert_args_to_length(
 
     Returns
     -------
-    tuple of np.ndarray
+    tuple of numpy.ndarray
         The converted values in the same order they were originally passed.
         Any NumPy arrays passed will **not be copied** and the original
         arrays will simply be returned.
