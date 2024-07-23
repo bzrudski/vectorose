@@ -334,6 +334,9 @@ def import_vector_field(
                 vector_field = np.moveaxis(vector_field, component_axis, -1).reshape(
                     -1, d
                 )
+
+                # Remove any rows containing NaN
+                vector_field = vector_field[~np.any(np.isnan(vector_field), axis=1)]
         except (OSError, ValueError):
             # Invalid NumPy array, so return None.
             if not silence_exceptions:
@@ -347,14 +350,18 @@ def import_vector_field(
         try:
             # Reading function depends on whether CSV or Excel
             if filetype is VectorFileType.CSV:
-                vector_field_dataframe = pd.read_csv(filepath, header=header_row, sep=separator)
+                vector_field_dataframe = pd.read_csv(
+                    filepath, header=header_row, sep=separator
+                )
             elif filetype is VectorFileType.EXCEL:
                 vector_field_dataframe = pd.read_excel(
                     filepath, sheet_name=sheet, header=header_row
                 )
             else:
                 return None
-            vector_field = vector_field_dataframe.to_numpy()
+
+            # Remove NaN values
+            vector_field = vector_field_dataframe.dropna().to_numpy()
         except (OSError, ValueError):
             if not silence_exceptions:
                 raise
