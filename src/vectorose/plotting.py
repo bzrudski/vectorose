@@ -34,6 +34,9 @@ from .util import (AngularIndex, convert_spherical_to_cartesian_coordinates,
 
 from .tregenza_sphere import TregenzaSphereBase
 
+# Configure the SVG export, per https://stackoverflow.com/a/35734729
+plt.rcParams['svg.fonttype'] = 'none'
+
 
 class CardinalDirection(str, enum.Enum):
     """
