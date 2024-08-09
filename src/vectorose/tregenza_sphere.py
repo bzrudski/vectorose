@@ -435,6 +435,60 @@ class TregenzaSphereBase:
         return weights
 
 
+class CoarseTregenzaSphere(TregenzaSphereBase):
+    def __init__(self):
+        # Define the almucantar angles (phi rings)
+        almucantar_angles = [0.00, 5.0, 11.25]
+
+        # Add almucantars for remaining upper bounds of phi
+        for i in range(1, 7):
+            new_almucantar_angle = 11.25 + i * 11.25
+            almucantar_angles.append(new_almucantar_angle)
+
+        top_phi_values = np.array(almucantar_angles)
+        bottom_phi_values = 180 - np.flip(top_phi_values[1:])
+
+        phi_values = np.concatenate([top_phi_values, [90], bottom_phi_values])
+
+        # Define the patch count
+        top_patch_count = np.array(
+            [
+                1,
+                4,
+                15,
+                24,
+                32,
+                39,
+                45,
+                49,
+                51,
+            ]
+        )
+
+        bottom_patch_count = np.flip(top_patch_count)
+
+        patch_count = np.concatenate([top_patch_count, bottom_patch_count])
+
+        # Define the theta bins within each ring
+        number_of_rings = len(patch_count)
+        theta_bounds: List[np.ndarray] = []
+
+        for i in range(number_of_rings):
+            # Get the number of patches in the current ring
+            number_of_patches = patch_count[i]
+
+            # Get the angular spacing for the ring in degrees
+            row_theta_bounds = np.linspace(
+                start=0, stop=360, num=number_of_patches, endpoint=False
+            )
+
+            theta_bounds.append(row_theta_bounds)
+
+        theta_values = theta_bounds
+
+        super().__init__(patch_count, phi_values, theta_values)
+
+
 class FineTregenzaSphere(TregenzaSphereBase):
     def __init__(self):
         # Define the almucantar angles (phi rings)
