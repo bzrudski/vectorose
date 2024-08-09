@@ -15,6 +15,7 @@ import enum
 import functools
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
+import imageio_ffmpeg
 import matplotlib.animation
 import matplotlib.cm
 import matplotlib.colorbar
@@ -36,6 +37,10 @@ from .tregenza_sphere import TregenzaSphereBase
 
 # Configure the SVG export, per https://stackoverflow.com/a/35734729
 plt.rcParams['svg.fonttype'] = 'none'
+
+# Configure the ffmpeg for export, per
+# https://stackoverflow.com/questions/13316397#comment115906431_44483126
+plt.rcParams['animation.ffmpeg_path'] = imageio_ffmpeg.get_ffmpeg_exe()
 
 
 class CardinalDirection(str, enum.Enum):
