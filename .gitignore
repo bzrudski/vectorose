@@ -143,3 +143,7 @@ dmypy.json
 
 # vscode
 .vscode/
+
+# pixi environments
+.pixi
+*.egg-info
