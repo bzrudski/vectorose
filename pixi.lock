@@ -14352,7 +14352,7 @@ packages:
   name: vectorose
   version: 0.1.0
   path: .
-  sha256: d77e5c136b3f636bb8f9e85143aef84814c7deed7404b7bc0f591a6d79062b04
+  sha256: 11afc7e7aa7aede783ab9fad8c93baf27c4a49ffee1cd8faa521712de1814cfb
   requires_dist:
   - numpy
   - matplotlib
