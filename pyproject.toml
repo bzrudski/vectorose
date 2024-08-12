@@ -41,7 +41,6 @@ platforms = ["osx-arm64", "linux-64", "osx-64", "win-64"]
 vectorose = { path = ".", editable = true }
 
 [tool.pixi.dependencies]
-python = ">=3.9"
 scipy = ">=1.14.0,<2"
 numpy = ">=1.19.5,<2"
 matplotlib = ">=3.3.4"
@@ -50,6 +49,7 @@ openpyxl = ">=3.1.2,<4"
 trimesh = ">=4.3.0, <5"
 ffmpeg = "*"
 pixi-pycharm = ">=0.0.6,<0.0.7"
+importlib-metadata = ">=8.2.0,<9"
 
 [tool.pixi.feature.dev.dependencies]
 pytest = ">=7.4.4"
