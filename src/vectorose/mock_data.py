@@ -16,7 +16,7 @@ References
    paperback ed). Cambridge Univ. Press.
 """
 from numbers import Real
-from typing import List, Sequence, Union
+from typing import List, Optional, Sequence, Union
 from collections.abc import Collection
 
 import numpy as np
@@ -254,6 +254,7 @@ def create_vonmises_fisher_vectors_single_direction(
     magnitude: float = 1.0,
     magnitude_std: float = 0,
     use_degrees: bool = False,
+    seed: Optional[int] = None
 ) -> np.ndarray:
     """Create a set of vectors using a von Mises-Fisher distribution.
 
@@ -283,6 +284,8 @@ def create_vonmises_fisher_vectors_single_direction(
     use_degrees
         Indicate whether the angles `phi` and `theta` are provided in
         degrees.
+    seed
+        Optional seed for random number generation.
 
     Returns
     -------
@@ -314,7 +317,7 @@ def create_vonmises_fisher_vectors_single_direction(
     mu = convert_spherical_to_cartesian_coordinates(angular_coordinates=mu_spherical)
 
     # Generate the von Mises-Fisher distribution
-    vmf = vonmises_fisher(mu=mu, kappa=kappa)
+    vmf = vonmises_fisher(mu=mu, kappa=kappa, seed=seed)
 
     # Sample the distribution
     sampled_points = vmf.rvs(size=number_of_points)
@@ -322,7 +325,7 @@ def create_vonmises_fisher_vectors_single_direction(
     # Play with the magnitude, if applicable.
     if magnitude_std > 0:
         # Sample the magnitudes from a Gaussian distribution
-        magnitudes = np.random.default_rng().normal(
+        magnitudes = np.random.default_rng(seed).normal(
             loc=magnitude, scale=magnitude_std, size=number_of_points
         )
 
@@ -397,6 +400,7 @@ def create_von_mises_fisher_vectors_multiple_directions(
     magnitudes: Union[float, Collection[float]] = 1.0,
     magnitude_stds: Union[float, Collection[float]] = 0.5,
     use_degrees: bool = False,
+    seeds: Optional[Collection[int]] = None
 ) -> np.ndarray:
     """Create vectors drawn from multiple von Mises-Fisher distributions.
 
@@ -430,6 +434,10 @@ def create_von_mises_fisher_vectors_multiple_directions(
     use_degrees
         Indicate whether the provided angles are in degrees. If `False`,
         the angles are assumed to be in radians.
+    seeds
+        Optional seeds for the random number generation for
+        reproducibility.
+
 
     Returns
     -------
@@ -459,6 +467,12 @@ def create_von_mises_fisher_vectors_multiple_directions(
     theta_array: np.ndarray = np.array(thetas)
     kappa_array: np.ndarray = np.array(kappas)
 
+    seed_array: Optional[np.ndarray]
+    if seeds is not None:
+        seed_array = np.array(seeds)
+    else:
+        seed_array = None
+
     # Get the number of vector families
     number_of_families = len(phi_array)
 
@@ -467,8 +481,9 @@ def create_von_mises_fisher_vectors_multiple_directions(
         number_of_vectors_array,
         magnitude_array,
         magnitude_std_array,
+        seeds_array
     ) = convert_args_to_length(
-        number_of_families, numbers_of_vectors, magnitudes, magnitude_stds
+        number_of_families, numbers_of_vectors, magnitudes, magnitude_stds, seed_array
     )
 
     # Now, build up the results
@@ -481,6 +496,7 @@ def create_von_mises_fisher_vectors_multiple_directions(
             magnitude_array[i],
             magnitude_std_array[i],
             use_degrees,
+            seeds_array[i]
         )
         for i in range(number_of_families)
     ]
@@ -491,7 +507,8 @@ def create_von_mises_fisher_vectors_multiple_directions(
 
 
 def generate_watson_distribution(
-    mean_direction: np.ndarray, kappa: float, n: int = 100000
+    mean_direction: np.ndarray, kappa: float, n: int = 100000,
+    seed: Optional[int] = None
 ) -> np.ndarray:
     """Generate points from a Watson distribution.
 
@@ -507,6 +524,8 @@ def generate_watson_distribution(
         Shape parameter of the watson distribution.
     n
         Number of points to generate.
+    seed
+        Optional seed for the random number generator.
 
     Returns
     -------
@@ -519,6 +538,8 @@ def generate_watson_distribution(
 
     random_vector_list: List[np.ndarray] = []
 
+    rng = np.random.default_rng(seed)
+
     for _ in range(n):
         # Check the shape parameter
         s = 0
@@ -526,8 +547,8 @@ def generate_watson_distribution(
             while True:
                 # Construct the bipolar distribution
                 c = 1 / (np.exp(kappa) - 1)
-                u = np.random.default_rng().uniform()
-                v = np.random.default_rng().uniform()
+                u = rng.uniform()
+                v = rng.uniform()
                 s = (1 / kappa) * np.log(u / c + 1)
                 if v <= np.exp(kappa * s * s - kappa * s):
                     break
@@ -536,8 +557,8 @@ def generate_watson_distribution(
                 # Construct the girdle distribution
                 c1 = np.sqrt(np.abs(kappa))
                 c2 = np.arctan(c1)
-                u = np.random.default_rng().uniform()
-                v = np.random.default_rng().uniform()
+                u = rng.uniform()
+                v = rng.uniform()
                 s = (1 / c1) * np.tan(c2 * u)
 
                 if v <= (1 - kappa * s * s) * np.exp(kappa * s * s):
@@ -548,7 +569,7 @@ def generate_watson_distribution(
         # Compute the co-latitude and the longitude - adapt for our
         # definition of phi and theta
         phi = np.arccos(s)
-        theta = 2 * np.pi * np.random.default_rng().uniform()
+        theta = 2 * np.pi * rng.uniform()
 
         # Add the new vector spherical angles to the list
         new_vector = np.array([phi, theta])
@@ -571,6 +592,7 @@ def generate_watson_vectors_multiple_directions(
     kappas: Collection[float],
     numbers_of_vectors: Union[int, Collection[int]] = 1000,
     use_degrees: bool = False,
+    seeds: Optional[Collection[int]] = None
 ) -> np.ndarray:
     """Create vectors drawn from multiple von Watson distributions.
 
@@ -594,6 +616,9 @@ def generate_watson_vectors_multiple_directions(
     use_degrees
         Indicate whether the provided angles are in degrees. If `False`,
         the angles are assumed to be in radians.
+    seeds
+        Optional seeds for the random number generation for
+        reproducibility.
 
     Returns
     -------
@@ -620,13 +645,20 @@ def generate_watson_vectors_multiple_directions(
     theta_array: np.ndarray = np.array(thetas)
     kappa_array: np.ndarray = np.array(kappas)
 
+    seed_array: Optional[np.ndarray]
+    if seeds is not None:
+        seed_array = np.array(seeds)
+    else:
+        seed_array = None
+
     # Get the number of vector families
     number_of_families = len(phi_array)
 
     # Convert the remaining arguments
-    (number_of_vectors_array, ) = convert_args_to_length(
+    (number_of_vectors_array, seeds_array ) = convert_args_to_length(
         number_of_families,
         numbers_of_vectors,
+        seed_array
     )
 
     # Convert the phi and theta values to Cartesian coordinates
@@ -644,6 +676,7 @@ def generate_watson_vectors_multiple_directions(
             mean_directions[i],
             kappa_array[i],
             number_of_vectors_array[i],
+            seeds_array[i]
         )
         for i in range(number_of_families)
     ]
