@@ -18,7 +18,7 @@ openpyxl = "^3.1.2"
 trimesh = {extras = ["easy"], version = "^4.3.0"}
 imageio-ffmpeg = "^0.5.1"
 scipy = "^1.14"
-importlib-metadata = "^8.4.0"
+importlib-metadata = ">=7.0.1"
 
 [tool.poetry.dev-dependencies]
 
