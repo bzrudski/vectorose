@@ -528,6 +528,12 @@ class TregenzaSphereBaseNew:
         # And now, put these in the data frame
         rings["start"] = ring_initial_angles
 
+        # Compute the bin end angles
+        ring_end_angles = np.roll(ring_initial_angles, -1)
+        ring_end_angles[-1] = 180
+
+        rings["end"] = ring_end_angles
+
         # Now, we need to compute the theta bin size for each ring
         theta_bin_size = 360 / all_patch_counts
 
@@ -553,113 +559,38 @@ class TregenzaSphereBaseNew:
         self.number_of_shells = number_of_shells
         self.magnitude_range = magnitude_range
 
-    def get_closest_phi_ring(self, phi: float) -> int:
-        """Find the index of the closest phi ring for a specified angle.
+    def get_closest_faces(self, spherical_coordinates: pd.DataFrame) -> pd.DataFrame:
+        """Get the closest faces for a specified spherical positions.
 
         Parameters
         ----------
-        phi
-            Angle under consideration, in degrees.
+        spherical_coordinates
+            Coordinates containing ``phi`` and ``theta`` in **degrees**.
 
         Returns
         -------
-        int
-            Index of the appropriate phi ring.
+        pandas.DataFrame
+            The phi ``ring`` and theta ``bin`` for each vector.
 
         """
 
-        # First, let's check to see if we're in the regular regime
-        number_of_irregular_rings = int(self.number_of_irregular_rings / 2)
+        # First, let's get the phi ring for each vector
+        ring_end_angles = self._rings.loc[:, "end"]
+        ring_end_angles = ring_end_angles.iloc[:-1]
+        phi = spherical_coordinates.loc[:, "phi"]
+        rings = ring_end_angles.searchsorted(phi)
 
-        first_regular_ring_start = self._rings.loc[number_of_irregular_rings, "start"]
+        # Now, let's get the theta spacing for each respective ring.
+        theta_increments = self._rings.loc[rings, "theta_inc"]
+        theta = spherical_coordinates.loc[:, "theta"]
+        theta_bin = (theta // theta_increments.to_numpy()).astype(int)
 
-        if phi < first_regular_ring_start:
-            # Get the starting angles of the top cap bins
-            top_cap_bins: pd.Series = self._rings.loc[
-                1:number_of_irregular_rings, "start"
-            ]
+        closest_faces = pd.DataFrame({
+            "ring": rings,
+            "bin": theta_bin
+        })
 
-            # Search for the correct phi bin
-            angular_bin = top_cap_bins.searchsorted(phi)
-            return angular_bin
-
-        # Get the start of the first bottom irregular ring
-        first_irregular_bottom_ring = (
-            self.number_of_rings - number_of_irregular_rings + 1
-        )
-
-        first_irregular_bottom_ring_start = self._rings.loc[
-            first_irregular_bottom_ring, "start"
-        ]
-
-        if phi > first_irregular_bottom_ring_start:
-            # Get the starting angles of the bottom cap
-            bottom_cap_bins = self._rings.loc[first_irregular_bottom_ring:, "start"]
-
-            # Search for the correct phi bin
-            angular_bin_index = bottom_cap_bins.searchsorted(phi) - 1
-            angular_bin = bottom_cap_bins.index[angular_bin_index]
-            return angular_bin
-
-        # Offset by the first bin angle.
-        corrected_angle = phi - first_regular_ring_start
-        angular_bin = int(corrected_angle // self._ring_increment)
-        angular_bin += number_of_irregular_rings
-        return angular_bin
-
-    def get_closest_theta_bin_in_ring(self, phi_ring: int, theta: float) -> int:
-        """Find the index of the closest theta bin in a specific phi ring.
-
-        Parameters
-        ----------
-        phi_ring
-            The index of the phi ring under consideration.
-        theta
-            The theta value under consideration.
-
-        Returns
-        -------
-        int
-            Index of the theta bin in the specified phi ring.
-
-        """
-
-        # Get the bin size for the respective ring
-        theta_bin_size = self._rings.loc[phi_ring, "theta_inc"]
-
-        # Divide to get the correct theta bin
-        theta_bin = int(theta // theta_bin_size)
-        return theta_bin
-
-    def get_closest_face(self, phi: float, theta: float) -> Tuple[int, int]:
-        """Get the closest face for a specified spherical position.
-
-        Parameters
-        ----------
-        phi
-            The angle phi of inclination from the positive z-axis.
-        theta
-            The in-plane angle theta clockwise with respect to the positive
-            y-axis.
-
-        Returns
-        -------
-        tuple[int, int]
-            Tuple containing the phi ring and theta bin containing the
-            desired angular coordinates.
-
-        """
-
-        # Get the phi ring
-        phi_ring = self.get_closest_phi_ring(phi)
-
-        # print(f"Found phi {phi} in ring {phi_ring}...")
-
-        # Get the theta bin within this ring
-        theta_bin = self.get_closest_theta_bin_in_ring(phi_ring, theta)
-        # print(f"Found theta {theta} is in bin {theta_bin}...")
-
-        return phi_ring, theta_bin
+        return closest_faces
 
     def assign_histogram_bins(
         self, spherical_coordinates: pd.DataFrame, use_degrees: bool = False
@@ -724,33 +655,9 @@ class TregenzaSphereBaseNew:
         histogram["shell"] = magnitude_histogram_bins
 
         # And now, let's deal with the angles.
-        # def compute_orientation_bins(row: pd.Series) -> pd.Series:
-        #     """Compute the orientation bins for a row."""
-        #     phi = row.loc["phi"]
-        #     theta = row.loc["theta"]
-        #     ring, theta_bin = self.get_closest_face(phi, theta)
-        #
-        #     return pd.Series({"ring": ring, "bin": theta_bin})
+        angular_faces = self.get_closest_faces(spherical_coordinates_degrees)
 
-        def compute_orientation_bins_np(row: np.ndarray) -> np.ndarray:
-            """Compute the orientation bins for a row."""
-            phi = row[0]
-            theta = row[1]
-            ring, theta_bin = self.get_closest_face(phi, theta)
-
-            return np.array([ring, theta_bin])
-
-        # angular_bins = histogram.apply(compute_orientation_bins, axis=1)
-
-        angular_bins = np.apply_along_axis(
-            compute_orientation_bins_np,
-            axis=1,
-            arr=spherical_coordinates_degrees.to_numpy(),
-        )
-        angular_bins_df = pd.DataFrame(angular_bins, columns=["ring", "bin"])
-
-        histogram = pd.concat([histogram, angular_bins_df], axis=1)
-        # histogram = pd.concat([histogram, angular_bins], axis=1)
+        histogram = pd.concat([histogram, angular_faces], axis=1)
 
         # And finally, to return the histogram
         return histogram, magnitude_bin_edges
