@@ -509,6 +509,54 @@ def compute_vector_orientation_angles(
     return angular_coordinates
 
 
+def compute_spherical_coordinates(
+    vectors: np.ndarray, use_degrees: bool=False
+) -> np.ndarray:
+    """Compute spherical coordinates for a set of vectors.
+
+    Compute true spherical coordinates for a set of provided vectors. These
+    coordinates express a vector as an orientation, consisting of the
+    angles phi and theta, and a magnitude.
+
+    Parameters
+    ----------
+    vectors
+        2D NumPy array containing 3 columns, corresponding to the x, y and
+        z **components** of the vectors, and ``n`` rows, one for each
+        vector. **Note:** We only require the vector *components*, not the
+        *coordinates* in space.
+    use_degrees
+        indicate whether the returned angles should be in degrees.
+        If ``False`` (default), the angles will be returned in *radians*.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array of shape ``(n, 3)`` containing the vectors in spherical
+        coordinates, consisting of ``phi``, ``theta`` and ``magnitude``
+        columns.
+
+    See Also
+    --------
+    compute_compute_vector_orientation_angles :
+        Compute phi and theta angles from Cartesian coordinates.
+    numpy.linalg.norm :
+        Compute the magnitude (norm) of vectors in Cartesian coordinates.
+    """
+
+    # Compute the orientation angles
+    orientations = compute_vector_orientation_angles(vectors, use_degrees)
+
+    # Compute the magnitudes
+    magnitudes = np.linalg.norm(vectors, axis=-1)[:, None]
+
+    # Combine everything
+    spherical_coordinates = np.hstack([orientations, magnitudes])
+
+    # And return it all
+    return spherical_coordinates
+
+
 def convert_to_math_spherical_coordinates(
     original_angles: np.ndarray, use_degrees: bool = False
 ) -> np.ndarray:
