@@ -662,7 +662,9 @@ class TregenzaSphereBaseNew:
         # And finally, to return the histogram
         return histogram, magnitude_bin_edges
 
-    def construct_histogram(self, binned_data: pd.DataFrame) -> pd.Series:
+    def construct_histogram(
+        self, binned_data: pd.DataFrame, return_fraction: bool = True
+    ) -> pd.Series:
         """Construct a histogram based on the Tregenza sphere.
 
         Using the binned data, produce a histogram containing all the face
@@ -673,6 +675,9 @@ class TregenzaSphereBaseNew:
         binned_data
             All vectors, along with their respective bins, which must be in
             the columns ``ring``, ``bin`` and ``shell`` (case-sensitive).
+        return_fraction
+            Indicate whether the proportion of vectors in each bin should
+            be returned (default) or the count of vectors.
 
         Returns
         -------
@@ -686,7 +691,7 @@ class TregenzaSphereBaseNew:
         number_of_vectors = len(binned_data)
 
         # Get the number of shells - avoid off-by-one error
-        number_of_shells = binned_data.loc[:, "shell"].max() + 1
+        # number_of_shells = binned_data.loc[:, "shell"].max() + 1
 
         # Use the groupby method to perform the grouping.
         original_histogram = binned_data.groupby(["shell", "ring", "bin"]).apply(len)
@@ -697,7 +702,10 @@ class TregenzaSphereBaseNew:
         filled_histogram = original_histogram.reindex(index=multi_index, fill_value=0)
 
         # Finally, divide by the total count to get the frequencies
-        frequency_histogram = filled_histogram  # / number_of_vectors
+        frequency_histogram = filled_histogram
+
+        if return_fraction:
+            frequency_histogram /= number_of_vectors
 
         return frequency_histogram
 
