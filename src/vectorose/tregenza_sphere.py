@@ -701,13 +701,11 @@ class TregenzaSphereBaseNew:
 
         filled_histogram = original_histogram.reindex(index=multi_index, fill_value=0)
 
-        # Finally, divide by the total count to get the frequencies
-        frequency_histogram = filled_histogram
-
         if return_fraction:
-            frequency_histogram /= number_of_vectors
+            # Finally, divide by the total count to get the frequencies
+            filled_histogram /= number_of_vectors
 
-        return frequency_histogram
+        return filled_histogram
 
     def _construct_histogram_index(self) -> pd.MultiIndex:
         """Get the histogram index for the current Tregenza sphere.
