@@ -9,11 +9,11 @@ This module provides the functions necessary to produce an approximately
 equal area rectangular-based projection of a sphere, with face colours
 corresponding to either the face count or a sum of the magnitudes of
 vectors at each orientation. This projection is based on work by 
-Beckers & Beckers. [Beckers]_
+Beckers & Beckers. [#Beckers]_
 
 References
 ----------
-.. [Beckers] Beckers, B., & Beckers, P. (2012). A general rule for disk and
+.. [#Beckers] Beckers, B., & Beckers, P. (2012). A general rule for disk and
    hemisphere partition into equal-area cells. Computational Geometry,
    45(7), 275-283. https://doi.org/10.1016/j.comgeo.2012.01.011
 
@@ -28,16 +28,16 @@ import mpl_toolkits.mplot3d.art3d
 import numpy as np
 import pandas as pd
 
-import vectorose.util
-import vectorose.vectorose
-from vectorose.util import perform_binary_search
+from . import util
+from .sphere_base import SphereBase
+from .util import perform_binary_search
 
 
 class TregenzaSphereBase:
     """Representation of a Tregenza Sphere.
 
     Represent and interact with a Tregenza Sphere, similar to those in the
-    work by Beckers & Beckers. [Beckers]_
+    work by Beckers & Beckers. [#Beckers]_
     """
 
     # Attributes: phi values, theta bounds per ring, face indices
@@ -298,7 +298,7 @@ class TregenzaSphereBase:
         top_cap_vertices = np.stack([phi_upper_second_row, thetas_second_row], axis=-1)
 
         top_cap_vertices_cartesian = (
-            vectorose.util.convert_spherical_to_cartesian_coordinates(
+            util.convert_spherical_to_cartesian_coordinates(
                 np.radians(top_cap_vertices)
             )
         )
@@ -341,7 +341,7 @@ class TregenzaSphereBase:
                 face_vertices = np.array([v1, v2, v3, v4])
 
                 face_vertices_cartesian = (
-                    vectorose.util.convert_spherical_to_cartesian_coordinates(
+                    util.convert_spherical_to_cartesian_coordinates(
                         np.radians(face_vertices)
                     )
                 )
@@ -358,7 +358,7 @@ class TregenzaSphereBase:
         )
 
         bottom_cap_vertices_cartesian = (
-            vectorose.util.convert_spherical_to_cartesian_coordinates(
+            util.convert_spherical_to_cartesian_coordinates(
                 np.radians(bottom_cap_vertices)
             )
         )
@@ -436,11 +436,11 @@ class TregenzaSphereBase:
         return weights
 
 
-class TregenzaSphereBaseNew:
+class TregenzaSphereBaseNew(SphereBase):
     """Representation of a Tregenza Sphere.
 
     Represent and interact with a Tregenza Sphere, similar to those in the
-    work by Beckers & Beckers. [Beckers]_
+    work by Beckers & Beckers. [#Beckers]_
     """
 
     _rings: pd.DataFrame
@@ -448,24 +448,6 @@ class TregenzaSphereBaseNew:
 
     _ring_increment: float
     """Angular increment for regularly-sized rings."""
-
-    number_of_shells: int
-    """Number of shells to consider for bivariate vector histograms."""
-
-    magnitude_range: Optional[Tuple[float, float]]
-    """Range for the magnitude values.
-    
-    Maximum and minimum values to consider for the magnitude. If ``None``,
-    then the maximum and minimum of the provided vectors are used.
-    """
-
-    magnitude_precision: Optional[int] = 8
-    """Precision with which to round the magnitudes when binning.
-    
-    To avoid floating point errors, the vector magnitudes may be rounded
-    before binning. This option allows the precision of the rounding to be
-    set. If ``None``, then no rounding is performed.
-    """
 
     @property
     def number_of_rings(self) -> int:
@@ -482,6 +464,10 @@ class TregenzaSphereBaseNew:
         """Angular increment for the regularly-sized rings."""
         return self._ring_increment
 
+    @property
+    def hist_group_cols(self) -> List[str]:
+        return ["shell", "ring"]
+
     # Define the constructor...
     def __init__(
         self,
@@ -491,6 +477,61 @@ class TregenzaSphereBaseNew:
         number_of_shells: int = 1,
         magnitude_range: Optional[Tuple[float, float]] = None,
     ):
+        rings = self._construct_tregenza_sphere(
+            irregular_phi_values, patch_count, ring_increment
+        )
+
+        self._rings = rings
+        self._ring_increment = ring_increment
+
+        super().__init__(
+            number_of_shells=number_of_shells,
+            magnitude_range=magnitude_range
+        )
+
+    def _construct_tregenza_sphere(
+        self,
+        irregular_phi_values: np.ndarray,
+        patch_count: np.ndarray,
+        ring_increment: float
+    ) -> pd.DataFrame:
+        """Define a Tregenza sphere.
+
+        Define a Tregenza sphere with the specified patch count and
+        almucantar angles.
+
+        Parameters
+        ----------
+        irregular_phi_values
+            The phi values for the first rings, which are manually defined
+            and of irregular increments.
+        patch_count
+            The number of rectangular patches in each ring.
+        ring_increment
+            The regular phi spacing between adjacent rings.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The structure of the produced Tregenza sphere, containing as
+            index the ring number, and as columns:
+
+            * ``bins`` -- the number of bins in each ring;
+            * ``start`` -- the starting phi value for each ring;
+            * ``end`` -- the ending phi angle of each ring;
+            * ``theta_inc`` -- the theta increment within each ring;
+            * ``face_area`` -- the area of the faces in each ring;
+            * ``weight`` -- the correction weight for the faces in each
+                ring;
+            * ``regular`` -- an indication of whether the ring has a
+                regular almucantar spacing or not.
+
+        Warnings
+        --------
+        This method assumes that the Tregenza sphere is symmetric with
+        respect to the equator, i.e., that the northern and southern
+        hemispheres are reflections of each other.
+        """
         # Define our data frame which will hold everything
         rings = pd.DataFrame()
         rings.index.name = "ring"
@@ -508,7 +549,6 @@ class TregenzaSphereBaseNew:
 
         # And now, for the ring beginning angles
         number_of_irregular_rings = len(irregular_phi_values)
-
         initial_angle = irregular_phi_values[-1]
         ring_initial_angles = np.arange(
             initial_angle + ring_increment, 89.999999, ring_increment
@@ -531,18 +571,15 @@ class TregenzaSphereBaseNew:
         # Compute the bin end angles
         ring_end_angles = np.roll(ring_initial_angles, -1)
         ring_end_angles[-1] = 180
-
         rings["end"] = ring_end_angles
 
         # Now, we need to compute the theta bin size for each ring
         theta_bin_size = 360 / all_patch_counts
-
         rings["theta_inc"] = theta_bin_size
 
         # And now, the face areas and weights
         face_areas = self._compute_face_areas(ring_initial_angles, all_patch_counts)
         rings["face_area"] = face_areas
-
         weights = face_areas.min() / face_areas
         rings["weight"] = weights
 
@@ -550,14 +587,9 @@ class TregenzaSphereBaseNew:
         regularity = np.array([True] * number_of_rings)
         regularity[:number_of_irregular_rings] = False
         regularity[-number_of_irregular_rings:] = False
-
         rings["regular"] = regularity
 
-        # And now to store everything
-        self._rings = rings
-        self._ring_increment = ring_increment
-        self.number_of_shells = number_of_shells
-        self.magnitude_range = magnitude_range
+        return rings
 
     def get_closest_faces(self, spherical_coordinates: pd.DataFrame) -> pd.DataFrame:
         """Get the closest faces for a specified spherical positions.
@@ -592,120 +624,20 @@ class TregenzaSphereBaseNew:
 
         return closest_faces
 
-    def assign_histogram_bins(
-        self, spherical_coordinates: pd.DataFrame, use_degrees: bool = False
-    ) -> Tuple[pd.DataFrame, np.ndarray]:
-        """Assign histogram bins using the Tregenza sphere.
+    def _initial_vector_data_preparation(
+        self, vectors: pd.DataFrame
+    ) -> pd.DataFrame:
+        vectors_array = vectors.loc[:, ["x", "y", "z"]].to_numpy()
+        spherical_coordinates = util.compute_spherical_coordinates(vectors_array, use_degrees=True)
+        spherical_coordinate_data_frame = pd.DataFrame(
+            spherical_coordinates, columns=["phi", "theta", "magnitude"]
+        )
 
-        Parameters
-        ----------
-        spherical_coordinates
-            Spherical coordinates from which to construct the histogram.
-            This must be a :class:`pandas.DataFrame` containing columns
-            ``phi``, ``theta`` and ``magnitude``.
-        use_degrees
-            Indicate whether the orientations are in degrees.
+        return spherical_coordinate_data_frame
 
-        Returns
-        -------
-        pandas.DataFrame
-            List of all the vectors containing additional columns
-            representing the phi ring (``ring``), theta bin (``bin``) and
-            magnitude shell (``shell``).
-        numpy.ndarray
-            Histogram bin edges for the magnitude shells.
-        """
-
-        # Convert to degrees, if necessary
-        if use_degrees:
-            spherical_coordinates_degrees = spherical_coordinates
-        else:
-            spherical_coordinates_degrees = spherical_coordinates.copy()
-            spherical_coordinates_degrees.loc[:, ["phi", "theta"]] = np.degrees(
-                spherical_coordinates
-            )
-
-        # Build the data structure
-        histogram = spherical_coordinates_degrees.copy()
-
-        # And now for the fun... First, let's deal with the magnitude bins
-        magnitudes = histogram.loc[:, "magnitude"]
-
-        # Define the magnitude bin edges
-        if self.number_of_shells > 1:
-            magnitude_bin_edges = np.histogram_bin_edges(
-                magnitudes, bins=self.number_of_shells, range=self.magnitude_range
-            )
-
-            # Don't consider the initial bin edge.
-            internal_bin_edges = magnitude_bin_edges[1:]
-
-            # Round the magnitudes, if requested
-            if self.magnitude_precision is not None:
-                magnitudes = np.round(magnitudes, self.magnitude_precision)
-
-            # Assign the vectors the correct bins
-            magnitude_histogram_bins = np.digitize(
-                magnitudes, internal_bin_edges, right=True
-            )
-        else:
-            magnitude_histogram_bins = np.zeros(len(magnitudes))
-            magnitude_bin_edges = np.array([0])
-
-        histogram["shell"] = magnitude_histogram_bins
-
-        # And now, let's deal with the angles.
-        angular_faces = self.get_closest_faces(spherical_coordinates_degrees)
-
-        histogram = pd.concat([histogram, angular_faces], axis=1)
-
-        # And finally, to return the histogram
-        return histogram, magnitude_bin_edges
-
-    def construct_histogram(
-        self, binned_data: pd.DataFrame, return_fraction: bool = True
-    ) -> pd.Series:
-        """Construct a histogram based on the Tregenza sphere.
-
-        Using the binned data, produce a histogram containing all the face
-        values for the Tregenza sphere.
-
-        Parameters
-        ----------
-        binned_data
-            All vectors, along with their respective bins, which must be in
-            the columns ``ring``, ``bin`` and ``shell`` (case-sensitive).
-        return_fraction
-            Indicate whether the proportion of vectors in each bin should
-            be returned (default) or the count of vectors.
-
-        Returns
-        -------
-        pandas.Series
-            The frequency (as a decimal) corresponding to each sphere face.
-            This :class:`pandas.Series` contains a multi-index
-            corresponding to the shell, ring and bin values.
-        """
-
-        # Get the total number of vectors
-        number_of_vectors = len(binned_data)
-
-        # Get the number of shells - avoid off-by-one error
-        # number_of_shells = binned_data.loc[:, "shell"].max() + 1
-
-        # Use the groupby method to perform the grouping.
-        original_histogram = binned_data.groupby(["shell", "ring", "bin"]).apply(len)
-
-        # And now, we need to account for any bins that are missing.
-        multi_index = self._construct_histogram_index()
-
-        filled_histogram = original_histogram.reindex(index=multi_index, fill_value=0)
-
-        if return_fraction:
-            # Finally, divide by the total count to get the frequencies
-            filled_histogram /= number_of_vectors
-
-        return filled_histogram
+    def _compute_orientation_binning(self, vectors: pd.DataFrame) -> pd.DataFrame:
+        orientation_bins = self.get_closest_faces(vectors)
+        return orientation_bins
 
     def _construct_histogram_index(self) -> pd.MultiIndex:
         """Get the histogram index for the current Tregenza sphere.
@@ -757,16 +689,16 @@ class TregenzaSphereBaseNew:
 
         Returns
         -------
-        list[numpy.ndarray]
-            Corrected histogram values. Same shape as `histogram`.
+        pandas.DataFrame
+            Corrected histogram values.
 
         """
 
         # Compute the weights
-        ring_weights = self.compute_weights()
-        weighted_face_data = [
-            histogram[i] * ring_weights[i] for i in range(self.number_of_rings)
-        ]
+        ring_weights = self._rings.loc[:, "weight"]
+        original_index = histogram.index
+        weighted_face_data = histogram.groupby("ring") / ring_weights
+        weighted_face_data = weighted_face_data.reindex(original_index)
 
         return weighted_face_data
 
@@ -856,7 +788,7 @@ class TregenzaSphereBaseNew:
         top_cap_vertices = np.stack([phi_upper_second_row, thetas_second_row], axis=-1)
 
         top_cap_vertices_cartesian = (
-            vectorose.util.convert_spherical_to_cartesian_coordinates(
+            util.convert_spherical_to_cartesian_coordinates(
                 np.radians(top_cap_vertices)
             )
         )
@@ -899,7 +831,7 @@ class TregenzaSphereBaseNew:
                 face_vertices = np.array([v1, v2, v3, v4])
 
                 face_vertices_cartesian = (
-                    vectorose.util.convert_spherical_to_cartesian_coordinates(
+                    util.convert_spherical_to_cartesian_coordinates(
                         np.radians(face_vertices)
                     )
                 )
@@ -916,7 +848,7 @@ class TregenzaSphereBaseNew:
         )
 
         bottom_cap_vertices_cartesian = (
-            vectorose.util.convert_spherical_to_cartesian_coordinates(
+            util.convert_spherical_to_cartesian_coordinates(
                 np.radians(bottom_cap_vertices)
             )
         )
@@ -1503,18 +1435,18 @@ def run_tregenza_histogram_pipeline(
 
     # Perform vector pre-processing
     if remove_zero_vectors:
-        vectors = vectorose.util.remove_zero_vectors(vectors)
+        vectors = util.remove_zero_vectors(vectors)
 
     if is_axial:
-        vectors = vectorose.util.convert_vectors_to_axes(vectors)
-        vectors = vectorose.util.create_symmetric_vectors_from_axes(vectors)
+        vectors = util.convert_vectors_to_axes(vectors)
+        vectors = util.create_symmetric_vectors_from_axes(vectors)
 
-    angular_coordinates = vectorose.util.compute_vector_orientation_angles(
+    angular_coordinates = util.compute_vector_orientation_angles(
         vectors, use_degrees=True
     )
 
     if weight_by_magnitude:
-        _, magnitudes = vectorose.util.normalise_vectors(vectors)
+        _, magnitudes = util.normalise_vectors(vectors)
     else:
         magnitudes = None
 
