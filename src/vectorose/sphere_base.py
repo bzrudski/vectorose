@@ -9,6 +9,7 @@ from typing import List, Optional, Tuple
 import numpy as np
 import pandas as pd
 import pandas.core.generic
+import pyvista as pv
 
 
 class SphereBase(abc.ABC):
@@ -176,7 +177,7 @@ class SphereBase(abc.ABC):
         """Construct the index for the histogram."""
 
         raise NotImplementedError(
-            "Subclass must implement this abstract method!"
+            "Subclasses must implement this abstract method!"
         )
 
     def construct_histogram(
@@ -202,7 +203,8 @@ class SphereBase(abc.ABC):
         -------
         pandas.Series
             The counts or proportions of vectors in each case, ordered by
-            the columns specified in :prop:`SphereBase.hist_group_cols`.
+            the columns specified in
+            :attr:`SphereBase.hist_group_cols`.
         """
 
         # Get the total number of vectors
@@ -220,3 +222,85 @@ class SphereBase(abc.ABC):
             filled_histogram /= number_of_vectors
 
         return filled_histogram
+
+    @abc.abstractmethod
+    def create_mesh(self) -> pv.PolyData:
+        """Return the mesh representation of the current sphere."""
+
+        raise NotImplementedError(
+            "Subclasses must implement this abstract method!"
+        )
+
+    def _create_shell_mesh(self, histogram: pd.Series, radius: float) -> pv.PolyData:
+        """Create the mesh for a given shell.
+
+        Using the provided histogram data for a specific shell, produce a
+        sphere with the desired radius, storing the frequencies as face
+        values.
+
+        Parameters
+        ----------
+        histogram
+            The counts or frequencies of orientations in each sphere face
+            of the specific shell.
+        radius
+            Desired shell radius. This typically corresponds to a magnitude
+            bin upper bound.
+
+        Returns
+        -------
+        pyvista.PolyData
+            The constructed shell containing the desired scalars, with the
+            name ``frequency``.
+        """
+
+        # First, construct the mesh that will underlie the shell
+        shell_mesh = self.create_mesh()
+
+        # Now, adjust the radius
+        shell_mesh = shell_mesh.scale(radius)
+
+        # Set the scalar values
+        shell_mesh.cell_data["frequency"] = histogram
+
+        return shell_mesh
+
+    def create_histogram_meshes(
+        self, histogram_data: pd.Series, magnitude_bins: np.ndarray
+    ) -> List[pv.PolyData]:
+        """Create mesh shells for the supplied histogram.
+
+        Parameters
+        ----------
+        histogram_data
+            The binned histogram data, ordered by shell and then other
+            implementation-specific parameters.
+        magnitude_bins
+            The upper bounds for the magnitude bins. These are used to
+            determine the radius of each shell.
+
+        Returns
+        -------
+        list of pyvista.PolyData
+            List containing one mesh for each shell, with the appropriate
+            scalar values assigned to the ``frequency`` array.
+
+        Warnings
+        --------
+        The provided histogram must have been constructed with the current
+        sphere, or an equivalent sphere.
+        """
+
+        number_of_shells = self.number_of_shells
+
+        shell_list = []
+
+        for i in range(number_of_shells):
+            shell_histogram = histogram_data.loc[i]
+            shell_radius = magnitude_bins[i + 1]
+
+            shell = self._create_shell_mesh(shell_histogram, shell_radius)
+
+            shell_list.append(shell)
+
+        return shell_list

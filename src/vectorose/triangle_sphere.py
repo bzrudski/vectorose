@@ -13,6 +13,7 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+import pyvista as pv
 import trimesh
 
 from .sphere_base import SphereBase
@@ -124,6 +125,24 @@ class TriangleSphere(SphereBase):
 
         return multi_index
 
+    def create_mesh(self) -> pv.PolyData:
+        points = self._sphere.vertices
+        faces = self._sphere.faces
+
+        number_of_faces = len(faces)
+
+        # Augment the faces by adding a column with 3s
+        threes_column = np.ones(number_of_faces, dtype=int) * 3
+        threes_column = np.atleast_2d(threes_column).T
+        complete_faces = np.concatenate([threes_column, faces], axis=-1)
+
+        # And now, build the mesh
+        sphere_mesh = pv.PolyData(points, complete_faces)
+
+        # And now, just to be sure, let's put in the face scalars
+        sphere_mesh.cell_data["face-index"] = range(number_of_faces)
+
+        return sphere_mesh
 
 
 def construct_spherical_histogram(

@@ -26,21 +26,26 @@ import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d
 import mpl_toolkits.mplot3d.art3d
 import numpy as np
+import pyvista as pv
 import trimesh
 from scipy.spatial.transform import Rotation
 
+from .sphere_base import SphereBase
 from .vectorose import MagnitudeType, produce_phi_theta_1d_histogram_data
-from .util import (AngularIndex, convert_spherical_to_cartesian_coordinates,
-                   compute_vector_orientation_angles)
+from .util import (
+    AngularIndex,
+    convert_spherical_to_cartesian_coordinates,
+    compute_vector_orientation_angles,
+)
 
 from .tregenza_sphere import TregenzaSphereBase
 
 # Configure the SVG export, per https://stackoverflow.com/a/35734729
-plt.rcParams['svg.fonttype'] = 'none'
+plt.rcParams["svg.fonttype"] = "none"
 
 # Configure the ffmpeg for export, per
 # https://stackoverflow.com/questions/13316397#comment115906431_44483126
-plt.rcParams['animation.ffmpeg_path'] = imageio_ffmpeg.get_ffmpeg_exe()
+plt.rcParams["animation.ffmpeg_path"] = imageio_ffmpeg.get_ffmpeg_exe()
 
 
 class CardinalDirection(str, enum.Enum):
@@ -176,6 +181,175 @@ class SphereProjection(enum.Enum):
 
     ORTHOGRAPHIC = "ortho"
     PERSPECTIVE = "persp"
+
+
+class SpherePlotter:
+    """Produce beautiful, fast 3D sphere plots."""
+
+    # _sphere: SphereBase
+    # """The sphere to use for plotting."""
+
+    _sphere_meshes: List[pv.PolyData]
+    """The meshes representing individual shells."""
+
+    _selected_shell: int
+    """The currently-selected shell."""
+
+    _active_shell_opacity: float
+    """The opacity of the currently active shell."""
+
+    _inactive_shell_opacity: float
+    """The opacity of the inactive shells."""
+
+    _plotter: Optional[pv.Plotter]
+    """Plotter to use to visualise the spheres."""
+
+    _sphere_actors: List[pv.Actor]
+    """The actors representing the plotted spheres."""
+
+    _min_value: float
+    """The minimum face value."""
+
+    _max_value: float
+    """The maximum face value."""
+
+    cmap: str
+    """The colour map to use when visualising the data."""
+
+    # @property
+    # def sphere(self) -> SphereBase:
+    #     """Access the wrapped sphere instance."""
+    #     return self._sphere
+
+    @property
+    def sphere_meshes(self) -> List[pv.PolyData]:
+        """Access the wrapped sphere meshes."""
+        return self._sphere_meshes
+
+
+    def __init__(
+        self, sphere_meshes: List[pv.PolyData], cmap: str = "viridis"
+    ):
+        self._sphere_meshes = sphere_meshes
+        self._plotter = None
+        self._sphere_actors = []
+        self._selected_shell = len(sphere_meshes)
+        self._active_shell_opacity = 1
+        self._inactive_shell_opacity = 0
+        self.cmap = cmap
+
+        all_frequencies = np.concatenate([m.cell_data["frequency"] for m in sphere_meshes])
+
+        self._min_value = all_frequencies.min()
+        self._max_value = all_frequencies.max()
+
+    def _update_active_sphere_opacity(self, new_opacity: float):
+        """Update the opacity level of the active sphere."""
+
+        self._active_shell_opacity = new_opacity
+        actor = self._sphere_actors[self._selected_shell]
+        actor.prop.opacity = new_opacity
+
+    def _update_inactive_sphere_opacity(self, new_opacity: float):
+        """Update the opacity level of the inactive spheres."""
+
+        self._inactive_shell_opacity = new_opacity
+
+        for i, actor in enumerate(self._sphere_actors):
+            if i == self._selected_shell:
+                continue
+
+            actor.prop.opacity = new_opacity
+
+    def _update_active_sphere(self, new_selected_index: float):
+        """Update the active sphere number."""
+        current_shell = self._selected_shell
+        new_shell = np.round(new_selected_index).astype(int) - 1
+
+        if new_shell != current_shell:
+            self._selected_shell = new_shell
+            self._update_active_sphere_opacity(self._active_shell_opacity)
+            self._update_inactive_sphere_opacity(self._inactive_shell_opacity)
+
+    def produce_plot(self) -> pv.Plotter:
+        """Produce the 3D visual plot for the current spheres.
+
+        Returns
+        -------
+        pyvista.Plotter
+            The plotting object.
+
+        Warnings
+        --------
+        This function produces the :class:`pyvista.Plotter`. The method
+        :meth:`pyvista.Plotter.show` must be called on the returned object
+        in order to view the plot.
+        """
+
+        plotter = pv.Plotter()
+
+        # Clean up from previous plots
+        self._sphere_actors.clear()
+
+        # Add the sphere actors
+        for mesh in self._sphere_meshes:
+            actor = plotter.add_mesh(
+                mesh,
+                clim=[self._min_value, self._max_value],
+                cmap=self.cmap,
+                scalars="frequency",
+                scalar_bar_args={
+                    "vertical": True,
+                    "position_y": 0.3
+                }
+            )
+            self._sphere_actors.append(actor)
+
+        # Add the slider widgets
+        number_of_shells = len(self._sphere_meshes)
+        plotter.add_slider_widget(
+            self._update_active_sphere,
+            [1, number_of_shells],
+            value=self._selected_shell,
+            title="Active shell",
+            pointa=(0.1, 0.9),
+            pointb=(0.3, 0.9),
+            title_height=0.01,
+            fmt="%.0f",
+            interaction_event="always",
+            style="modern"
+        )
+
+        plotter.add_slider_widget(
+            self._update_active_sphere_opacity,
+            [0, 1],
+            value=self._active_shell_opacity,
+            title="Active shell opacity",
+            pointa=(0.4, 0.9),
+            pointb=(0.6, 0.9),
+            title_height=0.01,
+            interaction_event="always",
+            style="modern"
+        )
+
+        plotter.add_slider_widget(
+            self._update_inactive_sphere_opacity,
+            [0, 1],
+            value=self._inactive_shell_opacity,
+            title="Inactive shell opacity",
+            pointa=(0.7, 0.9),
+            pointb=(0.9, 0.9),
+            title_height=0.01,
+            interaction_event="always",
+            style="modern"
+        )
+
+        plotter.add_axes()
+        plotter.add_camera_orientation_widget()
+        plotter.enable_parallel_projection()
+
+        self._plotter = plotter
+        return plotter
 
 
 def produce_labelled_3d_plot(
@@ -1436,7 +1610,7 @@ def construct_confidence_cone(
     mean_orientation: Optional[np.ndarray] = None,
     two_sided_cone: bool = True,
     use_degrees: bool = False,
-    **kwargs
+    **kwargs,
 ) -> List[mpl_toolkits.mplot3d.art3d.Poly3DCollection]:
     """Construct the patches for a confidence cone.
 
@@ -1529,9 +1703,7 @@ def construct_confidence_cone(
 
 
 def construct_uv_sphere(
-    phi_steps: int = 80,
-    theta_steps: int = 160,
-    radius: float = 1
+    phi_steps: int = 80, theta_steps: int = 160, radius: float = 1
 ) -> np.ndarray:
     """Construct a sphere with rectangular faces.
 
@@ -1570,7 +1742,7 @@ def construct_uv_sphere(
 
     # Compute the phi and theta values
     phi = np.linspace(start=0, stop=np.pi, num=phi_steps + 1, endpoint=True)
-    theta = np.linspace(start=0, stop=2*np.pi, num=theta_steps + 1, endpoint=True)
+    theta = np.linspace(start=0, stop=2 * np.pi, num=theta_steps + 1, endpoint=True)
 
     # Now, build the 2D spherical coordinates
     phi_grid, theta_grid = np.meshgrid(phi, theta)
@@ -1579,8 +1751,7 @@ def construct_uv_sphere(
     sphere_angles = np.stack([phi_grid, theta_grid], axis=-1)
 
     sphere_cartesian_coordinates = convert_spherical_to_cartesian_coordinates(
-        angular_coordinates=sphere_angles,
-        radius=radius
+        angular_coordinates=sphere_angles, radius=radius
     )
 
     return sphere_cartesian_coordinates
@@ -1593,7 +1764,7 @@ def produce_3d_confidence_cone_plot(
     sphere_radius: float = 1,
     sphere_alpha: float = 0.5,
     sphere_colour: str = "#a8a8a8",
-    **kwargs
+    **kwargs,
 ) -> mpl_toolkits.mplot3d.axes3d.Axes3D:
     """Produce a 3D confidence cone plot.
 

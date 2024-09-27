@@ -27,6 +27,7 @@ import mpl_toolkits.mplot3d
 import mpl_toolkits.mplot3d.art3d
 import numpy as np
 import pandas as pd
+import pyvista as pv
 
 from . import util
 from .sphere_base import SphereBase
@@ -466,7 +467,7 @@ class TregenzaSphereBaseNew(SphereBase):
 
     @property
     def hist_group_cols(self) -> List[str]:
-        return ["shell", "ring"]
+        return ["shell", "ring", "bin"]
 
     # Define the constructor...
     def __init__(
@@ -701,6 +702,137 @@ class TregenzaSphereBaseNew(SphereBase):
         weighted_face_data = weighted_face_data.reindex(original_index)
 
         return weighted_face_data
+
+    def create_mesh(self) -> pv.PolyData:
+        # So, here's how we're going to do this...
+
+        # Construct the inner rings.
+        inner_ring_df = self._rings.iloc[1:-1]
+
+        inner_ring_meshes = inner_ring_df.apply(
+            self._construct_interior_ring, axis="columns"
+        ).to_list()
+
+        # Construct the caps
+        top_cap = self._construct_cap(inner_ring_meshes[0], True, 0)
+        bottom_cap = self._construct_cap(inner_ring_meshes[-1], False, self.number_of_rings - 1)
+
+        # Merge everything
+        sphere_mesh = pv.merge([top_cap] + inner_ring_meshes + [bottom_cap])
+
+        return sphere_mesh
+
+    def _construct_interior_ring(self, ring: pd.Series) -> pv.PolyData:
+        """Construct a mesh for a single interior ring.
+
+        Parameters
+        ----------
+        ring
+            The parameters associated with the ring to construct, extracted
+            from the :attr:`TregenzaSphereBaseNew._rings` attribute.
+
+        Returns
+        -------
+        pyvista.PolyData
+            A mesh representing the constructed ring.
+
+        Notes
+        -----
+        The mesh construction occurs carefully to ensure that the indexes
+        of the vertices and faces are in the same order as the bins in any
+        produced histogram data.
+        """
+
+        # First, get the basic information about the ring
+        number_of_faces = ring["bins"]
+        start_phi = ring["start"]
+        end_phi = ring["end"]
+
+        # Define the theta rings
+        theta = np.linspace(0, 360, number_of_faces, endpoint=False)
+
+        top_phi = np.tile(start_phi, number_of_faces)
+        bottom_phi = np.tile(end_phi, number_of_faces)
+
+        top_ring = np.stack([top_phi, theta], axis=-1)
+        bottom_ring = np.stack([bottom_phi, theta], axis=-1)
+
+        # Convert the ring angles to radians
+        top_ring = np.radians(top_ring)
+        bottom_ring = np.radians(bottom_ring)
+
+        # Convert the rings to Cartesian coordinates
+        top_ring_cartesian = util.convert_spherical_to_cartesian_coordinates(top_ring)
+        bottom_ring_cartesian = util.convert_spherical_to_cartesian_coordinates(bottom_ring)
+
+        # Combine everything
+        ring_vertices = np.concatenate([top_ring_cartesian, bottom_ring_cartesian], axis=0)
+
+        # Now, establish the connectivity.
+        vertex_count_column = 4 * np.ones(number_of_faces, dtype=int)
+        top_left_corner = np.arange(number_of_faces)
+        top_right_corner = np.roll(top_left_corner, -1)
+        bottom_left_corner = top_left_corner + number_of_faces
+        bottom_right_corner = top_right_corner + number_of_faces
+
+        # And now to create a table
+        cells = np.stack([
+            vertex_count_column,
+            top_left_corner,
+            top_right_corner,
+            bottom_right_corner,
+            bottom_left_corner,
+        ], axis=-1)
+
+        # Begin building the mesh
+        ring_mesh = pv.PolyData(ring_vertices, cells)
+
+        # And now, to test, let's add the face indices as scalars
+        face_indices = range(number_of_faces)
+
+        ring_mesh.cell_data["ring-index"] = np.tile(ring.name, number_of_faces)
+        ring_mesh.cell_data["face-index"] = face_indices
+
+        return ring_mesh
+
+    def _construct_cap(self, adjacent_ring: pv.PolyData, is_top: bool, index: int) -> pv.PolyData:
+        """Construct a Tregenza sphere cap.
+
+        Parameters
+        ----------
+        adjacent_ring
+            The ring immediately touching the cap.
+        is_top
+            Indicate whether the cap is on top of the provided ring.
+        index
+            The ring index.
+
+        Returns
+        -------
+        pyvista.PolyData
+            A single polygon representing the produced cap
+        """
+
+        number_of_vertices = adjacent_ring.n_points // 2
+
+        # Get the vertices forming the cap.
+        # If the cap is above, the first `number_of_vertices` form the cap,
+        # otherwise the last `number_of_vertices` do.
+        if is_top:
+            vertices = adjacent_ring.points[:number_of_vertices]
+        else:
+            vertices = adjacent_ring.points[number_of_vertices:]
+
+        cap_cell = np.hstack([number_of_vertices, np.arange(number_of_vertices)])
+
+        # Now, create the mesh
+        cap = pv.PolyData(vertices, cap_cell)
+
+        cap.cell_data["ring-index"] = [index]
+        cap.cell_data["face-index"] = [0]
+
+        return cap
+
 
     def create_tregenza_plot(
         self,
