@@ -36,6 +36,10 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # a list of builtin themes.
 #
 html_theme = "pydata_sphinx_theme"
+html_logo = "../resources/app_icons/icon_white_200x200.png"
+html_favicon = "../resources/app_icons/icon_white_16x16.png"
+html_title = "VectoRose Documentation"
+html_short_title = "VectoRose Docs"
 
 # -- Options for napoleon ----------------------------------------------------
 
@@ -57,7 +61,12 @@ intersphinx_mapping = {
     'matplotlib': ('https://matplotlib.org/stable/', None),
     'pandas': ('https://pandas.pydata.org/docs', None),
     'trimesh': ('https://trimesh.org/', None),
+    'pyvista': ('https://docs.pyvista.org/', None),
 }
 
 # -- Options for to-do -------------------------------------------------------
 todo_include_todos = True
+
+# -- Options for myst-nb -----------------------------------------------------
+myst_enable_extensions = ["dollarmath", "amsmath", "attrs_inline"]
+myst_dmath_double_inline = True
