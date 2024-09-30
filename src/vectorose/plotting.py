@@ -28,15 +28,12 @@ import mpl_toolkits.mplot3d.art3d
 import numpy as np
 import pyvista as pv
 import trimesh
+import vtk
 from scipy.spatial.transform import Rotation
 
 from .sphere_base import SphereBase
 from .vectorose import MagnitudeType, produce_phi_theta_1d_histogram_data
-from .util import (
-    AngularIndex,
-    convert_spherical_to_cartesian_coordinates,
-    compute_vector_orientation_angles,
-)
+from . import util
 
 from .tregenza_sphere import TregenzaSphereBase
 
@@ -186,11 +183,11 @@ class SphereProjection(enum.Enum):
 class SpherePlotter:
     """Produce beautiful, fast 3D sphere plots."""
 
-    # _sphere: SphereBase
-    # """The sphere to use for plotting."""
-
     _sphere_meshes: List[pv.PolyData]
     """The meshes representing individual shells."""
+
+    _largest_radius: float
+    """The largest radius of a plotted sphere."""
 
     _selected_shell: int
     """The currently-selected shell."""
@@ -207,6 +204,15 @@ class SpherePlotter:
     _sphere_actors: List[pv.Actor]
     """The actors representing the plotted spheres."""
 
+    _phi_axis_actor: Optional[pv.Actor]
+    """The actor representing the semicircular phi axis."""
+
+    _theta_axis_actor: Optional[pv.Actor]
+    """The actor representing the circular theta axis."""
+
+    _point_label_actor: Optional[vtk.vtkActor2D]
+    """The actor controlling the point labels."""
+
     _min_value: float
     """The minimum face value."""
 
@@ -216,29 +222,35 @@ class SpherePlotter:
     cmap: str
     """The colour map to use when visualising the data."""
 
-    # @property
-    # def sphere(self) -> SphereBase:
-    #     """Access the wrapped sphere instance."""
-    #     return self._sphere
-
     @property
     def sphere_meshes(self) -> List[pv.PolyData]:
         """Access the wrapped sphere meshes."""
         return self._sphere_meshes
 
+    @property
+    def radius(self) -> float:
+        """Access the sphere radius."""
+        return self._largest_radius
 
-    def __init__(
-        self, sphere_meshes: List[pv.PolyData], cmap: str = "viridis"
-    ):
+    def __init__(self, sphere_meshes: List[pv.PolyData], cmap: str = "viridis"):
         self._sphere_meshes = sphere_meshes
         self._plotter = None
         self._sphere_actors = []
         self._selected_shell = len(sphere_meshes)
         self._active_shell_opacity = 1
         self._inactive_shell_opacity = 0
+        self._phi_axis_actor = None
+        self._theta_axis_actor = None
+        self._point_label_actor = None
         self.cmap = cmap
 
-        all_frequencies = np.concatenate([m.cell_data["frequency"] for m in sphere_meshes])
+        # Compute the radius
+        bounds = np.abs([m.bounds for m in sphere_meshes])
+        self._largest_radius = bounds.max()
+
+        all_frequencies = np.concatenate(
+            [m.cell_data["frequency"] for m in sphere_meshes]
+        )
 
         self._min_value = all_frequencies.min()
         self._max_value = all_frequencies.max()
@@ -271,6 +283,144 @@ class SpherePlotter:
             self._update_active_sphere_opacity(self._active_shell_opacity)
             self._update_inactive_sphere_opacity(self._inactive_shell_opacity)
 
+    def _update_show_axes(self, show_axes: bool):
+        """Update whether the axes are drawn."""
+
+        if self._phi_axis_actor is not None:
+            self._phi_axis_actor.visibility = show_axes
+
+        if self._theta_axis_actor is not None:
+            self._theta_axis_actor.visibility = show_axes
+
+        if self._point_label_actor is not None:
+            self._point_label_actor.SetVisibility(show_axes)
+
+    def add_spherical_axes(
+        self,
+        plot_phi: bool = True,
+        plot_theta: bool = True,
+        phi_increment: int = 30,
+        theta_increment: int = 30,
+        axis_distance_fixed: float = 0.2,
+        axis_distance_relative: float = 1,
+        axis_thickness: float = 0.05,
+    ):
+        """Add spherical axes to the current plotter.
+
+        Parameters
+        ----------
+        plot_phi
+            Indicate that the phi axis is to be plotted.
+        plot_theta
+            Indicate that the theta axis is to be plotted.
+        phi_increment
+            Label increment for the phi values.
+        theta_increment
+            Label increment for the theta values.
+        axis_distance_fixed
+            Fixed distance from the outer shell to the axis.
+        axis_distance_relative
+            Relative distance from the outer shell to the axis.
+        axis_thickness
+            Absolute thickness of the axes.
+        """
+
+        # Can't add if there's no plotter
+        assert self._plotter is not None
+
+        # Clear the axes if they are already present
+        self.clear_axes()
+
+        # Create a disc for the theta axis and a circular arc for phi.
+        max_radius = self._largest_radius
+        inner_radius = axis_distance_relative * max_radius + axis_distance_fixed
+        outer_radius = inner_radius + axis_thickness
+
+        if plot_theta:
+            theta_axis = pv.Disc(inner=inner_radius, outer=outer_radius, c_res=36)
+            self._theta_axis_actor = self._plotter.add_mesh(theta_axis, show_edges=True)
+        else:
+            self._theta_axis_actor = None
+
+        if plot_phi:
+            phi_axis = pv.Disc(
+                inner=inner_radius,
+                outer=outer_radius,
+                c_res=36,
+                normal=(0, 1, 0),
+            ).clip(normal="-x")
+
+            self._phi_axis_actor = self._plotter.add_mesh(phi_axis, show_edges=True)
+        else:
+            self._phi_axis_actor = None
+
+        # Create the labels
+        angular_label_positions = []
+        angular_label_strings = []
+        # if plot_phi and plot_theta:
+        #     angular_labels.append(np.array([90, 90]))
+
+        if plot_phi:
+            phi_label_phi_angles = np.arange(0, 181, phi_increment)
+            phi_label_theta_angles = 90 * np.ones_like(phi_label_phi_angles)
+            phi_label_angles = np.stack(
+                [phi_label_phi_angles, phi_label_theta_angles], axis=-1
+            )
+            angular_label_positions.append(phi_label_angles)
+            phi_labels = [f"{phi}\u00b0" for phi in phi_label_phi_angles]
+            angular_label_strings.extend(phi_labels)
+
+        if plot_theta:
+            theta_label_theta_angles = np.arange(0, 360, theta_increment)
+            theta_label_phi_angles = 90 * np.ones_like(theta_label_theta_angles)
+            theta_label_angles = np.stack(
+                [theta_label_phi_angles, theta_label_theta_angles], axis=-1
+            )
+            angular_label_positions.append(theta_label_angles)
+            theta_labels = [f"{theta}\u00b0" for theta in theta_label_theta_angles]
+            angular_label_strings.extend(theta_labels)
+
+        # Put everything together and remove potential duplicates
+        angular_label_positions = np.concatenate(angular_label_positions)
+        angular_label_positions, unique_indices = np.unique(
+            angular_label_positions, axis=0, return_index=True
+        )
+
+        angular_label_strings = np.array(angular_label_strings)
+        angular_label_strings = angular_label_strings[unique_indices]
+
+        # Get the Cartesian coordinates
+        label_cartesian_coordinates = util.convert_spherical_to_cartesian_coordinates(
+            np.radians(angular_label_positions), radius=outer_radius + axis_thickness
+        )
+
+        # And now construct the labels
+        self._point_label_actor = self._plotter.add_point_labels(
+            label_cartesian_coordinates, angular_label_strings, show_points=False
+        )
+
+        # And finally, add a button to toggle axis visibility
+        self._plotter.add_checkbox_button_widget(
+            self._update_show_axes,
+            value=True,
+            position=(10, 5),
+            size=50
+        )
+
+    def clear_axes(self):
+        """Clear the plotted axes."""
+
+        assert self._plotter is not None
+
+        self._plotter.remove_actor(self._phi_axis_actor)
+        self._phi_axis_actor = None
+
+        self._plotter.remove_actor(self._theta_axis_actor)
+        self._theta_axis_actor = None
+
+        self._plotter.remove_actor(self._point_label_actor)
+        self._point_label_actor = None
+
     def produce_plot(self) -> pv.Plotter:
         """Produce the 3D visual plot for the current spheres.
 
@@ -298,10 +448,7 @@ class SpherePlotter:
                 clim=[self._min_value, self._max_value],
                 cmap=self.cmap,
                 scalars="frequency",
-                scalar_bar_args={
-                    "vertical": True,
-                    "position_y": 0.3
-                }
+                scalar_bar_args={"vertical": True, "position_y": 0.3},
             )
             self._sphere_actors.append(actor)
 
@@ -317,7 +464,7 @@ class SpherePlotter:
             title_height=0.01,
             fmt="%.0f",
             interaction_event="always",
-            style="modern"
+            style="modern",
         )
 
         plotter.add_slider_widget(
@@ -329,7 +476,7 @@ class SpherePlotter:
             pointb=(0.6, 0.9),
             title_height=0.01,
             interaction_event="always",
-            style="modern"
+            style="modern",
         )
 
         plotter.add_slider_widget(
@@ -341,7 +488,7 @@ class SpherePlotter:
             pointb=(0.9, 0.9),
             title_height=0.01,
             interaction_event="always",
-            style="modern"
+            style="modern",
         )
 
         plotter.add_axes()
@@ -482,7 +629,7 @@ def produce_labelled_3d_plot(
             [phi_axis_positions, phi_position_theta], axis=-1
         )
 
-        phi_axis_cartesian = convert_spherical_to_cartesian_coordinates(
+        phi_axis_cartesian = util.convert_spherical_to_cartesian_coordinates(
             phi_axis_polar_positions, radius=axis_label_factor * radius
         )
 
@@ -502,7 +649,7 @@ def produce_labelled_3d_plot(
             [theta_position_phi, theta_axis_positions], axis=-1
         )
 
-        theta_axis_cartesian = convert_spherical_to_cartesian_coordinates(
+        theta_axis_cartesian = util.convert_spherical_to_cartesian_coordinates(
             theta_axis_polar_positions, radius=axis_label_factor * radius
         )
 
@@ -527,12 +674,14 @@ def produce_labelled_3d_plot(
         theta_position_for_phi_labels = np.ones(number_of_phi_labels) * np.pi / 2
 
         spherical_coordinates_of_phi_labels = np.zeros((number_of_phi_labels, 2))
-        spherical_coordinates_of_phi_labels[:, AngularIndex.PHI] = phi_label_positions
         spherical_coordinates_of_phi_labels[
-            :, AngularIndex.THETA
+            :, util.AngularIndex.PHI
+        ] = phi_label_positions
+        spherical_coordinates_of_phi_labels[
+            :, util.AngularIndex.THETA
         ] = theta_position_for_phi_labels
 
-        phi_label_positions_cartesian = convert_spherical_to_cartesian_coordinates(
+        phi_label_positions_cartesian = util.convert_spherical_to_cartesian_coordinates(
             angular_coordinates=spherical_coordinates_of_phi_labels,
             radius=axis_tick_factor * radius,
         )
@@ -576,16 +725,18 @@ def produce_labelled_3d_plot(
         spherical_coordinates_of_theta_labels = np.zeros((number_of_theta_labels, 2))
 
         spherical_coordinates_of_theta_labels[
-            :, AngularIndex.THETA
+            :, util.AngularIndex.THETA
         ] = theta_label_positions
 
         spherical_coordinates_of_theta_labels[
-            :, AngularIndex.PHI
+            :, util.AngularIndex.PHI
         ] = phi_position_for_theta_labels
 
-        theta_label_positions_cartesian = convert_spherical_to_cartesian_coordinates(
-            angular_coordinates=spherical_coordinates_of_theta_labels,
-            radius=axis_tick_factor * radius,
+        theta_label_positions_cartesian = (
+            util.convert_spherical_to_cartesian_coordinates(
+                angular_coordinates=spherical_coordinates_of_theta_labels,
+                radius=axis_tick_factor * radius,
+            )
         )
 
         theta_label_angles_degrees = np.degrees(theta_label_positions)
@@ -763,7 +914,7 @@ def produce_spherical_histogram_plot(
     sphere_angles = np.stack([sphere_phi, sphere_theta], axis=-1)
 
     # Get the cartesian coordinates of the sphere
-    sphere_cartesian_coordinates = convert_spherical_to_cartesian_coordinates(
+    sphere_cartesian_coordinates = util.convert_spherical_to_cartesian_coordinates(
         angular_coordinates=sphere_angles, radius=sphere_radius
     )
 
@@ -930,7 +1081,7 @@ def produce_polar_histogram_plot(
 
 def produce_polar_histogram_plot_from_2d_bins(
     ax: matplotlib.projections.polar.PolarAxes,
-    angle: AngularIndex,
+    angle: util.AngularIndex,
     data: np.ndarray,
     bins: np.ndarray,
     bin_angle_unit: AngularUnits = AngularUnits.DEGREES,
@@ -1233,8 +1384,8 @@ def produce_histogram_plots(
     one_dimensional_histograms = produce_phi_theta_1d_histogram_data(
         binned_data, weight_by_magnitude=weight_by_magnitude
     )
-    phi_histogram: np.ndarray = one_dimensional_histograms[AngularIndex.PHI]
-    theta_histogram: np.ndarray = one_dimensional_histograms[AngularIndex.THETA]
+    phi_histogram: np.ndarray = one_dimensional_histograms[util.AngularIndex.PHI]
+    theta_histogram: np.ndarray = one_dimensional_histograms[util.AngularIndex.THETA]
 
     # Construct the 3D plot
     plt.figure(figsize=(10, 3.5))
@@ -1259,8 +1410,8 @@ def produce_histogram_plots(
     bins = bins[:, :-1]
 
     # These two bin widths should be IDENTICAL.
-    phi_bins = bins[AngularIndex.PHI]
-    theta_bins = bins[AngularIndex.THETA]
+    phi_bins = bins[util.AngularIndex.PHI]
+    theta_bins = bins[util.AngularIndex.THETA]
 
     # Construct the theta polar plot
     ax2 = plt.subplot(132, projection="polar")
@@ -1655,12 +1806,12 @@ def construct_confidence_cone(
 
     # Construct the rotation matrix
     if mean_orientation is not None:
-        mean_orientation_spherical = compute_vector_orientation_angles(
+        mean_orientation_spherical = util.compute_vector_orientation_angles(
             vectors=mean_orientation
         )
 
-        mean_phi = mean_orientation_spherical[AngularIndex.PHI]
-        mean_theta = mean_orientation_spherical[AngularIndex.THETA]
+        mean_phi = mean_orientation_spherical[util.AngularIndex.PHI]
+        mean_theta = mean_orientation_spherical[util.AngularIndex.THETA]
 
         rotation = Rotation.from_euler("xz", [-mean_phi, -mean_theta])
     else:
@@ -1677,7 +1828,7 @@ def construct_confidence_cone(
 
         ring_vertices = np.stack([start_vertex, end_vertex], axis=0)
 
-        ring_vertices_cartesian = convert_spherical_to_cartesian_coordinates(
+        ring_vertices_cartesian = util.convert_spherical_to_cartesian_coordinates(
             ring_vertices
         )
 
@@ -1750,7 +1901,7 @@ def construct_uv_sphere(
     # Convert to Cartesian coordinates
     sphere_angles = np.stack([phi_grid, theta_grid], axis=-1)
 
-    sphere_cartesian_coordinates = convert_spherical_to_cartesian_coordinates(
+    sphere_cartesian_coordinates = util.convert_spherical_to_cartesian_coordinates(
         angular_coordinates=sphere_angles, radius=radius
     )
 
