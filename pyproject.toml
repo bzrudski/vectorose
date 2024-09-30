@@ -20,6 +20,7 @@ imageio-ffmpeg = "^0.5.1"
 scipy = "^1.14"
 importlib-metadata = ">=7.0.1"
 pyvista = "^0.44.1"
+imageio = {version = "2.27.0", extras = ["ffmpeg", "pyav"]}
 
 [tool.poetry.dev-dependencies]
 
