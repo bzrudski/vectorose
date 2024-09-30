@@ -88,9 +88,7 @@ class SphereBase(abc.ABC):
         # Return the complete histogram
         return histogram, magnitude_bin_edges
 
-    def _initial_vector_data_preparation(
-        self, vectors: pd.DataFrame
-    ) -> pd.DataFrame:
+    def _initial_vector_data_preparation(self, vectors: pd.DataFrame) -> pd.DataFrame:
         """Prepare the vectors for histogram construction.
 
         Override this method to include specific operations that should be
@@ -168,22 +166,16 @@ class SphereBase(abc.ABC):
             used.
         """
 
-        raise NotImplementedError(
-            "Subclasses must implement this abstract method!"
-        )
+        raise NotImplementedError("Subclasses must implement this abstract method!")
 
     @abc.abstractmethod
     def _construct_histogram_index(self) -> pd.MultiIndex:
         """Construct the index for the histogram."""
 
-        raise NotImplementedError(
-            "Subclasses must implement this abstract method!"
-        )
+        raise NotImplementedError("Subclasses must implement this abstract method!")
 
     def construct_histogram(
-        self,
-        binned_data: pd.DataFrame,
-        return_fraction: bool = True
+        self, binned_data: pd.DataFrame, return_fraction: bool = True
     ) -> pd.Series:
         """Construct a histogram based on the labelled data.
 
@@ -227,11 +219,11 @@ class SphereBase(abc.ABC):
     def create_mesh(self) -> pv.PolyData:
         """Return the mesh representation of the current sphere."""
 
-        raise NotImplementedError(
-            "Subclasses must implement this abstract method!"
-        )
+        raise NotImplementedError("Subclasses must implement this abstract method!")
 
-    def _create_shell_mesh(self, histogram: pd.Series, radius: float) -> pv.PolyData:
+    def _create_shell_mesh(
+        self, histogram: pd.Series, radius: float
+    ) -> pv.PolyData:
         """Create the mesh for a given shell.
 
         Using the provided histogram data for a specific shell, produce a
@@ -266,7 +258,7 @@ class SphereBase(abc.ABC):
         return shell_mesh
 
     def create_histogram_meshes(
-        self, histogram_data: pd.Series, magnitude_bins: np.ndarray
+        self, histogram_data: pd.Series, magnitude_bins: np.ndarray, constant_radius: bool = False
     ) -> List[pv.PolyData]:
         """Create mesh shells for the supplied histogram.
 
@@ -278,6 +270,8 @@ class SphereBase(abc.ABC):
         magnitude_bins
             The upper bounds for the magnitude bins. These are used to
             determine the radius of each shell.
+        constant_radius
+            Indicate whether all meshes should have the same radius.
 
         Returns
         -------
@@ -297,7 +291,7 @@ class SphereBase(abc.ABC):
 
         for i in range(number_of_shells):
             shell_histogram = histogram_data.loc[i]
-            shell_radius = magnitude_bins[i + 1]
+            shell_radius = 1 if constant_radius else magnitude_bins[i + 1]
 
             shell = self._create_shell_mesh(shell_histogram, shell_radius)
 
