@@ -191,8 +191,12 @@ class SphereBase(abc.ABC):
         number_of_orientations = len(orientation_index_arr)
 
         # Repeat each index
-        magnitude_index_complete = np.repeat(magnitude_index_arr, number_of_orientations, axis=0)
-        orientation_index_complete = np.tile(orientation_index_arr, (number_of_shells, 1))
+        magnitude_index_complete = np.repeat(
+            magnitude_index_arr, number_of_orientations, axis=0
+        )
+        orientation_index_complete = np.tile(
+            orientation_index_arr, (number_of_shells, 1)
+        )
 
         raw_index_arrays = [magnitude_index_complete, orientation_index_complete]
         headers_arrays = [self.magnitude_shell_cols, self.orientation_cols]
@@ -216,9 +220,7 @@ class SphereBase(abc.ABC):
         """Construct the index for the magnitude bins."""
 
         index = pd.RangeIndex(
-            start=0,
-            stop=self.number_of_shells,
-            name=self.magnitude_shell_cols[0]
+            start=0, stop=self.number_of_shells, name=self.magnitude_shell_cols[0]
         )
 
         return index
@@ -453,7 +455,8 @@ class SphereBase(abc.ABC):
 
         # Get the bivariate histogram with the counts
         bivariate_histogram = self.construct_histogram(
-            binned_data, return_fraction=False,
+            binned_data,
+            return_fraction=False,
         )
 
         # And now, get the marginal magnitude histogram
@@ -553,3 +556,36 @@ class SphereBase(abc.ABC):
             shell_list.append(shell)
 
         return shell_list
+
+    @abc.abstractmethod
+    def convert_vectors_to_cartesian_array(
+        self, labelled_vectors: pd.DataFrame, create_unit_vectors: bool = False
+    ) -> np.ndarray:
+        """Convert a set of labelled vectors into Cartesian coordinates.
+
+        Each concrete implementation of a sphere may internally represent
+        the vectors differently. This abstract method converts from that
+        implementation-specific formatting to Cartesian coordinates.
+
+        Parameters
+        ----------
+        labelled_vectors
+            The set of labelled ``n`` labelled vectors in ``d`` dimensions,
+            in the same format as produced by
+            :meth:`SphereBase.assign_histogram_bins`.
+        create_unit_vectors
+            Indicate where the returned vectors should be unit vectors.
+            Depending on the implementation, this may either remove an
+            extraneous normalisation step later, or add an extra
+            normalisation step now.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of shape ``(n, d)`` containing the vector components in
+            Cartesian coordinates.
+        """
+
+        raise NotImplementedError(
+            "This abstract method must be implemented in subclasses."
+        )

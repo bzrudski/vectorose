@@ -38,9 +38,7 @@ class TriangleSphere(SphereBase):
     def orientation_cols(self) -> List[str]:
         return ["face"]
 
-    def _initial_vector_data_preparation(
-        self, vectors: pd.DataFrame
-    ) -> pd.DataFrame:
+    def _initial_vector_data_preparation(self, vectors: pd.DataFrame) -> pd.DataFrame:
         vectors_array = vectors.loc[:, ["x", "y", "z"]].to_numpy()
         unit_vectors, magnitudes = util.normalise_vectors(vectors_array)
 
@@ -68,13 +66,11 @@ class TriangleSphere(SphereBase):
         self,
         number_of_subdivisions: int = 3,
         number_of_shells: int = 1,
-        magnitude_range: Optional[Tuple[float, float]] = None
+        magnitude_range: Optional[Tuple[float, float]] = None,
     ):
         # Create the sphere
         sphere = trimesh.primitives.Sphere(
-            radius=1,
-            subdivisions=number_of_subdivisions,
-            mutable=False
+            radius=1, subdivisions=number_of_subdivisions, mutable=False
         )
 
         self._sphere = sphere
@@ -86,14 +82,13 @@ class TriangleSphere(SphereBase):
         faces_dataframe = pd.DataFrame(
             vertex_coordinates,
             index=face_ids,
-            columns=["x1", "y1", "z1", "x2", "y2", "z2", "x3", "y3", "z3"]
+            columns=["x1", "y1", "z1", "x2", "y2", "z2", "x3", "y3", "z3"],
         )
 
         self._faces = faces_dataframe
 
         super().__init__(
-            number_of_shells=number_of_shells,
-            magnitude_range=magnitude_range
+            number_of_shells=number_of_shells, magnitude_range=magnitude_range
         )
 
     def _construct_orientation_index(self) -> pd.RangeIndex:
@@ -112,7 +107,7 @@ class TriangleSphere(SphereBase):
         number_of_faces = len(self._faces)
 
         # Get the face indices
-        face_indices = pd.RangeIndex(0 , number_of_faces)
+        face_indices = pd.RangeIndex(0, number_of_faces)
 
         return face_indices
 
@@ -134,6 +129,28 @@ class TriangleSphere(SphereBase):
         sphere_mesh.cell_data["face-index"] = range(number_of_faces)
 
         return sphere_mesh
+
+    def convert_vectors_to_cartesian_array(
+        self, labelled_vectors: pd.DataFrame, create_unit_vectors: bool = False
+    ) -> np.ndarray:
+        # So, the way that the frame is structured is that we have the
+        # Cartesian components of the unit vectors as `ux, uy, uz` and then
+        # we have the magnitude in the `magnitude` column.
+
+        # First, let's extract the vector components.
+        unit_vectors = labelled_vectors[["ux", "uy", "uz"]].to_numpy()
+
+        # If we only want unit vectors, great! Return these!
+        if create_unit_vectors:
+            return unit_vectors
+
+        magnitudes = labelled_vectors["magnitude"].to_numpy()
+
+        magnitudes = np.expand_dims(magnitudes, axis=-1)
+
+        cartesian_vectors = unit_vectors * magnitudes
+
+        return cartesian_vectors
 
 
 def construct_spherical_histogram(

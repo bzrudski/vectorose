@@ -300,7 +300,7 @@ class TregenzaSphereBase:
 
         top_cap_vertices_cartesian = (
             util.convert_spherical_to_cartesian_coordinates(
-                np.radians(top_cap_vertices)
+                top_cap_vertices, use_degrees=True
             )
         )
 
@@ -343,7 +343,7 @@ class TregenzaSphereBase:
 
                 face_vertices_cartesian = (
                     util.convert_spherical_to_cartesian_coordinates(
-                        np.radians(face_vertices)
+                        face_vertices, use_degrees=True
                     )
                 )
 
@@ -360,7 +360,7 @@ class TregenzaSphereBase:
 
         bottom_cap_vertices_cartesian = (
             util.convert_spherical_to_cartesian_coordinates(
-                np.radians(bottom_cap_vertices)
+                bottom_cap_vertices, use_degrees=True
             )
         )
 
@@ -749,13 +749,11 @@ class TregenzaSphereBaseNew(SphereBase):
         top_ring = np.stack([top_phi, theta], axis=-1)
         bottom_ring = np.stack([bottom_phi, theta], axis=-1)
 
-        # Convert the ring angles to radians
-        top_ring = np.radians(top_ring)
-        bottom_ring = np.radians(bottom_ring)
-
         # Convert the rings to Cartesian coordinates
-        top_ring_cartesian = util.convert_spherical_to_cartesian_coordinates(top_ring)
-        bottom_ring_cartesian = util.convert_spherical_to_cartesian_coordinates(bottom_ring)
+        top_ring_cartesian = util.convert_spherical_to_cartesian_coordinates(top_ring,
+                                                                             use_degrees=True)
+        bottom_ring_cartesian = util.convert_spherical_to_cartesian_coordinates(bottom_ring,
+                                                                                use_degrees=True)
 
         # Combine everything
         ring_vertices = np.concatenate([top_ring_cartesian, bottom_ring_cartesian], axis=0)
@@ -913,7 +911,7 @@ class TregenzaSphereBaseNew(SphereBase):
 
         top_cap_vertices_cartesian = (
             util.convert_spherical_to_cartesian_coordinates(
-                np.radians(top_cap_vertices)
+                top_cap_vertices, use_degrees=True
             )
         )
 
@@ -956,7 +954,7 @@ class TregenzaSphereBaseNew(SphereBase):
 
                 face_vertices_cartesian = (
                     util.convert_spherical_to_cartesian_coordinates(
-                        np.radians(face_vertices)
+                        face_vertices, use_degrees=True
                     )
                 )
 
@@ -1105,6 +1103,27 @@ class TregenzaSphereBaseNew(SphereBase):
         weights = smallest_area / patch_areas
 
         return weights
+
+    def convert_vectors_to_cartesian_array(
+        self, labelled_vectors: pd.DataFrame, create_unit_vectors: bool = False
+    ) -> np.ndarray:
+        # Here's how this is going to go... We have spherical coordinates
+        # with the columns `phi`, `theta` and `magnitude`. If we want unit
+        # vectors, we just convert using phi and theta. If we don't, then
+        # we throw in the magnitudes also.
+
+        angular_coordinates = labelled_vectors[["phi", "theta"]].to_numpy()
+
+        if create_unit_vectors:
+            magnitudes = 1
+        else:
+            magnitudes = labelled_vectors["magnitude"].to_numpy()
+
+        cartesian_coordinates = util.convert_spherical_to_cartesian_coordinates(
+            angular_coordinates, radius=magnitudes, use_degrees=True
+        )
+
+        return cartesian_coordinates
 
 
 class CoarseTregenzaSphere(TregenzaSphereBase):
