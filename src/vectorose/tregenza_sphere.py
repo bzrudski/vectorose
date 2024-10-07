@@ -466,8 +466,8 @@ class TregenzaSphereBaseNew(SphereBase):
         return self._ring_increment
 
     @property
-    def hist_group_cols(self) -> List[str]:
-        return ["shell", "ring", "bin"]
+    def orientation_cols(self) -> List[str]:
+        return ["ring", "bin"]
 
     # Define the constructor...
     def __init__(
@@ -640,16 +640,17 @@ class TregenzaSphereBaseNew(SphereBase):
         orientation_bins = self.get_closest_faces(vectors)
         return orientation_bins
 
-    def _construct_histogram_index(self) -> pd.MultiIndex:
-        """Get the histogram index for the current Tregenza sphere.
+    def _construct_orientation_index(self) -> pd.MultiIndex:
+        """Get the orientation index for the current Tregenza sphere.
 
-        Produce the full histogram index for the current Tregenza sphere,
-        with the requested number of shells.
+        Produce the histogram orientation index for the current Tregenza
+        sphere.
 
         Returns
         -------
         pandas.MultiIndex
-            Index containing all possible values of shell, ring and bin.
+            Index containing all possible values of ring and bin in a given
+            shell.
         """
 
         # Get the ring numbers and bin counts as an array
@@ -662,17 +663,8 @@ class TregenzaSphereBaseNew(SphereBase):
         # Create the incremental bin indices
         bin_indices = np.concatenate([np.arange(i) for i in bin_counts])
 
-        # Create the shell indices
-        shell_indices = np.repeat(np.arange(self.number_of_shells), len(bin_indices))
-
-        # Repeat the ring and bin indices for each shell
-        complete_ring_indices = np.tile(ring_indices, self.number_of_shells)
-        complete_bin_indices = np.tile(bin_indices, self.number_of_shells)
-
-        # And now, build the multi-index
         multi_index = pd.MultiIndex.from_arrays(
-            [shell_indices, complete_ring_indices, complete_bin_indices],
-            names=["shell", "ring", "bin"],
+            [ring_indices, bin_indices], names=["ring", "bin"]
         )
 
         return multi_index

@@ -35,8 +35,8 @@ class TriangleSphere(SphereBase):
     """Data frame containing information about the mesh faces."""
 
     @property
-    def hist_group_cols(self) -> List[str]:
-        return ["shell", "face"]
+    def orientation_cols(self) -> List[str]:
+        return ["face"]
 
     def _initial_vector_data_preparation(
         self, vectors: pd.DataFrame
@@ -96,34 +96,25 @@ class TriangleSphere(SphereBase):
             magnitude_range=magnitude_range
         )
 
-    def _construct_histogram_index(self) -> pd.MultiIndex:
-        """Get the index for the current triangulated sphere.
+    def _construct_orientation_index(self) -> pd.RangeIndex:
+        """Get the orientation index for the current triangulated sphere.
 
-        Produce the full histogram index for the current triangulated
-        sphere, containing all face indices for each requested shell.
+        Produce the orientation index for the current triangulated sphere,
+        containing all face indices for a given shell.
 
         Returns
         -------
-        pandas.MultiIndex
-            Index containing all possible values of ``shell`` and ``face``.
+        pandas.RangeIndex
+            Index containing all valid ``face`` indices.
         """
 
         # Get the number of faces
         number_of_faces = len(self._faces)
 
         # Get the face indices
-        face_indices = np.tile(np.arange(number_of_faces), self.number_of_shells)
+        face_indices = pd.RangeIndex(0 , number_of_faces)
 
-        # And now, get the shell indices
-        shell_indices = np.repeat(np.arange(self.number_of_shells), number_of_faces)
-
-        # Construct the MultiIndex using these arrays
-        multi_index = pd.MultiIndex.from_arrays(
-            [shell_indices, face_indices],
-            names=["shell", "face"]
-        )
-
-        return multi_index
+        return face_indices
 
     def create_mesh(self) -> pv.PolyData:
         points = self._sphere.vertices

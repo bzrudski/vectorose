@@ -36,9 +36,19 @@ class SphereBase(abc.ABC):
     """
 
     @property
-    @abc.abstractmethod
     def hist_group_cols(self) -> List[str]:
         """Names of the histogram columns to use for sorting."""
+        return self.magnitude_shell_cols + self.orientation_cols
+
+    @property
+    def magnitude_shell_cols(self) -> List[str]:
+        """Name of the histogram columns to use for magnitude."""
+        return ["shell"]
+
+    @property
+    @abc.abstractmethod
+    def orientation_cols(self) -> List[str]:
+        """Name of the histogram columns to use for orientation."""
         raise NotImplementedError(
             "This abstract property must be implemented in subclasses."
         )
@@ -168,14 +178,62 @@ class SphereBase(abc.ABC):
 
         raise NotImplementedError("Subclasses must implement this abstract method!")
 
-    @abc.abstractmethod
-    def _construct_histogram_index(self) -> pd.MultiIndex:
+    def _construct_histogram_index(self, reverse: bool = False) -> pd.MultiIndex:
         """Construct the index for the histogram."""
+
+        magnitude_index = self._construct_magnitude_index()
+        orientation_index = self._construct_orientation_index()
+
+        magnitude_index_arr = magnitude_index.to_frame(index=False).to_numpy()
+        orientation_index_arr = orientation_index.to_frame(index=False).to_numpy()
+
+        number_of_shells = len(magnitude_index_arr)
+        number_of_orientations = len(orientation_index_arr)
+
+        # Repeat each index
+        magnitude_index_complete = np.repeat(magnitude_index_arr, number_of_orientations, axis=0)
+        orientation_index_complete = np.tile(orientation_index_arr, (number_of_shells, 1))
+
+        raw_index_arrays = [magnitude_index_complete, orientation_index_complete]
+        headers_arrays = [self.magnitude_shell_cols, self.orientation_cols]
+
+        if reverse:
+            raw_index_arrays = list(reversed(raw_index_arrays))
+            headers_arrays = list(reversed(headers_arrays))
+
+        # And now combine everything!
+        index_array = np.concatenate(raw_index_arrays, axis=-1)
+        headers = np.concatenate(headers_arrays)
+
+        # And build a data frame from this
+        index_data_frame = pd.DataFrame(index_array, columns=headers)
+
+        multi_index = pd.MultiIndex.from_frame(index_data_frame)
+
+        return multi_index
+
+    def _construct_magnitude_index(self) -> pd.Index:
+        """Construct the index for the magnitude bins."""
+
+        index = pd.RangeIndex(
+            start=0,
+            stop=self.number_of_shells,
+            name=self.magnitude_shell_cols[0]
+        )
+
+        return index
+
+    @abc.abstractmethod
+    def _construct_orientation_index(self) -> pd.Index:
+        """Construct the index for the orientation bins."""
 
         raise NotImplementedError("Subclasses must implement this abstract method!")
 
     def construct_histogram(
-        self, binned_data: pd.DataFrame, return_fraction: bool = True
+        self,
+        binned_data: pd.DataFrame,
+        return_fraction: bool = True,
+        reverse_indexing: bool = False,
     ) -> pd.Series:
         """Construct a histogram based on the labelled data.
 
@@ -190,6 +248,9 @@ class SphereBase(abc.ABC):
         return_fraction
             Indicate whether the values returned should be the raw counts
             or the proportions.
+        reverse_indexing
+            Indicate whether the indexing should be reversed, and the
+            orientation should be before the magnitude shell.
 
         Returns
         -------
@@ -199,21 +260,214 @@ class SphereBase(abc.ABC):
             :attr:`SphereBase.hist_group_cols`.
         """
 
-        # Get the total number of vectors
-        number_of_vectors = len(binned_data)
+        grouping_columns = self.hist_group_cols
+
+        if reverse_indexing:
+            grouping_columns = list(reversed(grouping_columns))
 
         # Use groupby to perform the grouping
-        original_histogram = binned_data.groupby(self.hist_group_cols).apply(len)
+        original_histogram = binned_data.groupby(grouping_columns).apply(len)
 
         # Modify the index to account for any missing bins.
-        multi_index = self._construct_histogram_index()
+        multi_index = self._construct_histogram_index(reverse=reverse_indexing)
 
         filled_histogram = original_histogram.reindex(index=multi_index, fill_value=0)
 
         if return_fraction:
+            number_of_vectors = len(binned_data)
+
             filled_histogram /= number_of_vectors
 
         return filled_histogram
+
+    def construct_marginal_magnitude_histogram(
+        self, binned_data: pd.DataFrame, return_fraction: bool = True
+    ) -> pd.Series:
+        """Construct the marginal magnitude histogram.
+
+        Compute the marginal histogram of the magnitude data, disregarding
+        the orientation differences. The resulting histogram has the same
+        number of bins as the number of shells.
+
+        Parameters
+        ----------
+        binned_data
+            Data frame containing the labelled vectors.
+        return_fraction
+            Indicate whether the values returned should be the raw counts
+            or the proportions.
+
+        Returns
+        -------
+        pandas.Series
+            The counts or proportions of vectors in each magnitude shell.
+
+        See Also
+        --------
+        SphereBase.assign_histogram_bins:
+            Label a set of vectors into different bins.
+        SphereBase.construct_histogram:
+            Construct a bivariate magnitude and orientation histogram.
+        SphereBase.construct_marginal_orientation_histogram:
+            Construct a marginal orientation histogram.
+        """
+
+        # Group based only on the magnitude bin
+        counts_by_shell = binned_data.groupby(self.magnitude_shell_cols).apply(len)
+
+        # Construct the index (in case some bins are zero).
+        magnitude_index = self._construct_magnitude_index()
+
+        magnitude_histogram = counts_by_shell.reindex(
+            index=magnitude_index, fill_value=0
+        )
+
+        if return_fraction:
+            number_of_vectors = len(binned_data)
+
+            magnitude_histogram /= number_of_vectors
+
+        return magnitude_histogram
+
+    def construct_marginal_orientation_histogram(
+        self, binned_data: pd.DataFrame, return_fraction: bool = True
+    ) -> pd.Series:
+        """Construct the marginal orientation histogram.
+
+        Compute the marginal histogram of the orientation data,
+        disregarding the magnitude differences. The resulting histogram has
+        the same configuration of bins as a single shell.
+
+        Parameters
+        ----------
+        binned_data
+            Data frame containing the labelled vectors.
+        return_fraction
+            Indicate whether the values returned should be the raw counts
+            or the proportions.
+
+        Returns
+        -------
+        pandas.Series
+            The counts or proportions of vectors in each orientation bin.
+
+        See Also
+        --------
+        SphereBase.assign_histogram_bins:
+            Label a set of vectors into different bins.
+        SphereBase.construct_histogram:
+            Construct a bivariate magnitude and orientation histogram.
+        SphereBase.construct_marginal_magnitude_histogram:
+            Construct a marginal magnitude histogram.
+        """
+
+        # Group based on only the orientation data
+        counts_by_orientation = binned_data.groupby(self.orientation_cols).apply(len)
+
+        # Construct the index (in case some orientations are zero).
+        orientation_index = self._construct_orientation_index()
+        orientation_index.names = self.orientation_cols
+
+        orientation_histogram = counts_by_orientation.reindex(
+            orientation_index, fill_value=0
+        )
+
+        if return_fraction:
+            number_of_vectors = len(binned_data)
+
+            orientation_histogram /= number_of_vectors
+
+        return orientation_histogram
+
+    def construct_conditional_orientation_histogram(
+        self, binned_data: pd.DataFrame
+    ) -> pd.Series:
+        """Construct the conditional orientation histogram.
+
+        Construct the histogram of orientations conditioned on the
+        magnitude. Within each shell, the returned fractions sum to 1.
+
+        Parameters
+        ----------
+        binned_data
+            Data frame containing the labelled vectors.
+
+        Returns
+        -------
+        pandas.Series
+            The proportion of vectors in each orientation relative to all
+            vectors within that shell. The index used is the same as that
+            obtained in the bivariate case.
+
+        Warnings
+        --------
+        Unlike the bivariate and marginal histograms, this method does not
+        allow returning raw counts. The returned values are proportions
+        relative to each shell.
+        """
+
+        # Get the bivariate histogram with the counts
+        bivariate_histogram = self.construct_histogram(
+            binned_data, return_fraction=False
+        )
+
+        # And now, get the marginal magnitude histogram
+        marginal_magnitude_histogram = self.construct_marginal_magnitude_histogram(
+            binned_data, return_fraction=False
+        )
+
+        # Divide the bivariate distribution by the marginal to get the
+        # conditional distribution.
+        orientation_given_magnitude = bivariate_histogram / marginal_magnitude_histogram
+
+        return orientation_given_magnitude
+
+    def construct_conditional_magnitude_histogram(
+        self, binned_data: pd.DataFrame
+    ) -> pd.Series:
+        """Construct the conditional magnitude histogram.
+
+        Construct the histogram of magnitudes conditioned on the
+        orientation. Within each orientation bin, the returned fractions
+        sum to 1.
+
+        Parameters
+        ----------
+        binned_data
+            Data frame containing the labelled vectors.
+
+        Returns
+        -------
+        pandas.Series
+            The proportion of vectors in each magnitude shell relative to
+            all vectors having that orientation. The index used is the
+            reverse of that obtained in the bivariate case, having the
+            orientation parameters first and the magnitude second.
+
+        Warnings
+        --------
+        Unlike the bivariate and marginal histograms, this method does not
+        allow returning raw counts. The returned values are proportions
+        relative to each shell.
+        """
+
+        # Get the bivariate histogram with the counts
+        bivariate_histogram = self.construct_histogram(
+            binned_data, return_fraction=False,
+        )
+
+        # And now, get the marginal magnitude histogram
+        marginal_orientation_histogram = self.construct_marginal_orientation_histogram(
+            binned_data, return_fraction=False
+        )
+
+        # Divide the bivariate distribution by the marginal to get the
+        # conditional distribution.
+        magnitude_given_orientation = (
+            bivariate_histogram / marginal_orientation_histogram
+        )
+
+        return magnitude_given_orientation
 
     @abc.abstractmethod
     def create_mesh(self) -> pv.PolyData:
@@ -221,9 +475,7 @@ class SphereBase(abc.ABC):
 
         raise NotImplementedError("Subclasses must implement this abstract method!")
 
-    def _create_shell_mesh(
-        self, histogram: pd.Series, radius: float
-    ) -> pv.PolyData:
+    def _create_shell_mesh(self, histogram: pd.Series, radius: float) -> pv.PolyData:
         """Create the mesh for a given shell.
 
         Using the provided histogram data for a specific shell, produce a
@@ -258,7 +510,10 @@ class SphereBase(abc.ABC):
         return shell_mesh
 
     def create_histogram_meshes(
-        self, histogram_data: pd.Series, magnitude_bins: np.ndarray, constant_radius: bool = False
+        self,
+        histogram_data: pd.Series,
+        magnitude_bins: np.ndarray,
+        constant_radius: bool = False,
     ) -> List[pv.PolyData]:
         """Create mesh shells for the supplied histogram.
 
