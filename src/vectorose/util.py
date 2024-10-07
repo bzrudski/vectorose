@@ -328,15 +328,16 @@ def create_symmetric_vectors_from_axes(axes: np.ndarray) -> np.ndarray:
 
 
 def convert_spherical_to_cartesian_coordinates(
-    angular_coordinates: np.ndarray, radius: Union[float, np.ndarray] = 1
+    angular_coordinates: np.ndarray,
+    radius: Union[float, np.ndarray] = 1,
+    use_degrees: bool = False
 ) -> np.ndarray:
     """Convert spherical coordinates to cartesian coordinates.
 
     Convert spherical coordinates provided in terms of phi and theta
     into cartesian coordinates. For the conversion to be possible, a
     sphere radius must also be specified. If none is provided, the
-    sphere is assumed to be the unit sphere. The angles must be provided
-    in **radians**.
+    sphere is assumed to be the unit sphere.
 
     Parameters
     ----------
@@ -347,11 +348,13 @@ def convert_spherical_to_cartesian_coordinates(
         used on the output of :func:`np.mgrid`, if the arrays have been
         stacked such that the final axis is used to distinguish between phi
         and theta.
-
     radius
         A :class:`float` or :class:`numpy.ndarray` representing the radius
         of the sphere. If the value passed is an array, it must have ``n``
         rows, one for each data point. Default: ``radius=1``.
+    use_degrees
+        Indicate whether the provided angular coordinates are in degrees.
+        If `False` (default), radians are assumed.
 
     Return
     ------
@@ -380,6 +383,10 @@ def convert_spherical_to_cartesian_coordinates(
     The returned array is also a 2D array, with three columns (X, Y, Z)
     and ``n`` rows.
     """
+
+    # Convert to radians if necessary
+    if use_degrees:
+        angular_coordinates = np.radians(angular_coordinates)
 
     # Simple definition of a sphere used here.
     phi: np.ndarray = angular_coordinates[..., AngularIndex.PHI]
