@@ -478,7 +478,12 @@ class SphereBase(abc.ABC):
 
         raise NotImplementedError("Subclasses must implement this abstract method!")
 
-    def _create_shell_mesh(self, histogram: pd.Series, radius: float) -> pv.PolyData:
+    def create_shell_mesh(
+        self,
+        histogram: pd.Series,
+        radius: float = 1.0,
+        series_name: Optional[str] = "frequency"
+    ) -> pv.PolyData:
         """Create the mesh for a given shell.
 
         Using the provided histogram data for a specific shell, produce a
@@ -493,12 +498,15 @@ class SphereBase(abc.ABC):
         radius
             Desired shell radius. This typically corresponds to a magnitude
             bin upper bound.
+        series_name
+            The name to associate with the provided scalar data. If `None`,
+            then the value of :attr:`pandas.Series.name` is used.
 
         Returns
         -------
         pyvista.PolyData
-            The constructed shell containing the desired scalars, with the
-            name ``frequency``.
+            The constructed shell containing the desired scalars in the
+            specified slot.
         """
 
         # First, construct the mesh that will underlie the shell
@@ -507,8 +515,11 @@ class SphereBase(abc.ABC):
         # Now, adjust the radius
         shell_mesh = shell_mesh.scale(radius)
 
+        # Get the name
+        series_name = series_name or histogram.name
+
         # Set the scalar values
-        shell_mesh.cell_data["frequency"] = histogram
+        shell_mesh.cell_data[series_name] = histogram
 
         return shell_mesh
 
@@ -551,7 +562,7 @@ class SphereBase(abc.ABC):
             shell_histogram = histogram_data.loc[i]
             shell_radius = 1 if constant_radius else magnitude_bins[i + 1]
 
-            shell = self._create_shell_mesh(shell_histogram, shell_radius)
+            shell = self.create_shell_mesh(shell_histogram, shell_radius)
 
             shell_list.append(shell)
 
