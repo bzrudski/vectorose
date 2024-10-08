@@ -709,8 +709,14 @@ class TregenzaSphereBaseNew(SphereBase):
         top_cap = self._construct_cap(inner_ring_meshes[0], True, 0)
         bottom_cap = self._construct_cap(inner_ring_meshes[-1], False, self.number_of_rings - 1)
 
+        # Combine all the meshes into a single list
+        inner_ring_meshes.append(bottom_cap)
+
         # Merge everything
-        sphere_mesh = pv.merge([top_cap] + inner_ring_meshes + [bottom_cap])
+        # sphere_mesh = pv.merge([top_cap] + inner_ring_meshes + [bottom_cap])
+        sphere_mesh = top_cap.append_polydata(*inner_ring_meshes)
+
+        sphere_mesh = sphere_mesh.clean()
 
         return sphere_mesh
 
