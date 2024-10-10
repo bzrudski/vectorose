@@ -62,6 +62,11 @@ class TriangleSphere(SphereBase):
 
         return face_series
 
+    def to_dataframe(self) -> pd.DataFrame:
+        """Get the data frame representation of the sphere."""
+
+        return self._faces.copy()
+
     def __init__(
         self,
         number_of_subdivisions: int = 3,
@@ -76,12 +81,12 @@ class TriangleSphere(SphereBase):
         self._sphere = sphere
 
         # Get the data frame containing the faces
-        face_ids = np.arange(len(sphere.faces))
+        face_index = pd.RangeIndex(start=0, stop=len(sphere.faces), name="face")
         vertex_coordinates = sphere.vertices[sphere.faces].reshape(-1, 9)
 
         faces_dataframe = pd.DataFrame(
             vertex_coordinates,
-            index=face_ids,
+            index=face_index,
             columns=["x1", "y1", "z1", "x2", "y2", "z2", "x3", "y3", "z3"],
         )
 

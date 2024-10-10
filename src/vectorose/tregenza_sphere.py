@@ -592,6 +592,11 @@ class TregenzaSphereBaseNew(SphereBase):
 
         return rings
 
+    def to_dataframe(self) -> pd.DataFrame:
+        """Get the data frame representation of the sphere."""
+
+        return self._rings.copy()
+
     def get_closest_faces(self, spherical_coordinates: pd.DataFrame) -> pd.DataFrame:
         """Get the closest faces for a specified spherical positions.
 
