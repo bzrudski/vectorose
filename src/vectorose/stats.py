@@ -26,7 +26,7 @@ References
 """
 import dataclasses
 import functools
-from typing import List, NamedTuple, Optional
+from typing import List, NamedTuple, Optional, Tuple
 
 from scipy.optimize import NonlinearConstraint, minimize, fsolve
 from scipy.stats import chi2, vonmises_fisher
@@ -934,3 +934,94 @@ def fit_fisher_vonmises_distribution(
 
     # And return
     return parameters
+
+
+def compute_magnitude_orientation_correlation(
+    vectors: np.ndarray, significance_level: float = 0.05
+) -> Tuple[float, HypothesisResult]:
+    """Compute the correlation between the magnitude and orientation.
+
+    Following the procedure outlined in section 8.2.4 in Fisher, Lewis and
+    Embleton, [#fisher-lewis-embleton]_ compute the correlation between the
+    magnitude and orientation of a set of **non-unit** vectors.
+
+    Parameters
+    ----------
+    vectors
+        Array of shape ``(n, 3)`` containing the vectors to analyse. These
+        should **not** be unit vectors.
+    significance_level
+        The test significance to compare the computed p-value against.
+
+    Returns
+    -------
+    correlation_coefficient : float
+        Biased estimate of the correlation coefficient.
+    hypothesis_result : HypothesisResult
+        Result of the hypothesis test to determine if the magnitude and
+        orientation are correlated.
+
+    Warnings
+    --------
+    This implementation assumes that a **large sample** is used (i.e.,
+    ``n`` > 25).
+
+    Notes
+    -----
+    The correlation coefficient is computed using the deviations from the
+    mean of each variable. The jackknife approach has not yet been
+    implemented.
+
+    In this statistical test, the **null hypothesis** is that the magnitude
+    and orientation are **not** correlated. If the test statistics is below
+    the chi-squared value at the desired significance level, we reject this
+    null hypothesis.
+
+    The current implementation modifies the description in Fisher, Lewis
+    and Embleton [#fisher-lewis-embleton]_ by performing array operations.
+    """
+
+    # Normalise vectors and compute magnitudes to separate the variables
+    unit_vectors, magnitudes = util.normalise_vectors(vectors)
+
+    # Make the magnitudes also a column
+    magnitudes = np.expand_dims(magnitudes, -1)
+
+    # The unit_vectors occupy the place of X, and the magnitudes that of Y
+    x_bar = np.mean(unit_vectors, axis=0)
+    y_bar = np.mean(magnitudes)
+
+    # Perform the subtractions
+    x_sub = unit_vectors - x_bar
+    y_sub = magnitudes - y_bar
+
+    # And now for the multiplications
+    s_11 = x_sub.T @ x_sub
+    s_12 = x_sub.T @ y_sub
+    s_22 = y_sub.T @ y_sub
+
+    # Now, build the matrix from which the correlations are computed
+    s_matrix = np.linalg.inv(s_11) @ s_12 @ np.linalg.inv(s_22) @ s_12.T
+
+    # Now, we must sum the diagonals.
+    n, p = magnitudes.shape
+    q = np.min([p, 3])
+
+    rho_hat: float = s_matrix.diagonal().sum() / q
+
+    # Now, for the hypothesis testing
+    df = 3 * p
+    test_statistic = q * n * rho_hat
+    p_value = chi2.sf(test_statistic, df=df)
+
+    can_reject_null = p_value < significance_level
+
+    # Combine everything into the results
+    test_result = HypothesisResult(
+        can_reject_null,
+        p_value,
+        significance_level
+    )
+
+    # And return everything
+    return rho_hat, test_result
