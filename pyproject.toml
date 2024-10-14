@@ -19,8 +19,10 @@ trimesh = {extras = ["easy"], version = "^4.3.0"}
 imageio-ffmpeg = "^0.5.1"
 scipy = "^1.14"
 importlib-metadata = ">=7.0.1"
-pyvista = "^0.44.1"
+pyvista = {extras = ["all", "jupyter", "trame"], version = "^0.44.1"}
 imageio = {version = "2.27.0", extras = ["ffmpeg", "pyav"]}
+trame = "^3.6.5"
+ipywidgets = "^8.1.5"
 
 [tool.poetry.dev-dependencies]
 
@@ -33,6 +35,7 @@ sphinx-autoapi = "^3.0.0"
 python-semantic-release = "^8.7.0"
 ipympl = "^0.9.4"
 pydata-sphinx-theme = "^0.15.3"
+jupyterlab = ">=3"
 
 [tool.semantic_release]
 version_toml = [
