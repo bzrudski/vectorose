@@ -830,8 +830,8 @@ def calculate_coplanarity_index(
 
     Warnings
     --------
-    The vectors must be normalised to unit length before computing these
-    statistics.
+    This approach has not been validated yet and should not be used in
+    production code.
 
     Notes
     -----
