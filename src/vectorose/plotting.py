@@ -32,7 +32,6 @@ import trimesh
 import vtk
 from scipy.spatial.transform import Rotation
 
-from .sphere_base import SphereBase
 from .vectorose import MagnitudeType, produce_phi_theta_1d_histogram_data
 from . import util
 
@@ -193,6 +192,9 @@ class SpherePlotter:
     _selected_shell: int
     """The index of the currently-selected shell."""
 
+    _visible_shells: List[int]
+    """The indicies of the shells to plot as visible."""
+
     _active_shell_opacity: float
     """The opacity of the currently active shell."""
 
@@ -227,9 +229,14 @@ class SpherePlotter:
         """Access the sphere radius."""
         return self._largest_radius
 
-    def __init__(self, sphere_meshes: List[pv.PolyData], cmap: str = "viridis"):
+    def __init__(
+        self,
+        sphere_meshes: List[pv.PolyData],
+        visible_shells: Optional[List[int]] = None,
+        off_screen: bool = False,
+        cmap: str = "viridis",
+    ):
         self._sphere_meshes = sphere_meshes
-        self._plotter = None
         self._sphere_actors = []
         self._selected_shell = len(sphere_meshes) - 1
         self._active_shell_opacity = 1
@@ -239,9 +246,18 @@ class SpherePlotter:
         self._point_label_actor = None
         self.cmap = cmap
 
+        # Determine the visible shells
+        self._visible_shells = visible_shells or np.arange(len(sphere_meshes)).tolist()
+
         # Compute the radius
         bounds = np.abs([m.bounds for m in sphere_meshes])
         self._largest_radius = bounds.max()
+
+        # Create the plotter
+        self._plotter = pv.Plotter(off_screen=off_screen)
+
+        # Produce the plot
+        # self._produce_plot()
 
     def _update_active_sphere_opacity(self, new_opacity: float):
         """Update the opacity level of the active sphere."""
@@ -312,9 +328,6 @@ class SpherePlotter:
         axis_thickness
             Absolute thickness of the axes.
         """
-
-        # Can't add if there's no plotter
-        assert self._plotter is not None
 
         # Clear the axes if they are already present
         self.clear_axes()
@@ -410,45 +423,34 @@ class SpherePlotter:
         """Remove the current plotter."""
         self._plotter = None
 
-    def produce_plot(
-        self,
-        desired_shells: Optional[Collection[int]] = None,
-        off_screen: bool = False,
-        add_sliders: bool = True,
-    ) -> pv.Plotter:
+    def produce_plot(self, add_sliders: bool = True, series_name: str = "frequency"):
         """Produce the 3D visual plot for the current spheres.
 
         Parameters
         ----------
-        desired_shells
-            Indices of the specific shells to plot. If `None`, then all
-            shells are plotted.
-        off_screen
-            Indicate whether the plot should be off-screen or not.
         add_sliders
             Indicate whether the opacity sliders should be added to the
             plotting window.
+        series_name
+            Name of the scalars to consider.
 
         Warnings
         --------
         This function produces the :class:`pyvista.Plotter`. The method
-        :meth:`pyvista.Plotter.show` must be called on the returned object
-        in order to view the plot.
+        :meth:`SpherePlotter.show` must be called to view the plot.
         """
 
-        plotter = pv.Plotter(off_screen=off_screen)
+        plotter = self._plotter
 
         # Clean up from previous plots
+        plotter.clear()
         self._sphere_actors.clear()
 
-        if desired_shells is None or len(desired_shells) == 0:
-            desired_shells = range(len(self._sphere_meshes))
-
-        sphere_meshes = [self._sphere_meshes[i] for i in desired_shells]
+        sphere_meshes = [self._sphere_meshes[i] for i in self._visible_shells]
 
         # Get the bounds for the plotting
         all_frequencies = np.concatenate(
-            [m.cell_data["frequency"] for m in sphere_meshes]
+            [m.cell_data[series_name] for m in sphere_meshes]
         )
 
         min_value = all_frequencies.min()
@@ -461,14 +463,14 @@ class SpherePlotter:
                 mesh,
                 clim=[min_value, max_value],
                 cmap=self.cmap,
-                scalars="frequency",
+                scalars=series_name,
                 scalar_bar_args={
                     "vertical": True,
                     "position_y": 0.3,
                     "position_x": 0.8,
                 },
             )
-            actor.visibility = i in desired_shells
+            actor.visibility = i in self._visible_shells
             self._sphere_actors.append(actor)
 
         # Add the slider widgets
@@ -491,7 +493,7 @@ class SpherePlotter:
                 plotter.add_slider_widget(
                     self._update_active_sphere,
                     [1, number_of_shells],
-                    value=self._selected_shell,
+                    value=self._selected_shell + 1,
                     title="Active shell",
                     pointa=(0.1, 0.9),
                     pointb=(0.3, 0.9),
@@ -517,92 +519,29 @@ class SpherePlotter:
         plotter.add_camera_orientation_widget()
         plotter.enable_parallel_projection()
 
-        self._update_active_sphere(self._selected_shell)
+        self._update_active_sphere(self._selected_shell + 1)
 
-        self._plotter = plotter
-        return plotter
-
-    def produce_single_shell_plot(
-        self,
-        desired_shell: int = 0,
-        off_screen: bool = False,
-        add_opacity_slider: bool = True,
-        scalar_name: str = "frequency"
-    ) -> pv.Plotter:
-        """Produce the 3D visual plot for a single sphere.
+    def show(self, *args, **kwargs):
+        """Show the plotter window.
 
         Parameters
         ----------
-        desired_shell
-            Index of the specific shell to plot.
-        off_screen
-            Indicate whether the plot should be off-screen or not.
-        add_opacity_slider
-            Indicate whether the opacity slider should be added to the
-            plotting window.
-        scalar_name
-            Name of the scalar values to plot.
+        *args
+            Arguments to pass to the method :meth:`pyvista.Plotter.show`.
+        **kwargs
+            Keyword arguments to pass to the method
+            :meth:`pyvista.Plotter.show`.
 
-        Warnings
+        See Also
         --------
-        This function produces the :class:`pyvista.Plotter`. The method
-        :meth:`pyvista.Plotter.show` must be called on the returned object
-        in order to view the plot.
-
-        This function overwrites the object stored in
-        :attr:`SpherePlotter._plotter` and should thus be used carefully!
+        pyvista.Plotter.show: Method used to show a PyVista plotter.
         """
+        self._plotter.show(*args, **kwargs)
 
-        plotter = pv.Plotter(off_screen=off_screen)
+    def close(self):
+        """Close the plotting window."""
 
-        # Clean up from previous plots
-        self._sphere_actors.clear()
-
-        sphere_mesh = self._sphere_meshes[desired_shell]
-
-        # # Get the bounds for the plotting
-        # min_value = sphere_mesh.cell_data[scalar_name].min()
-        # max_value = sphere_mesh.cell_data[scalar_name].min()
-
-
-        # Add the sphere actors
-        actor = plotter.add_mesh(
-            sphere_mesh,
-            # clim=[min_value, max_value],
-            cmap=self.cmap,
-            scalars=scalar_name,
-            scalar_bar_args={
-                "vertical": True,
-                "position_y": 0.3,
-                "position_x": 0.8,
-            },
-        )
-        self._sphere_actors.append(actor)
-
-        # Add the slider widgets
-        if add_opacity_slider:
-
-            plotter.add_slider_widget(
-                self._update_active_sphere_opacity,
-                [0, 1],
-                value=self._active_shell_opacity,
-                title="Active shell opacity",
-                pointa=(0.4, 0.9),
-                pointb=(0.6, 0.9),
-                title_height=0.01,
-                interaction_event="always",
-                style="modern",
-            )
-
-        plotter.add_axes()
-        plotter.add_camera_orientation_widget()
-        plotter.enable_parallel_projection()
-
-        # There will only be a single actor, so shell 1 is active.
-        self._update_active_sphere(1)
-
-        self._plotter = plotter
-        return plotter
+        self._plotter.close()
 
     def produce_rotating_video(
         self,
@@ -612,6 +551,7 @@ class SpherePlotter:
         zoom_factor: float = 1.0,
         number_of_frames: int = 36,
         vertical_shift: Optional[float] = None,
+        hide_sliders: bool = True,
     ):
         """Produce a video orbiting around the sphere.
 
@@ -635,6 +575,8 @@ class SpherePlotter:
             processing time.
         vertical_shift
             Upward shift of the orbital plane with respect to the ground.
+        hide_sliders
+            Indicate whether to hide the sliders when producing the video.
 
         See Also
         --------
@@ -647,10 +589,11 @@ class SpherePlotter:
         found at https://docs.pyvista.org/examples/02-plot/orbit.
         """
 
-        if self._plotter is None:
-            plotter = self.produce_plot(off_screen=True, add_sliders=False)
-        else:
-            plotter = self._plotter
+        # Hide the sliders if requested
+        if hide_sliders:
+            self.hide_sliders()
+
+        plotter = self._plotter
 
         # Open a movie
         plotter.open_movie(filename, fps, quality)
@@ -671,8 +614,10 @@ class SpherePlotter:
 
         # Close the plotter's writer
         plotter.mwriter.close()
-        # plotter.close()
-        # self._plotter = None
+
+        # Re-show the sliders
+        if hide_sliders:
+            self.show_sliders()
 
     def produce_shells_video(
         self,
@@ -684,6 +629,7 @@ class SpherePlotter:
         boomerang: bool = False,
         azimuth: Optional[float] = None,
         elevation: Optional[float] = None,
+        hide_sliders: bool = True,
     ):
         """Produce a video revealing all shells in a plot.
 
@@ -710,7 +656,13 @@ class SpherePlotter:
         elevation
             Camera elevation angle in degrees (phi). If not specified, the
             current plotter's angles are used.
+        hide_sliders
+            Indicate whether the sliders should be hidden before producing
+            the video.
         """
+
+        if hide_sliders:
+            self.hide_sliders()
 
         total_number_of_shells = len(self._sphere_meshes)
         shell_order = np.arange(total_number_of_shells)
@@ -725,10 +677,7 @@ class SpherePlotter:
         # Convert indices to numbers to be consistent with other methods
         shell_order += 1
 
-        if self._plotter is None:
-            plotter = self.produce_plot(off_screen=True, add_sliders=False)
-        else:
-            plotter = self._plotter
+        plotter = self._plotter
 
         # Activate the first shell manually
         first_shell = shell_order[0]
@@ -757,8 +706,99 @@ class SpherePlotter:
 
         # Close the plotter's writer
         plotter.mwriter.close()
-        # plotter.close()
-        # self._plotter = None
+
+        if hide_sliders:
+            self.show_sliders()
+
+    def hide_sliders(self):
+        """Hide the plotter's slider widgets."""
+
+        for slider in self._plotter.slider_widgets:
+            slider.SetEnabled(False)
+
+    def show_sliders(self):
+        """Show the plotter's slider widgets."""
+
+        for slider in self._plotter.slider_widgets:
+            slider.SetEnabled(True)
+
+    def hide_scalar_bars(self):
+        """Hide the scalar bars."""
+
+        for scalar_bar_key in self._plotter.scalar_bars.keys():
+            scalar_bar = self._plotter.scalar_bars[scalar_bar_key]
+            scalar_bar.VisibilityOff()
+
+    def show_scalar_bars(self):
+        """Show the scalar bars."""
+
+        for scalar_bar_key in self._plotter.scalar_bars.keys():
+            scalar_bar = self._plotter.scalar_bars[scalar_bar_key]
+            scalar_bar.VisibilityOn()
+
+    def show_axes(self):
+        """Show the spherical axes."""
+
+        self._update_show_axes(True)
+
+    def hide_axes(self):
+        """Hide the spherical axes."""
+
+        self._update_show_axes(False)
+
+    def export_screenshot(
+        self,
+        filename: str,
+        transparent_background: bool = True,
+        window_size: Optional[tuple[int, int]] = None,
+        scale: Optional[int] = None,
+        hide_sliders: bool = True,
+        hide_scalar_bar: bool = False,
+    ):
+        """Export a screenshot from the plotter.
+
+        Parameters
+        ----------
+        filename
+            Output destination for the screenshot, including file
+            extension. Must be of type PNG, bitmap, JPEG or TIFF.
+        transparent_background
+            Indicate whether the background should be transparent.
+        window_size
+            Desired window size before exporting.
+        scale
+            Factor by which to scale the window before exporting to
+            increase resolution.
+        hide_sliders
+            Indicate whether to hide sliders before exporting. If no
+            sliders have been added to the plot, this option has no effect.
+        hide_scalar_bar
+            Indicate whether to hide the scalar bar when exporting. The
+            scalar bar will be made visible again after exporting.
+
+        See Also
+        --------
+        pyvista.Plotter.screenshot :
+            Function wrapped by this function, which actually produces the
+            screenshot. The current function borrows some parameters from
+            this function.
+        """
+
+        if hide_sliders:
+            self.hide_sliders()
+
+        if hide_scalar_bar:
+            self.hide_scalar_bars()
+
+        self._plotter.screenshot(
+            filename, transparent_background, False, window_size, scale
+        )
+
+        if hide_sliders:
+            self.show_sliders()
+
+        if hide_scalar_bar:
+            self.show_scalar_bars()
 
 
 def produce_1d_scalar_histogram(
@@ -766,7 +806,7 @@ def produce_1d_scalar_histogram(
     bin_edges: np.ndarray,
     fill: bool = True,
     ax: Optional[plt.Axes] = None,
-    **kwargs
+    **kwargs,
 ) -> plt.Axes:
     """Produce a 1D scalar histogram.
 
