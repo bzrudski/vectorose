@@ -805,7 +805,6 @@ class SpherePlotter:
         azim: Optional[float] = None,
         elev: Optional[float] = None,
         roll: Optional[float] = None,
-        force_update: bool = True,
     ):
         """Change the view of the current plotter.
 
@@ -819,23 +818,20 @@ class SpherePlotter:
             New elevation angle.
         roll
             New roll angle.
-        force_update
-            Indicate whether to force the plotter to update after changing
-            the angles.
         """
 
         camera = self._plotter.camera
 
         if azim is not None:
             camera.azimuth = azim
+            self._plotter.update()
 
         if elev is not None:
             camera.elevation = elev
+            self._plotter.update()
 
         if roll is not None:
             camera.roll = roll
-
-        if force_update:
             self._plotter.update()
 
 def produce_1d_scalar_histogram(
