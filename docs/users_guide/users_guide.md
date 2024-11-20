@@ -1,7 +1,7 @@
 # VectoRose Users' Guide
 
-Welcome to VectoRose! Our open-source package and GUI application provide
-a straightforward tool for exploring axial and vectorial data in 3D.
+Welcome to VectoRose! Our open-source package provides a straightforward
+tool for exploring axial and vectorial data in 3D.
 
 This guide explains everything you need to know about how to set up and use
 VectoRose.
