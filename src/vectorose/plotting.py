@@ -538,10 +538,36 @@ class SpherePlotter:
         """
         self._plotter.show(*args, **kwargs)
 
-    def close(self):
-        """Close the plotting window."""
+    def close(self, deep_clean: bool = True):
+        """Close the plotting window and clear the associated memory.
+
+        Parameters
+        ----------
+        deep_clean
+            Indicate whether a deep clean of the memory should be
+            performed after closing.
+        """
 
         self._plotter.close()
+
+        if deep_clean:
+            self._plotter.deep_clean()
+
+    def activate_shell(self, index: int):
+        """Activate the shell with the specified index.
+
+        Parameters
+        ----------
+        index
+            The index of the shell to mark as active.
+
+        Warnings
+        --------
+        This function accepts the **index**, not the shell number. The
+        values provided here are offset by one compared with the slider
+        values.
+        """
+        self._update_active_sphere(index + 1)
 
     def produce_rotating_video(
         self,
