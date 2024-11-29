@@ -2115,7 +2115,7 @@ def produce_3d_tregenza_sphere_plot(
 
     norm.autoscale_None(flattened_histogram_data)
 
-    ax = tregenza_sphere.create_tregenza_plot(
+    ax = tregenza_sphere.create_plot_mpl(
         ax=ax,
         face_data=histogram_data,
         cmap=colour_map,

@@ -291,7 +291,7 @@ def test_tregenza_plotting_fine(tmp_path):
     # Plot the sphere
     fig = plt.figure()
     ax = plt.axes(projection="3d")
-    ax = sphere.create_tregenza_plot(ax)
+    ax = sphere.create_plot_mpl(ax)
     fig.add_axes(ax)
     fig.savefig(os.path.join(tmp_path, "test_plot.png"))
 
@@ -313,7 +313,7 @@ def test_tregenza_plotting_ultra_fine(tmp_path):
     # Plot the sphere
     fig = plt.figure()
     ax = plt.axes(projection="3d")
-    ax = sphere.create_tregenza_plot(ax)
+    ax = sphere.create_plot_mpl(ax)
     fig.add_axes(ax)
     fig.savefig(os.path.join(tmp_path, "test_plot.png"))
 

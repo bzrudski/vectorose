@@ -432,7 +432,7 @@ class TregenzaSphereBase(SphereBase):
         return cap
 
 
-    def create_tregenza_plot(
+    def create_plot_mpl(
         self,
         ax: Optional[mpl_toolkits.mplot3d.Axes3D] = None,
         face_data: Optional[pd.Series] = None,
@@ -440,7 +440,7 @@ class TregenzaSphereBase(SphereBase):
         norm: Optional[matplotlib.colors.Normalize] = None,
         sphere_alpha: float = 1.0,
     ) -> mpl_toolkits.mplot3d.Axes3D:
-        """Create a plot of the current Tregenza sphere.
+        """Create a plot of the current Tregenza sphere using Matplotlib.
 
         Parameters
         ----------
