@@ -13,7 +13,7 @@ of orientation/vector fields.
 
 import enum
 import functools
-from typing import Any, Collection, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional
 
 import imageio_ffmpeg
 import matplotlib.animation
@@ -23,20 +23,18 @@ import matplotlib.colors
 import matplotlib.figure
 import matplotlib.projections
 import matplotlib.pyplot as plt
-import mpl_toolkits.mplot3d.axes3d
 import mpl_toolkits.mplot3d.art3d
+import mpl_toolkits.mplot3d.axes3d
 import numpy as np
 import pandas as pd
 import pyvista as pv
-import trimesh
 import vtk
 from scipy.spatial.transform import Rotation
 from vectorose.triangle_sphere import TriangleSphere
 
-from .vectorose import MagnitudeType, produce_phi_theta_1d_histogram_data
 from . import util
-
 from .tregenza_sphere import TregenzaSphereBase
+from .vectorose import produce_phi_theta_1d_histogram_data
 
 # Configure the SVG export, per https://stackoverflow.com/a/35734729
 plt.rcParams["svg.fonttype"] = "none"
