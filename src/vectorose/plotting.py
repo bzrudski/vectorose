@@ -908,6 +908,326 @@ def produce_1d_scalar_histogram(
     return ax
 
 
+def produce_polar_histogram_plot(
+    ax: matplotlib.projections.polar.PolarAxes,
+    data: np.ndarray,
+    bins: np.ndarray,
+    zero_position: CardinalDirection = CardinalDirection.NORTH,
+    rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
+    plot_title: Optional[str] = None,
+    label_axis: bool = True,
+    axis_ticks: np.ndarray = np.arange(0, 360, 30),
+    axis_ticks_unit: AngularUnits = AngularUnits.DEGREES,
+    colour: str = "blue",
+    mirror_histogram: bool = True,
+) -> matplotlib.projections.polar.PolarAxes:
+    """Produce 1D polar histogram.
+
+    Produce a 1D polar histogram using the specified data on the
+    provided axes.
+
+
+    Parameters
+    ----------
+    ax
+        Matplotlib :class:`matplotlib.projections.polar.PolarAxes` on which
+        to plot the data.
+
+    data
+        Data to plot. This should have the same size as ``bins``.
+
+    bins
+        *Lower value* of each bin in the histogram.
+
+    zero_position
+        Zero-position on the polar axes, expressed as a member of the
+        enumerated class :class:`CardinalDirection`.
+
+    rotation_direction
+        Rotation direction indicating how the bin values should
+        increase from the zero-point specified in ``zero_position``,
+        represented as a member of :class:`RotationDirection`.
+
+    plot_title
+        Optional title of the plot.
+
+    label_axis
+        Indicate whether the circumferential axis should be labelled.
+
+    axis_ticks
+        Axis ticks for the histogram. Units specified in
+        ``axis_ticks_unit``.
+
+    axis_ticks_unit
+        :class:`AngularUnits` indicating what unit should be used for
+        specifying the axis ticks. Default is :attr:`AngularUnits.DEGREES`.
+
+    colour
+        Colour used for the histogram bars. Must be a valid matplotlib
+        colour [#f1]_.
+
+    mirror_histogram
+        Indicate whether the histogram should be mirrored to plot data on
+        the complete circle.
+
+    Returns
+    -------
+
+    matplotlib.projections.polar.PolarAxes
+        The ``PolarAxes`` used for plotting.
+
+    Warnings
+    --------
+    The axes provided **must** be created using ``projection="Polar"``.
+
+    See Also
+    --------
+    matplotlib.projections.polar.PolarAxes:
+        Polar axes used for plotting the polar histogram.
+
+    References
+    ----------
+    .. [#f1] https://matplotlib.org/stable/users/explain/colors/colors.html
+    """
+
+    bin_width = bins[1] - bins[0]
+    ax.set_theta_direction(rotation_direction.value)
+    ax.set_theta_zero_location(zero_position.value)
+    ax.set_title(plot_title)
+    ax.axes.yaxis.set_ticklabels([])
+
+    # Prepare the data for plotting, mirroring if necessary
+    if mirror_histogram:
+        # Duplicate the bins and the data.
+        mirrored_bins = bins.copy()
+        mirrored_data = data.copy()
+
+        # Offset the mirrored bins and flip the signs
+        mirrored_bins = -(mirrored_bins + bin_width)
+
+        # Flip the mirrored bins, but NOT the data
+        mirrored_bins = np.flip(mirrored_bins)
+
+        # Tack the bins and values onto the respective arrays
+        bins = np.concatenate([mirrored_bins, bins])
+        data = np.concatenate([mirrored_data, data])
+
+    if label_axis:
+        # start, end = ax.get_xlim()
+
+        if axis_ticks_unit is AngularUnits.DEGREES:
+            axis_ticks = np.radians(axis_ticks)
+            # axis_ticks_increment = np.radians(axis_ticks_increment)
+
+        ax.xaxis.set_ticks(axis_ticks)
+    else:
+        ax.xaxis.set_ticks([])
+
+    ax.bar(bins, data, align="edge", width=bin_width, color=colour)
+
+    return ax
+
+
+def produce_polar_histogram_plot_from_2d_bins(
+    ax: matplotlib.projections.polar.PolarAxes,
+    angle: util.AngularIndex,
+    data: np.ndarray,
+    bins: np.ndarray,
+    bin_angle_unit: AngularUnits = AngularUnits.DEGREES,
+    weight_by_magnitude: bool = True,
+    **kwargs: Dict[str, Any],
+) -> matplotlib.projections.polar.PolarAxes:
+    """Produce polar histogram from 2D binned data
+
+    Produce a polar histogram for the specified angle, starting from the 2D
+    histogram data. This function takes in existing Matplotlib axes and
+    plots the histogram on them.
+
+    Parameters
+    ----------
+    ax
+        Matplotlib polar axes on which the histogram will be plotted.
+
+    angle
+        Indicate which angle to extract from the data. See
+        :class:``AngularIndex`` for details.
+
+    data
+        2D histogram binned data of shape ``(n, n, 3)`` where
+        ``n`` is the half-number of bins used in the binning process.
+
+    bins
+        Bounds of the bins used to construct the histograms. If
+        the array is 2D, then the angular indexing will be used to
+        extract the phi bin boundaries. If ``n + 1`` entries are
+        present, the last value is removed to ensure that only the lower
+        bound of each bin is kept.
+
+    bin_angle_unit
+        Unit for the bin angles. See :class:`AngularUnits`.
+
+    weight_by_magnitude
+        Indicate whether the histograms should be weighted by count or by
+        magnitude. If magnitude is used, the phi histogram is weighted by
+        3D magnitude while the theta histogram is weighted by the projected
+        magnitude in the XY plane.
+
+    **kwargs
+        Keyword arguments for the plotting. See
+        :func:`produce_polar_histogram_plot` for more details.
+
+    Returns
+    -------
+    matplotlib.projections.polar.PolarAxes
+        A reference to the axes ``ax`` used for plotting.
+
+    Warnings
+    --------
+    The axes passed in ``ax`` must be of type
+    :class:`matplotlib.projections.polar.PolarAxes`. To create these axes,
+    ensure to set ``projection="Polar"``.
+
+    See Also
+    --------
+    produce_polar_histogram_plot:
+        Produce a polar plot from 1D data. See documentation for the
+        keyword arguments that can be passed to this function.
+    """
+
+    # Compute the 1D histograms from the binned data
+    one_dimensional_histograms = produce_phi_theta_1d_histogram_data(
+        data, weight_by_magnitude=weight_by_magnitude
+    )
+
+    # Select the relevant 1D histogram
+    selected_histogram_data = one_dimensional_histograms[angle]
+
+    if bin_angle_unit == AngularUnits.DEGREES:
+        bins = np.radians(bins)
+
+    data_shape = selected_histogram_data.shape
+    bin_shape = bins.shape
+
+    if len(bin_shape) == 2:
+        bins = bins[angle]
+
+    if len(bins) > data_shape[0]:
+        bins = bins[:-1]
+
+    ax = produce_polar_histogram_plot(
+        ax=ax, data=selected_histogram_data, bins=bins, **kwargs
+    )
+
+    return ax
+
+
+def produce_polar_histogram_plots(
+    binned_data: np.ndarray,
+    bins: np.ndarray,
+    zero_position_2d: CardinalDirection = CardinalDirection.NORTH,
+    rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
+    use_degrees: bool = True,
+    plot_title: Optional[str] = None,
+    weight_by_magnitude: bool = True,
+    mirror_polar_plots: bool = True,
+):
+    """Produce and show the polar phi and theta histograms.
+
+    This function takes in 2D binned histogram input and shows a 2-panel
+    figure containing the theta and phi polar histograms.
+
+    Parameters
+    ----------
+    binned_data
+        The binned histogram data for the :math:`\\phi,\\theta` plane. This
+        NumPy array should have size ``(n, n, 3)`` where ``n`` is the
+        half-number of histogram bins used to construct the histogram.
+        See :func:`.create_binned_orientation` for more details. See
+        :class:`MagnitudeType` for the indexing rules along the last axis.
+    bins
+        The boundaries of the bins. This array should be of size
+        ``(2, n + 1)`` where ``n`` represents the half-number of bins.
+        See :class:`AngularIndex` for the indexing rules along the first
+        axis.
+    zero_position_2d
+        The :class:`CardinalDirection` where zero should be placed in the
+        1D polar histograms (default: North).
+    rotation_direction
+        The :class:`RotationDirection` of increasing angles in the 1D polar
+        histograms (default: clockwise).
+    use_degrees
+        Indicate whether the values are in degrees. If ``True``, values are
+        assumed to be in degrees. Otherwise, radians are assumed.
+    plot_title
+        Title of the overall plot (optional).
+    weight_by_magnitude
+        Indicate whether plots should be weighted by magnitude or by count.
+    mirror_polar_plots
+        Indicate whether the polar histogram data should be mirrored to
+        fill the complete plot.
+
+    See Also
+    --------
+    produce_polar_histogram_plot:
+        Create 1D polar histograms in isolation from 1D histogram data.
+    .create_binned_orientation:
+        Bin vectors into a 2D ``(phi, theta)`` histogram. The return
+        values from that function may be passed as arguments to this
+        function.
+    """
+
+    # Compute the 1D histograms from the binned data
+    one_dimensional_histograms = produce_phi_theta_1d_histogram_data(
+        binned_data, weight_by_magnitude=weight_by_magnitude
+    )
+    phi_histogram: np.ndarray = one_dimensional_histograms[util.AngularIndex.PHI]
+    theta_histogram: np.ndarray = one_dimensional_histograms[util.AngularIndex.THETA]
+
+    # Construct the 3D plot
+    plt.figure(figsize=(7, 3.5))
+
+    # Construct the 2D plots
+    # Need to convert the bins back to radians if things have been done in degrees
+    if use_degrees:
+        bins = np.radians(bins)
+
+    # Remove the last element
+    bins = bins[:, :-1]
+
+    # These two bin widths should be IDENTICAL.
+    phi_bins = bins[util.AngularIndex.PHI]
+    theta_bins = bins[util.AngularIndex.THETA]
+
+    # Construct the theta polar plot
+    ax1 = plt.subplot(121, projection="polar")
+    ax1 = produce_polar_histogram_plot(
+        ax=ax1,
+        data=theta_histogram,
+        bins=theta_bins,
+        zero_position=zero_position_2d,
+        rotation_direction=rotation_direction,
+        plot_title=r"$\theta$ (Angle in $XY$)",
+        mirror_histogram=mirror_polar_plots,
+    )
+
+    # Construct the phi polar plot
+    ax2 = plt.subplot(122, projection="polar")
+    ax2 = produce_polar_histogram_plot(
+        ax=ax2,
+        data=phi_histogram,
+        bins=phi_bins,
+        zero_position=zero_position_2d,
+        rotation_direction=rotation_direction,
+        plot_title=r"$\phi$ (Angle from $+Z$)",
+        mirror_histogram=mirror_polar_plots,
+    )
+
+    # Show the plots
+    plt.suptitle(plot_title, fontweight="bold", fontsize=14)
+    plt.subplots_adjust(left=0.05, right=0.95, wspace=0.25)
+    plt.show()
+
+
 def produce_labelled_3d_plot(
     ax: mpl_toolkits.mplot3d.axes3d.Axes3D,
     radius: float,
@@ -1191,558 +1511,6 @@ def produce_labelled_3d_plot(
 
     return ax
 
-def produce_polar_histogram_plot(
-    ax: matplotlib.projections.polar.PolarAxes,
-    data: np.ndarray,
-    bins: np.ndarray,
-    zero_position: CardinalDirection = CardinalDirection.NORTH,
-    rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
-    plot_title: Optional[str] = None,
-    label_axis: bool = True,
-    axis_ticks: np.ndarray = np.arange(0, 360, 30),
-    axis_ticks_unit: AngularUnits = AngularUnits.DEGREES,
-    colour: str = "blue",
-    mirror_histogram: bool = True,
-) -> matplotlib.projections.polar.PolarAxes:
-    """Produce 1D polar histogram.
-
-    Produce a 1D polar histogram using the specified data on the
-    provided axes.
-
-
-    Parameters
-    ----------
-    ax
-        Matplotlib :class:`matplotlib.projections.polar.PolarAxes` on which
-        to plot the data.
-
-    data
-        Data to plot. This should have the same size as ``bins``.
-
-    bins
-        *Lower value* of each bin in the histogram.
-
-    zero_position
-        Zero-position on the polar axes, expressed as a member of the
-        enumerated class :class:`CardinalDirection`.
-
-    rotation_direction
-        Rotation direction indicating how the bin values should
-        increase from the zero-point specified in ``zero_position``,
-        represented as a member of :class:`RotationDirection`.
-
-    plot_title
-        Optional title of the plot.
-
-    label_axis
-        Indicate whether the circumferential axis should be labelled.
-
-    axis_ticks
-        Axis ticks for the histogram. Units specified in
-        ``axis_ticks_unit``.
-
-    axis_ticks_unit
-        :class:`AngularUnits` indicating what unit should be used for
-        specifying the axis ticks. Default is :attr:`AngularUnits.DEGREES`.
-
-    colour
-        Colour used for the histogram bars. Must be a valid matplotlib
-        colour [#f1]_.
-
-    mirror_histogram
-        Indicate whether the histogram should be mirrored to plot data on
-        the complete circle.
-
-    Returns
-    -------
-
-    matplotlib.projections.polar.PolarAxes
-        The ``PolarAxes`` used for plotting.
-
-    Warnings
-    --------
-    The axes provided **must** be created using ``projection="Polar"``.
-
-    See Also
-    --------
-    matplotlib.projections.polar.PolarAxes:
-        Polar axes used for plotting the polar histogram.
-
-    References
-    ----------
-    .. [#f1] https://matplotlib.org/stable/users/explain/colors/colors.html
-    """
-
-    bin_width = bins[1] - bins[0]
-    ax.set_theta_direction(rotation_direction.value)
-    ax.set_theta_zero_location(zero_position.value)
-    ax.set_title(plot_title)
-    ax.axes.yaxis.set_ticklabels([])
-
-    # Prepare the data for plotting, mirroring if necessary
-    if mirror_histogram:
-        # Duplicate the bins and the data.
-        mirrored_bins = bins.copy()
-        mirrored_data = data.copy()
-
-        # Offset the mirrored bins and flip the signs
-        mirrored_bins = -(mirrored_bins + bin_width)
-
-        # Flip the mirrored bins, but NOT the data
-        mirrored_bins = np.flip(mirrored_bins)
-
-        # Tack the bins and values onto the respective arrays
-        bins = np.concatenate([mirrored_bins, bins])
-        data = np.concatenate([mirrored_data, data])
-
-    if label_axis:
-        # start, end = ax.get_xlim()
-
-        if axis_ticks_unit is AngularUnits.DEGREES:
-            axis_ticks = np.radians(axis_ticks)
-            # axis_ticks_increment = np.radians(axis_ticks_increment)
-
-        ax.xaxis.set_ticks(axis_ticks)
-    else:
-        ax.xaxis.set_ticks([])
-
-    ax.bar(bins, data, align="edge", width=bin_width, color=colour)
-
-    return ax
-
-
-def produce_polar_histogram_plot_from_2d_bins(
-    ax: matplotlib.projections.polar.PolarAxes,
-    angle: util.AngularIndex,
-    data: np.ndarray,
-    bins: np.ndarray,
-    bin_angle_unit: AngularUnits = AngularUnits.DEGREES,
-    weight_by_magnitude: bool = True,
-    **kwargs: Dict[str, Any],
-) -> matplotlib.projections.polar.PolarAxes:
-    """Produce polar histogram from 2D binned data
-
-    Produce a polar histogram for the specified angle, starting from the 2D
-    histogram data. This function takes in existing Matplotlib axes and
-    plots the histogram on them.
-
-    Parameters
-    ----------
-    ax
-        Matplotlib polar axes on which the histogram will be plotted.
-
-    angle
-        Indicate which angle to extract from the data. See
-        :class:``AngularIndex`` for details.
-
-    data
-        2D histogram binned data of shape ``(n, n, 3)`` where
-        ``n`` is the half-number of bins used in the binning process.
-
-    bins
-        Bounds of the bins used to construct the histograms. If
-        the array is 2D, then the angular indexing will be used to
-        extract the phi bin boundaries. If ``n + 1`` entries are
-        present, the last value is removed to ensure that only the lower
-        bound of each bin is kept.
-
-    bin_angle_unit
-        Unit for the bin angles. See :class:`AngularUnits`.
-
-    weight_by_magnitude
-        Indicate whether the histograms should be weighted by count or by
-        magnitude. If magnitude is used, the phi histogram is weighted by
-        3D magnitude while the theta histogram is weighted by the projected
-        magnitude in the XY plane.
-
-    **kwargs
-        Keyword arguments for the plotting. See
-        :func:`produce_polar_histogram_plot` for more details.
-
-    Returns
-    -------
-    matplotlib.projections.polar.PolarAxes
-        A reference to the axes ``ax`` used for plotting.
-
-    Warnings
-    --------
-    The axes passed in ``ax`` must be of type
-    :class:`matplotlib.projections.polar.PolarAxes`. To create these axes,
-    ensure to set ``projection="Polar"``.
-
-    See Also
-    --------
-    produce_polar_histogram_plot:
-        Produce a polar plot from 1D data. See documentation for the
-        keyword arguments that can be passed to this function.
-    """
-
-    # Compute the 1D histograms from the binned data
-    one_dimensional_histograms = produce_phi_theta_1d_histogram_data(
-        data, weight_by_magnitude=weight_by_magnitude
-    )
-
-    # Select the relevant 1D histogram
-    selected_histogram_data = one_dimensional_histograms[angle]
-
-    if bin_angle_unit == AngularUnits.DEGREES:
-        bins = np.radians(bins)
-
-    data_shape = selected_histogram_data.shape
-    bin_shape = bins.shape
-
-    if len(bin_shape) == 2:
-        bins = bins[angle]
-
-    if len(bins) > data_shape[0]:
-        bins = bins[:-1]
-
-    ax = produce_polar_histogram_plot(
-        ax=ax, data=selected_histogram_data, bins=bins, **kwargs
-    )
-
-    return ax
-
-
-def produce_planar_2d_histogram_plot(
-    ax: plt.Axes,
-    data: np.ndarray,
-    bins: Tuple[np.ndarray, np.ndarray],
-    weight_by_magnitude: bool = True,
-    colour_map: str = "viridis",
-    show_axes: bool = True,
-    phi_axis_ticks: np.ndarray = np.arange(0, 181, 30),
-    theta_axis_ticks: np.ndarray = np.arange(0, 361, 30),
-    norm: Optional[matplotlib.colors.Normalize] = None,
-    show_colour_bar: bool = False,
-    colour_bar_position: str = "right",
-    plot_title: Optional[str] = None,
-) -> plt.Axes:
-    """
-    Produce a 2D planar plot of a flattened phi, theta histogram.
-
-    Produce a 2D histogram of the phi, theta
-
-    Parameters
-    ----------
-    ax
-        Axes on which to plot the 2D histogram.
-    data
-        Histogram data to plot. This array should consist of 2D sheets,
-        with the last axis determining magnitude vs. count.
-    bins
-        Histogram bins for phi and theta, respectively.
-    weight_by_magnitude
-        Indicate whether the histogram should be weighted by magnitude.
-    colour_map
-        Name of the colour map to use to visualise the histogram.
-    show_axes
-        Indicate whether to show the axes.
-    phi_axis_ticks
-        Axis ticks along the vertical phi axis.
-    theta_axis_ticks
-        Axis ticks along the horizontal theta axis.
-    norm
-        Normaliser to change how the data are plotted.
-    show_colour_bar
-        Indicate whether to show a colour bar.
-    colour_bar_position
-        Position of the colour bar with respect to the plot.
-    plot_title
-        Optional title for the produced plot.
-
-    Returns
-    -------
-    matplotlib.axes.Axes
-        The axes on which the histogram is plotted. This is the same object
-        as `ax` in the parameters.
-    """
-
-    # First isolate the correct sheet of data
-    histogram_data: np.ndarray
-
-    if weight_by_magnitude:
-        histogram_data = data[..., MagnitudeType.THREE_DIMENSIONAL]
-    else:
-        histogram_data = data[..., MagnitudeType.COUNT]
-
-    # Now, we need to be careful with the extent for the image.
-    phi_bins, theta_bins = bins
-
-    phi_max = phi_bins.max()
-    phi_bin_spacing = phi_bins[1] - phi_bins[0]
-    phi_half_bin = phi_bin_spacing / 2
-
-    theta_max = theta_bins.max()
-    theta_bin_spacing = theta_bins[1] - theta_bins[0]
-    theta_half_bin = theta_bin_spacing / 2
-
-    image_extent = (0, theta_max, phi_max, 0)
-
-    # Plot on the axes
-    ax.imshow(
-        histogram_data,
-        cmap=colour_map,
-        norm=norm,
-        extent=image_extent,
-        interpolation="None",
-    )
-
-    # Deal with the axis ticks
-    if show_axes:
-        ax.set_ylabel(r"$\phi$")
-        ax.set_xlabel(r"$\theta$")
-
-        ax.set_yticks(phi_axis_ticks)
-        ax.set_xticks(theta_axis_ticks)
-    else:
-        ax.axis("off")
-
-    if show_colour_bar:
-        if norm is None:
-            norm = matplotlib.colors.Normalize(
-                vmin=histogram_data.min(), vmax=histogram_data.max()
-            )
-        scalar_mappable = plt.cm.ScalarMappable(norm=norm, cmap=colour_map)
-        plt.colorbar(scalar_mappable, ax=ax, location=colour_bar_position)
-
-    ax.set_title(plot_title)
-
-    return ax
-
-
-def produce_polar_histogram_plots(
-    binned_data: np.ndarray,
-    bins: np.ndarray,
-    zero_position_2d: CardinalDirection = CardinalDirection.NORTH,
-    rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
-    use_degrees: bool = True,
-    plot_title: Optional[str] = None,
-    weight_by_magnitude: bool = True,
-    mirror_polar_plots: bool = True,
-):
-    """Produce and show the polar phi and theta histograms.
-
-    This function takes in 2D binned histogram input and shows a 2-panel
-    figure containing the theta and phi polar histograms.
-
-    Parameters
-    ----------
-    binned_data
-        The binned histogram data for the :math:`\\phi,\\theta` plane. This
-        NumPy array should have size ``(n, n, 3)`` where ``n`` is the
-        half-number of histogram bins used to construct the histogram.
-        See :func:`.create_binned_orientation` for more details. See
-        :class:`MagnitudeType` for the indexing rules along the last axis.
-    bins
-        The boundaries of the bins. This array should be of size
-        ``(2, n + 1)`` where ``n`` represents the half-number of bins.
-        See :class:`AngularIndex` for the indexing rules along the first
-        axis.
-    zero_position_2d
-        The :class:`CardinalDirection` where zero should be placed in the
-        1D polar histograms (default: North).
-    rotation_direction
-        The :class:`RotationDirection` of increasing angles in the 1D polar
-        histograms (default: clockwise).
-    use_degrees
-        Indicate whether the values are in degrees. If ``True``, values are
-        assumed to be in degrees. Otherwise, radians are assumed.
-    plot_title
-        Title of the overall plot (optional).
-    weight_by_magnitude
-        Indicate whether plots should be weighted by magnitude or by count.
-    mirror_polar_plots
-        Indicate whether the polar histogram data should be mirrored to
-        fill the complete plot.
-
-    See Also
-    --------
-    produce_polar_histogram_plot:
-        Create 1D polar histograms in isolation from 1D histogram data.
-    .create_binned_orientation:
-        Bin vectors into a 2D ``(phi, theta)`` histogram. The return
-        values from that function may be passed as arguments to this
-        function.
-    """
-
-    # Compute the 1D histograms from the binned data
-    one_dimensional_histograms = produce_phi_theta_1d_histogram_data(
-        binned_data, weight_by_magnitude=weight_by_magnitude
-    )
-    phi_histogram: np.ndarray = one_dimensional_histograms[util.AngularIndex.PHI]
-    theta_histogram: np.ndarray = one_dimensional_histograms[util.AngularIndex.THETA]
-
-    # Construct the 3D plot
-    plt.figure(figsize=(7, 3.5))
-
-    # Construct the 2D plots
-    # Need to convert the bins back to radians if things have been done in degrees
-    if use_degrees:
-        bins = np.radians(bins)
-
-    # Remove the last element
-    bins = bins[:, :-1]
-
-    # These two bin widths should be IDENTICAL.
-    phi_bins = bins[util.AngularIndex.PHI]
-    theta_bins = bins[util.AngularIndex.THETA]
-
-    # Construct the theta polar plot
-    ax1 = plt.subplot(121, projection="polar")
-    ax1 = produce_polar_histogram_plot(
-        ax=ax1,
-        data=theta_histogram,
-        bins=theta_bins,
-        zero_position=zero_position_2d,
-        rotation_direction=rotation_direction,
-        plot_title=r"$\theta$ (Angle in $XY$)",
-        mirror_histogram=mirror_polar_plots,
-    )
-
-    # Construct the phi polar plot
-    ax2 = plt.subplot(122, projection="polar")
-    ax2 = produce_polar_histogram_plot(
-        ax=ax2,
-        data=phi_histogram,
-        bins=phi_bins,
-        zero_position=zero_position_2d,
-        rotation_direction=rotation_direction,
-        plot_title=r"$\phi$ (Angle from $+Z$)",
-        mirror_histogram=mirror_polar_plots,
-    )
-
-    # Show the plots
-    plt.suptitle(plot_title, fontweight="bold", fontsize=14)
-    plt.subplots_adjust(left=0.05, right=0.95, wspace=0.25)
-    plt.show()
-
-
-def __update_sphere_viewing_angle(
-    frame: int,
-    sphere_axes: mpl_toolkits.mplot3d.axes3d.Axes3D,
-    angle_increment: int,
-) -> Iterable[mpl_toolkits.mplot3d.axes3d.Axes3D]:
-    """Update the sphere viewing angle.
-
-    Updates the sphere viewing angle to be the current angle, with
-    the azimuth increased by an increment.
-
-    Parameters
-    ----------
-    frame
-        The number of the current frame in the animation (required
-        to fit the animation signature, but unused here).
-
-    Returns
-    -------
-    Iterable[mpl_toolkits.mplot3d.axes3d.Axes3D]
-        An iterable containing a reference to the 3D sphere axes.
-    """
-
-    # Get the information about the current viewing angle
-    elev = sphere_axes.elev
-    azim = sphere_axes.azim
-    roll = sphere_axes.roll
-
-    # Increment the azim
-    azim += angle_increment
-
-    # Set the new values
-    sphere_axes.view_init(elev=elev, azim=azim, roll=roll)
-
-    return [sphere_axes]
-
-
-def animate_sphere_plot(
-    sphere_figure: matplotlib.figure.Figure,
-    sphere_axes: mpl_toolkits.mplot3d.axes3d.Axes3D,
-    rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
-    angle_increment: int = 10,
-    animation_delay: int = 250,
-    reset_initial_orientation: bool = True,
-) -> matplotlib.animation.FuncAnimation:
-    """Animate the sphere plot.
-
-    Create an animation of the sphere plot rotating about its central
-    axis (i.e., the axis running from the sphere's north pole to its
-    south pole).
-
-    Parameters
-    ----------
-    sphere_figure
-        The :class:`matplotlib.figure.Figure` containing the sphere
-        plot.
-
-    sphere_axes
-        The :class:`mpl_toolkits.mplot3d.axes3d.Axes3D` containing the
-        sphere plot. These axes **must** be 3D axes.
-
-    rotation_direction
-        Direction for the **sphere** to rotate.
-        See :class:`RotationDirection` for more information.
-
-    angle_increment
-        Increment of the angle in **degrees** for the rotation at each
-        frame. This value should be positive.
-
-    animation_delay
-        Time delay between frames in milliseconds.
-
-    reset_initial_orientation
-        Indicate whether the sphere should be reset to its original
-        orientation before recording the animation. This argument should
-        be set to ``False`` to allow a custom starting position.
-
-    Returns
-    -------
-    matplotlib.animation.FuncAnimation
-        The matplotlib animation produced by the sphere rotation.
-
-    Warnings
-    --------
-    We recommend to hide the polar axis ticks while performing the
-    animation. Otherwise, the result may look odd.
-
-    See Also
-    --------
-    matplotlib.animation.FuncAnimation:
-        The class that serves as the basis for the animations created
-        here.
-
-    mpl_toolkits.mplot3d.axes3d.Axes3D.view_init:
-        The method used to update the 3D viewing angle to produce the
-        animations.
-
-    """
-
-    # Determine the sign of the angle increment
-    angle_increment = -rotation_direction.value * abs(angle_increment)
-
-    # Create the function that will update the frame.
-    update_angle_func = functools.partial(
-        __update_sphere_viewing_angle,
-        sphere_axes=sphere_axes,
-        angle_increment=angle_increment,
-    )
-
-    # Check if we need to reset the orientation
-    if reset_initial_orientation:
-        sphere_axes.view_init()
-
-    # Get the number of frames necessary to do a full 360° rotation
-    number_of_frames = np.abs(np.ceil(360 / angle_increment)).astype(int)
-
-    # Create the animation
-    animation = matplotlib.animation.FuncAnimation(
-        fig=sphere_figure,
-        func=update_angle_func,
-        frames=number_of_frames,
-        interval=animation_delay,
-    )
-
-    return animation
-
 
 def produce_3d_triangle_sphere_plot(
     ax: mpl_toolkits.mplot3d.axes3d.Axes3D,
@@ -1926,104 +1694,6 @@ def produce_3d_tregenza_sphere_plot(
     return ax
 
 
-def construct_confidence_cone(
-    angular_radius: float,
-    number_of_patches: int = 80,
-    mean_orientation: Optional[np.ndarray] = None,
-    two_sided_cone: bool = True,
-    use_degrees: bool = False,
-    **kwargs,
-) -> List[mpl_toolkits.mplot3d.art3d.Poly3DCollection]:
-    """Construct the patches for a confidence cone.
-
-    Construct the triangular patches for a confidence cone with a specified
-    angular radius, and optionally rotated to a specified mean direction.
-
-    Parameters
-    ----------
-    angular_radius
-        Angular radius for the confidence cone bounds (in radians, unless
-        the parameter `use_degrees` is `True`).
-    number_of_patches
-        Number of patches to construct. Increase for a better approximation
-        to a cone.
-    mean_orientation
-        Mean orientation to rotate the confidence cone, in cartesian
-        coordinates. If `None`, then the cone is not rotated and remains
-        vertically oriented.
-    two_sided_cone
-        Indicate whether the cone should be two-sided. If `True`, two cones
-        will be constructed, radiating from the centre. If `False`, then a
-        single cone is created.
-    use_degrees
-        Indicate whether the provided angular radius is in degrees.
-    **kwargs
-        Keyword arguments for the patch construction.
-        See :class:`Poly3DCollection` for details.
-
-    Returns
-    -------
-    list[mpl_toolkits.mplot3d.art3d.Poly3DCollection]
-        List of :class:`Poly3DCollection` representing each patch of the
-        confidence cone. These patches are triangular.
-    """
-
-    # Convert to radians, if necessary
-    if use_degrees:
-        angular_radius = np.radians(angular_radius)
-
-    # Create a list of patches
-    patches: List[mpl_toolkits.mplot3d.art3d.Poly3DCollection] = []
-
-    # Construct the rotation matrix
-    if mean_orientation is not None:
-        mean_orientation_spherical = util.compute_vector_orientation_angles(
-            vectors=mean_orientation
-        )
-
-        mean_phi = mean_orientation_spherical[util.AngularIndex.PHI]
-        mean_theta = mean_orientation_spherical[util.AngularIndex.THETA]
-
-        rotation = Rotation.from_euler("xz", [-mean_phi, -mean_theta])
-    else:
-        rotation = None
-
-    angular_increment = 2 * np.pi / number_of_patches
-
-    origin = np.zeros((1, 3))
-    start_vertex = np.array([angular_radius, 0])
-    increment_array = np.array([0, angular_increment])
-
-    for i in range(number_of_patches):
-        end_vertex = start_vertex + increment_array
-
-        ring_vertices = np.stack([start_vertex, end_vertex], axis=0)
-
-        ring_vertices_cartesian = util.convert_spherical_to_cartesian_coordinates(
-            ring_vertices
-        )
-
-        patch_vertices = np.concatenate([ring_vertices_cartesian, origin], axis=0)
-
-        if rotation is not None:
-            patch_vertices = rotation.apply(patch_vertices)
-
-        patch = mpl_toolkits.mplot3d.art3d.Poly3DCollection([patch_vertices], **kwargs)
-
-        patches.append(patch)
-
-        if two_sided_cone:
-            inverse_vertices = -patch_vertices
-            inverse_patch = mpl_toolkits.mplot3d.art3d.Poly3DCollection(
-                [inverse_vertices], **kwargs
-            )
-            patches.append(inverse_patch)
-
-        start_vertex = end_vertex
-
-    return patches
-
-
 def construct_uv_sphere(
     phi_steps: int = 80, theta_steps: int = 160, radius: float = 1
 ) -> np.ndarray:
@@ -2201,7 +1871,7 @@ def produce_uv_spherical_2d_data_plot(
     sphere_cartesian_coordinates = construct_uv_sphere(
         phi_steps=number_of_phi_dividers,
         theta_steps=number_of_theta_dividers,
-        radius=sphere_radius
+        radius=sphere_radius,
     )
 
     sphere_x = sphere_cartesian_coordinates[..., 0]
@@ -2243,6 +1913,230 @@ def produce_uv_spherical_2d_data_plot(
     ax.set_aspect("equal")
 
     return ax
+
+
+def __update_sphere_viewing_angle(
+    frame: int,
+    sphere_axes: mpl_toolkits.mplot3d.axes3d.Axes3D,
+    angle_increment: int,
+) -> Iterable[mpl_toolkits.mplot3d.axes3d.Axes3D]:
+    """Update the sphere viewing angle.
+
+    Updates the sphere viewing angle to be the current angle, with
+    the azimuth increased by an increment.
+
+    Parameters
+    ----------
+    frame
+        The number of the current frame in the animation (required
+        to fit the animation signature, but unused here).
+
+    Returns
+    -------
+    Iterable[mpl_toolkits.mplot3d.axes3d.Axes3D]
+        An iterable containing a reference to the 3D sphere axes.
+    """
+
+    # Get the information about the current viewing angle
+    elev = sphere_axes.elev
+    azim = sphere_axes.azim
+    roll = sphere_axes.roll
+
+    # Increment the azim
+    azim += angle_increment
+
+    # Set the new values
+    sphere_axes.view_init(elev=elev, azim=azim, roll=roll)
+
+    return [sphere_axes]
+
+
+def animate_sphere_plot(
+    sphere_figure: matplotlib.figure.Figure,
+    sphere_axes: mpl_toolkits.mplot3d.axes3d.Axes3D,
+    rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
+    angle_increment: int = 10,
+    animation_delay: int = 250,
+    reset_initial_orientation: bool = True,
+) -> matplotlib.animation.FuncAnimation:
+    """Animate the sphere plot.
+
+    Create an animation of the sphere plot rotating about its central
+    axis (i.e., the axis running from the sphere's north pole to its
+    south pole).
+
+    Parameters
+    ----------
+    sphere_figure
+        The :class:`matplotlib.figure.Figure` containing the sphere
+        plot.
+
+    sphere_axes
+        The :class:`mpl_toolkits.mplot3d.axes3d.Axes3D` containing the
+        sphere plot. These axes **must** be 3D axes.
+
+    rotation_direction
+        Direction for the **sphere** to rotate.
+        See :class:`RotationDirection` for more information.
+
+    angle_increment
+        Increment of the angle in **degrees** for the rotation at each
+        frame. This value should be positive.
+
+    animation_delay
+        Time delay between frames in milliseconds.
+
+    reset_initial_orientation
+        Indicate whether the sphere should be reset to its original
+        orientation before recording the animation. This argument should
+        be set to ``False`` to allow a custom starting position.
+
+    Returns
+    -------
+    matplotlib.animation.FuncAnimation
+        The matplotlib animation produced by the sphere rotation.
+
+    Warnings
+    --------
+    We recommend to hide the polar axis ticks while performing the
+    animation. Otherwise, the result may look odd.
+
+    See Also
+    --------
+    matplotlib.animation.FuncAnimation:
+        The class that serves as the basis for the animations created
+        here.
+
+    mpl_toolkits.mplot3d.axes3d.Axes3D.view_init:
+        The method used to update the 3D viewing angle to produce the
+        animations.
+
+    """
+
+    # Determine the sign of the angle increment
+    angle_increment = -rotation_direction.value * abs(angle_increment)
+
+    # Create the function that will update the frame.
+    update_angle_func = functools.partial(
+        __update_sphere_viewing_angle,
+        sphere_axes=sphere_axes,
+        angle_increment=angle_increment,
+    )
+
+    # Check if we need to reset the orientation
+    if reset_initial_orientation:
+        sphere_axes.view_init()
+
+    # Get the number of frames necessary to do a full 360° rotation
+    number_of_frames = np.abs(np.ceil(360 / angle_increment)).astype(int)
+
+    # Create the animation
+    animation = matplotlib.animation.FuncAnimation(
+        fig=sphere_figure,
+        func=update_angle_func,
+        frames=number_of_frames,
+        interval=animation_delay,
+    )
+
+    return animation
+
+
+def construct_confidence_cone(
+    angular_radius: float,
+    number_of_patches: int = 80,
+    mean_orientation: Optional[np.ndarray] = None,
+    two_sided_cone: bool = True,
+    use_degrees: bool = False,
+    **kwargs,
+) -> List[mpl_toolkits.mplot3d.art3d.Poly3DCollection]:
+    """Construct the patches for a confidence cone.
+
+    Construct the triangular patches for a confidence cone with a specified
+    angular radius, and optionally rotated to a specified mean direction.
+
+    Parameters
+    ----------
+    angular_radius
+        Angular radius for the confidence cone bounds (in radians, unless
+        the parameter `use_degrees` is `True`).
+    number_of_patches
+        Number of patches to construct. Increase for a better approximation
+        to a cone.
+    mean_orientation
+        Mean orientation to rotate the confidence cone, in cartesian
+        coordinates. If `None`, then the cone is not rotated and remains
+        vertically oriented.
+    two_sided_cone
+        Indicate whether the cone should be two-sided. If `True`, two cones
+        will be constructed, radiating from the centre. If `False`, then a
+        single cone is created.
+    use_degrees
+        Indicate whether the provided angular radius is in degrees.
+    **kwargs
+        Keyword arguments for the patch construction.
+        See :class:`Poly3DCollection` for details.
+
+    Returns
+    -------
+    list[mpl_toolkits.mplot3d.art3d.Poly3DCollection]
+        List of :class:`Poly3DCollection` representing each patch of the
+        confidence cone. These patches are triangular.
+    """
+
+    # Convert to radians, if necessary
+    if use_degrees:
+        angular_radius = np.radians(angular_radius)
+
+    # Create a list of patches
+    patches: List[mpl_toolkits.mplot3d.art3d.Poly3DCollection] = []
+
+    # Construct the rotation matrix
+    if mean_orientation is not None:
+        mean_orientation_spherical = util.compute_vector_orientation_angles(
+            vectors=mean_orientation
+        )
+
+        mean_phi = mean_orientation_spherical[util.AngularIndex.PHI]
+        mean_theta = mean_orientation_spherical[util.AngularIndex.THETA]
+
+        rotation = Rotation.from_euler("xz", [-mean_phi, -mean_theta])
+    else:
+        rotation = None
+
+    angular_increment = 2 * np.pi / number_of_patches
+
+    origin = np.zeros((1, 3))
+    start_vertex = np.array([angular_radius, 0])
+    increment_array = np.array([0, angular_increment])
+
+    for i in range(number_of_patches):
+        end_vertex = start_vertex + increment_array
+
+        ring_vertices = np.stack([start_vertex, end_vertex], axis=0)
+
+        ring_vertices_cartesian = util.convert_spherical_to_cartesian_coordinates(
+            ring_vertices
+        )
+
+        patch_vertices = np.concatenate([ring_vertices_cartesian, origin], axis=0)
+
+        if rotation is not None:
+            patch_vertices = rotation.apply(patch_vertices)
+
+        patch = mpl_toolkits.mplot3d.art3d.Poly3DCollection([patch_vertices], **kwargs)
+
+        patches.append(patch)
+
+        if two_sided_cone:
+            inverse_vertices = -patch_vertices
+            inverse_patch = mpl_toolkits.mplot3d.art3d.Poly3DCollection(
+                [inverse_vertices], **kwargs
+            )
+            patches.append(inverse_patch)
+
+        start_vertex = end_vertex
+
+    return patches
 
 
 def produce_3d_confidence_cone_plot(
