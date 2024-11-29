@@ -182,7 +182,7 @@ class SphereProjection(enum.Enum):
 
 
 class SpherePlotter:
-    """Produce beautiful, fast 3D sphere plots."""
+    """Produce beautiful, fast 3D sphere plots using PyVista."""
 
     _sphere_meshes: List[pv.PolyData]
     """The meshes representing individual shells."""
