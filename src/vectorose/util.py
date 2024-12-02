@@ -363,13 +363,13 @@ def create_symmetric_vectors_from_axes(axes: np.ndarray) -> np.ndarray:
     Parameters
     ----------
     axes
-        NumPy array of shape ``(n, 3)`` containing the axes. All entries in
+        Array of shape ``(n, 3)`` containing the axes. All entries in
         this array should have a positive Z-value.
 
     Returns
     -------
     numpy.ndarray
-        NumPy array of shape ``(2n, 3)`` containing the vectors along each
+        Array of shape ``(2n, 3)`` containing the vectors along each
         direction. The inverted vectors appear in the same order as the
         axes **after the non-inverted vectors**.
 
@@ -467,38 +467,25 @@ def compute_vector_orientation_angles(
 ) -> np.ndarray:
     """Compute the vector orientation angles phi and theta.
 
-    For all vectors passed in ``vectors``, compute the :math:`\\phi` and
-    :math:`\\theta` orientation angles. The :math:`\\phi` angle corresponds
-    to the tilt with respect to the ``z`` axis, while the :math:`\\theta`
-    angle is the angle in the ``xy``-plane with respect to the ``y`` axis.
-    See **Notes** for more details on the definition and calculations
-    of these angles.
-
-    The unit for the angles is *radians* unless ``use_degrees`` is set
-    to ``True``. The returned angles are in the range of 0
-    to :math:`\\pi` (180\u00b0) for :math:`\\phi` and 0 to :math:`2\\pi`
-    (180\u00b0) for :math:`\\theta`. The first column in the returned array
-    corresponds to :math:`\\phi` and the second to :math:`\\theta`. See
-    :class:`AngularIndex` for more details about the ordering of the
-    angles.
+    For all provided vectors, compute the ``phi`` and ``theta`` angles. The
+    ``phi`` angle corresponds to the co-latitude, representing the tilt
+    with respect to the ``z``-axis, while ``theta`` is the azimuthal angle
+    in the ``xy``-plane with respect to the positive ``y``-axis.
 
     Parameters
     ----------
     vectors
-        2D NumPy array containing 3 columns, corresponding to the x, y and
-        z **components** of the vectors, and ``n`` rows, one for each
-        vector. **Note:** We only require the vector *components*, not the
-        *coordinates* in space.
-
+        Array of shape ``(n, 3)`` containing 3 columns, corresponding to
+        the x, y and z *components* of ``n`` 3-dimensional vectors.
     use_degrees
-        indicate whether the returned angles should be in degrees.
-        If ``False`` (default), the angles will be returned in *radians*.
+        Indicate whether the returned angles should be in degrees.
+        Otherwise, the angles are in **radians**.
 
     Returns
     -------
     numpy.ndarray
-        2D NumPy array containing 2 columns, corresponding to
-        :math:`\\phi,\\theta` for ``n`` rows.
+        Array of shape ``(n, 2)`` containing the ``phi`` and ``theta``
+        angles for each vector.
 
     Notes
     -----
@@ -526,14 +513,11 @@ def compute_vector_orientation_angles(
 
         \\theta_i &= \\textup{arctan} \\left( \\frac{x_i}{y_i} \\right)
 
-    It is important to note that these angles have specific ranges to avoid
-    the possibility of describing the same angle in two different ways. The
-    :math:``\\phi`` angle must be in the range :math:`0 \\leq \\phi < \\pi`
-    in radians, or :math:`0 \\leq \\phi < 180` in degrees. The value of
-    :math:`\\theta` is defined in :math:`-\\pi \\leq \\theta < \\pi` in
-    radians, or :math:`-180 \\leq \\theta < 180` in degrees. This function
-    restricts the range of :math:`\\theta` further due to the nature of
-    the orientations considered in the current application.
+    To ensure that each direction has a unique description, we restrict the
+    angles to specific ranges. The ``phi`` angle is in the range
+    ``0 <= phi <= 180`` degrees, or ``0 <= phi <= pi`` radians, while the
+    ``theta`` angle is in the range ``0 <= theta < 360`` degrees or
+    ``0 <= theta < 2 * pi`` radians.
     """
 
     if vectors.ndim > 1:
@@ -775,6 +759,10 @@ def rotate_vectors(
     -------
     numpy.ndarray
         Array of shape ``(n, 3)`` containing the rotated vector components.
+
+    See Also
+    --------
+    scipy.spatial.transform.Rotation : Abstraction used for the rotations.
 
     Notes
     -----
