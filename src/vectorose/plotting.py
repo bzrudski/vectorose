@@ -825,6 +825,79 @@ class SpherePlotter:
         if hide_scalar_bar:
             self.show_scalar_bars()
 
+    def export_graphic(
+        self,
+        filename: str,
+        title: str,
+        raster: bool,
+        painter: bool = True,
+        window_size: Optional[tuple[int, int]] = None,
+        scale: Optional[int] = None,
+        hide_sliders: bool = True,
+        hide_scalar_bar: bool = False,
+    ):
+        """Export a graphic from the plotter.
+
+        Parameters
+        ----------
+        filename
+            Output destination for the graphic, including file
+            extension. Must be of type SVG, PDF, TEX, PS or EPS.
+        title
+            Name of the graphics (see PyVista documentation).
+        raster
+            Indicate whether to write the properties as a raster image (see
+            PyVista documentation).
+        painter
+            Indicate whether to perform a certain painting step (see
+            PyVista documentation).
+        window_size
+            Desired window size before exporting.
+        scale
+            Factor by which to scale the window before exporting to
+            increase resolution.
+        hide_sliders
+            Indicate whether to hide sliders before exporting. If no
+            sliders have been added to the plot, this option has no effect.
+        hide_scalar_bar
+            Indicate whether to hide the scalar bar when exporting. The
+            scalar bar will be made visible again after exporting.
+
+        See Also
+        --------
+        pyvista.Plotter.save_graphic :
+            Function wrapped by this function, which actually produces the
+            graphic. The current function borrows some parameters from
+            this function.
+        """
+
+        if hide_sliders:
+            self.hide_sliders()
+
+        if hide_scalar_bar:
+            self.hide_scalar_bars()
+
+        # Save the old parameters
+        old_window_size = self._plotter.window_size
+        old_scale = self._plotter.scale
+
+        self._plotter.window_size = window_size
+        self._plotter.scale = scale
+
+        self._plotter.save_graphic(
+            filename, title, raster, painter
+        )
+
+        # Reset the parameters
+        self._plotter.window_size = old_window_size
+        self._plotter.scale = old_scale
+
+        if hide_sliders:
+            self.show_sliders()
+
+        if hide_scalar_bar:
+            self.show_scalar_bars()
+
     def set_view(
         self,
         azim: Optional[float] = None,
