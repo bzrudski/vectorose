@@ -865,6 +865,7 @@ def produce_1d_scalar_histogram(
     bin_edges: np.ndarray,
     fill: bool = True,
     ax: Optional[plt.Axes] = None,
+    log: bool = False,
     **kwargs,
 ) -> plt.Axes:
     """Produce a 1D scalar histogram.
@@ -884,6 +885,8 @@ def produce_1d_scalar_histogram(
     ax
         Optional axes on which to plot. If ``None``, then new axes are
         created.
+    log
+        Indicate whether to use a logarithmic scale for the y-axis.
     **kwargs
         Keyword arguments for plotting the histogram.
         See :class:`matplotlib.patches.StepPatch` for details.
@@ -902,6 +905,9 @@ def produce_1d_scalar_histogram(
     ax = ax or plt.axes()
 
     ax.stairs(counts, bin_edges, fill=fill, **kwargs)
+
+    if log:
+        ax.set_yscale('log')
 
     return ax
 
