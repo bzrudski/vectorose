@@ -29,6 +29,66 @@ class AngularIndex(enum.IntEnum):
     """Angle theta, incline with respect to positive ``z``; index 1."""
 
 
+class MagnitudeType(enum.IntEnum):
+    """Type of vector magnitude."""
+
+    THREE_DIMENSIONAL = 0
+    """Euclidean magnitude in 3D space."""
+
+    IN_PLANE = 1
+    """Magnitude of the ``(x,y)``-projection of the vector."""
+
+
+def compute_vector_magnitudes(vectors: np.ndarray) -> np.ndarray:
+    """
+    Compute vector magnitudes.
+
+    Compute vector magnitudes in 3D, as well as the component of the
+    magnitude in the ``(x,y)``-plane.
+
+    Parameters
+    ----------
+    vectors
+        Array of shape ``(n, 3)`` containing the x, y and z *components* of
+        the ``n`` 3-dimensional vectors.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array of shape ``(n, 2)`` containing the vector magnitudes. The
+        first column contains the true 3D vector magnitude. While the
+        second column contains the magnitude of the projection onto the
+        ``xy``-plane.
+
+    Notes
+    -----
+    The vector magnitudes are computed using the following equations:
+
+    .. math::
+
+        \\| v \\| &= \\sqrt{{v_x}^2 + {v_y}^2 + {v_z} ^ 2}
+
+        \\| v \\|_{xy} &= \\sqrt{{v_x}^2 + {v_y}^2}
+
+    The both magnitudes are implemented in :func:`numpy.linalg.norm`.
+
+    """
+
+    n = len(vectors)
+
+    three_dimensional_magnitude = np.linalg.norm(vectors, axis=-1)
+    in_plane_magnitude = np.linalg.norm(vectors[..., :2], axis=-1)
+
+    magnitudes_array = np.zeros((n, 2))
+    magnitudes_array[:, MagnitudeType.IN_PLANE] = in_plane_magnitude
+    magnitudes_array[:, MagnitudeType.THREE_DIMENSIONAL] = three_dimensional_magnitude
+
+    # Squeeze out single dimensions, if only a single vector is passed in.
+    magnitudes_array = np.squeeze(magnitudes_array, axis=0)
+
+    return magnitudes_array
+
+
 def flatten_vector_field(vector_field: np.ndarray) -> np.ndarray:
     """Flatten a vector field into a 2D vector list.
 

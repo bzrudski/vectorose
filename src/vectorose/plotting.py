@@ -34,7 +34,7 @@ from vectorose.triangle_sphere import TriangleSphere
 
 from . import util
 from .tregenza_sphere import TregenzaSphereBase
-from .vectorose import produce_phi_theta_1d_histogram_data
+from .polar_data import produce_phi_theta_1d_histogram_data
 
 # Configure the SVG export, per https://stackoverflow.com/a/35734729
 plt.rcParams["svg.fonttype"] = "none"
@@ -930,40 +930,30 @@ def produce_polar_histogram_plot(
     ax
         Matplotlib :class:`matplotlib.projections.polar.PolarAxes` on which
         to plot the data.
-
     data
         Data to plot. This should have the same size as ``bins``.
-
     bins
         *Lower value* of each bin in the histogram.
-
     zero_position
         Zero-position on the polar axes, expressed as a member of the
         enumerated class :class:`CardinalDirection`.
-
     rotation_direction
         Rotation direction indicating how the bin values should
         increase from the zero-point specified in ``zero_position``,
         represented as a member of :class:`RotationDirection`.
-
     plot_title
         Optional title of the plot.
-
     label_axis
         Indicate whether the circumferential axis should be labelled.
-
     axis_ticks
         Axis ticks for the histogram. Units specified in
         ``axis_ticks_unit``.
-
     axis_ticks_unit
         :class:`AngularUnits` indicating what unit should be used for
         specifying the axis ticks. Default is :attr:`AngularUnits.DEGREES`.
-
     colour
         Colour used for the histogram bars. Must be a valid matplotlib
         colour [#f1]_.
-
     mirror_histogram
         Indicate whether the histogram should be mirrored to plot data on
         the complete circle.
@@ -1126,7 +1116,6 @@ def produce_polar_histogram_plots(
     rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
     use_degrees: bool = True,
     plot_title: Optional[str] = None,
-    weight_by_magnitude: bool = True,
     mirror_polar_plots: bool = True,
 ):
     """Produce and show the polar phi and theta histograms.
@@ -1158,17 +1147,15 @@ def produce_polar_histogram_plots(
         assumed to be in degrees. Otherwise, radians are assumed.
     plot_title
         Title of the overall plot (optional).
-    weight_by_magnitude
-        Indicate whether plots should be weighted by magnitude or by count.
     mirror_polar_plots
         Indicate whether the polar histogram data should be mirrored to
         fill the complete plot.
 
     See Also
     --------
-    produce_polar_histogram_plot:
+    produce_polar_histogram_plot :
         Create 1D polar histograms in isolation from 1D histogram data.
-    .create_binned_orientation:
+    .create_binned_orientation :
         Bin vectors into a 2D ``(phi, theta)`` histogram. The return
         values from that function may be passed as arguments to this
         function.
@@ -1176,7 +1163,7 @@ def produce_polar_histogram_plots(
 
     # Compute the 1D histograms from the binned data
     one_dimensional_histograms = produce_phi_theta_1d_histogram_data(
-        binned_data, weight_by_magnitude=weight_by_magnitude
+        binned_data,
     )
     phi_histogram: np.ndarray = one_dimensional_histograms[util.AngularIndex.PHI]
     theta_histogram: np.ndarray = one_dimensional_histograms[util.AngularIndex.THETA]
@@ -1262,7 +1249,7 @@ def produce_labelled_3d_plot(
     ax
         Axes to modify. These must be 3D axes.
     radius
-        Radius of the 3D plot. This value is multiplied by
+        Sphere radius in the 3D plot. This value is multiplied by
         the `limits_factor` to obtain the radius of the spherical axes.
     limits_factor
         Factor used to add padding to the sphere, by default 1.1. The same
