@@ -1740,6 +1740,110 @@ def construct_uv_sphere(
     return sphere_cartesian_coordinates
 
 
+def construct_uv_sphere_mesh(
+    phi_steps: int = 80, theta_steps: int = 160, radius: float = 1
+) -> pv.PolyData:
+    """Construct a UV sphere mesh.
+
+    Parameters
+    ----------
+    phi_steps
+        Number of phi rings to construct.
+    theta_steps
+        Number of theta bins in each ring.
+    radius
+        Sphere radius.
+
+    Returns
+    -------
+    pyvista.PolyData
+        Mesh containing the UV sphere.
+    """
+
+    top_vertex = np.array([0, 0, radius])
+
+    phi_step_size = 180 / phi_steps
+    phi = np.linspace(phi_step_size, stop=180, num=phi_steps - 1, endpoint=False)
+    theta = np.linspace(0, 360, theta_steps, endpoint=False)
+
+    # Now, build the 2D spherical coordinates
+    theta_grid, phi_grid = np.meshgrid(theta, phi)
+
+    # Convert to Cartesian coordinates
+    sphere_angles = np.stack([phi_grid, theta_grid], axis=-1)
+
+    sphere_cartesian_coordinates = util.convert_spherical_to_cartesian_coordinates(
+        angular_coordinates=sphere_angles, radius=radius, use_degrees=True
+    )
+
+    sphere_cartesian_coordinates = sphere_cartesian_coordinates.reshape(-1, 3)
+
+    bottom_vertex = np.array([0, 0, -radius])
+
+    # Add the top and bottom caps
+    sphere_cartesian_coordinates = np.vstack(
+        [top_vertex, sphere_cartesian_coordinates, bottom_vertex]
+    )
+
+    # And now, to begin defining the faces
+    cells: List[np.ndarray] = []
+
+    # Define the top triangle fan
+    face_count = 3 * np.ones(theta_steps, dtype=int)
+    first_ring_starts = np.arange(1, theta_steps + 1)
+    first_ring_ends = np.roll(first_ring_starts, -1)
+    apex = np.zeros(theta_steps, dtype=int)
+    top_fan_cells = np.stack([
+        face_count,
+        apex,
+        first_ring_starts,
+        first_ring_ends
+    ], axis=-1)
+    cells.append(top_fan_cells)
+
+    # Define each row
+    for i in range(0, phi_steps - 2):
+        first_vertex_in_row = 1 + i * theta_steps
+        upper_ring = np.arange(first_vertex_in_row, first_vertex_in_row + theta_steps)
+
+        vertex_count_column = 4 * np.ones(theta_steps, dtype=int)
+        top_left_corner = upper_ring
+        top_right_corner = np.roll(top_left_corner, -1)
+        bottom_left_corner = upper_ring + theta_steps
+        bottom_right_corner = top_right_corner + theta_steps
+
+        ring_cells = np.stack([
+            vertex_count_column,
+            top_left_corner,
+            top_right_corner,
+            bottom_right_corner,
+            bottom_left_corner
+        ], axis=-1)
+
+        cells.append(ring_cells)
+
+    # Define the bottom triangle fan
+    bottom_apex_index = len(sphere_cartesian_coordinates) - 1
+    face_count = 3 * np.ones(theta_steps, dtype=int)
+    last_ring_starts = np.arange(bottom_apex_index - theta_steps, bottom_apex_index)
+    last_ring_ends = np.roll(last_ring_starts, -1)
+    bottom_apex = bottom_apex_index * np.ones(theta_steps, dtype=int)
+    bottom_fan_cells = np.stack([
+        face_count,
+        bottom_apex,
+        last_ring_starts,
+        last_ring_ends
+    ], axis=-1)
+    cells.append(bottom_fan_cells)
+
+    cell_array = np.concatenate(cells, axis=-1)
+
+    # Create the mesh
+    uv_sphere_mesh = pv.PolyData(sphere_cartesian_coordinates, cell_array)
+
+    return uv_sphere_mesh
+
+
 def produce_uv_spherical_2d_data_plot(
     ax: mpl_toolkits.mplot3d.axes3d.Axes3D,
     sphere_radius: float,
