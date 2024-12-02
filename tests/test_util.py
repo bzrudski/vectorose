@@ -398,27 +398,3 @@ def test_convert_to_vectorose_spherical_coordinates():
 
     # And check the equality
     assert np.all(converted_angles == expected_outputs)
-
-
-def test_perform_binary_search():
-    """Test the custom binary search implementation.
-
-    Unit test for :func:`util.perform_binary_search`.
-    """
-
-    # Create a list
-    my_list = [1, 2, 3, 4, 6, 7]
-
-    # Search for an element in the list
-    my_element = 3
-    my_index = util.perform_binary_search(my_list, my_element)
-
-    # Check the index
-    assert my_index == 2
-
-    # Search for an element not in the list
-    my_element = 5
-    my_index = util.perform_binary_search(my_list, my_element)
-
-    # Check the index
-    assert my_index == 3

@@ -31,7 +31,6 @@ import pyvista as pv
 
 from . import util
 from .sphere_base import SphereBase
-from .util import perform_binary_search
 
 
 class TregenzaSphereBase(SphereBase):

@@ -324,13 +324,13 @@ def convert_vectors_to_axes(vectors: np.ndarray) -> np.ndarray:
     Parameters
     ----------
     vectors
-        NumPy array of shape ``(n, 3)`` or ``(n, 6)`` containing the
+        Array of shape ``(n, 3)`` or ``(n, 6)`` containing the
         vectors.
 
     Returns
     -------
     numpy.ndarray
-        NumPy array of the same shape as the original, but with all vectors
+        Array of the same shape as the original, but with all vectors
         oriented towards a non-negative Z value.
 
     References
@@ -341,15 +341,12 @@ def convert_vectors_to_axes(vectors: np.ndarray) -> np.ndarray:
     """
 
     # Get the vector components
-    vector_components = vectors[:, -3:]
+    axes = vectors.copy()
+    axes_components = axes[:, -3:]
 
     # Invert the vectors with z component below zero
-    indices_to_flip = vector_components[:, -1] < 0
-    vector_components[indices_to_flip] = -vector_components[indices_to_flip]
-
-    # Assign the axes to the positions, if necessary.
-    axes = vectors.copy()
-    axes[:, -3:] = vector_components
+    indices_to_flip = axes_components[:, -1] < 0
+    axes_components[indices_to_flip] = -axes_components[indices_to_flip]
 
     return axes
 
@@ -525,25 +522,16 @@ def compute_vector_orientation_angles(
     else:
         n = 1
 
-    # Ensure that all vectors are in octants with positive x.
-    # vectors = np.copy(vectors)
-    # vectors[vectors[:, 0] < 0] = -vectors[vectors[:, 0] < 0]
-
     x: np.ndarray = vectors[..., 0]
     y: np.ndarray = vectors[..., 1]
     z: np.ndarray = vectors[..., 2]
 
-    # Compute the raw angles using arctan2
+    # Compute the orientation angles using arctan2
     phi = np.arctan2(np.sqrt(x**2 + y**2), z)
     theta = np.arctan2(x, y)
 
-    # Now, we need to fix the angles
-    phi = np.where(phi < 0, phi + 2 * np.pi, phi)
-    # phi[phi == np.pi] = 0
-
-    theta = np.where(theta < 0, theta + 2 * np.pi, theta)
-    theta = np.where(theta >= 2 * np.pi, theta - 2 * np.pi, theta)
-    # theta[theta == np.pi] = 0
+    # Now, we need to fix the theta angles to get the correct range
+    theta %= (2 * np.pi)
 
     # Convert to degrees if necessary
     if use_degrees:
@@ -604,6 +592,9 @@ def compute_spherical_coordinates(
     # Combine everything
     spherical_coordinates = np.hstack([orientations, magnitudes])
 
+    # If there is only one vector, squeeze out the extra dimension
+    spherical_coordinates = np.squeeze(spherical_coordinates, axis=0)
+
     # And return it all
     return spherical_coordinates
 
@@ -644,7 +635,7 @@ def convert_to_math_spherical_coordinates(
     Embleton [#fisher-lewis-embleton]_ define the angle :math:`\\theta` as
     the angle of inclination from the vertical axis, while the in-plane
     angle :math:`\\phi` is the counter-clockwise (anticlockwise) angle in
-    the ``xy``-plane, measured with respect to the ``+y`` axis.
+    the ``xy``-plane, measured with respect to the ``+x`` axis.
 
     """
 
@@ -702,7 +693,6 @@ def convert_math_spherical_coordinates_to_vr_coordinates(
         Array of the same shape as the input `original_angles`, but with
         the angles defined as in the function
         :func:`.compute_vector_orientation_angles`.
-
 
     Notes
     -----
@@ -783,50 +773,3 @@ def rotate_vectors(
 
     # Return the rotated components
     return rotated_vectors
-
-
-# Non-vector operations
-def perform_binary_search(
-    seq: Union[Sequence, np.ndarray], item: Any, lower_bound: int = 0
-) -> int:
-    """Perform a binary search.
-
-    Find the index of a specified item, or of the greatest item less than
-    the desired item.
-
-    Parameters
-    ----------
-    seq
-        Sequence to search.
-    item
-        Item to locate.
-    lower_bound
-        Start index of the sequence.
-
-    Returns
-    -------
-    int
-        Index of the requested item, or of the greatest item less than the
-        requested one.
-
-    """
-    # Check the list length - return the current index if only one or no values.
-    if len(seq) == 1:
-        return lower_bound
-
-    # Get the middle index
-    middle_index = np.floor(len(seq) / 2).astype(int)
-    middle_value = seq[middle_index]
-
-    # print(f"Considering the item {middle_value} at index {middle_index}")
-
-    if item == middle_value:
-        return lower_bound + middle_index
-    elif item < middle_value:
-        # Recurse left
-        return perform_binary_search(seq[:middle_index], item, lower_bound=lower_bound)
-    elif item > middle_value:
-        # Recurse right
-        return perform_binary_search(
-            seq[middle_index:], item, lower_bound=lower_bound + middle_index
-        )
