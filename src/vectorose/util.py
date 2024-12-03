@@ -84,7 +84,8 @@ def compute_vector_magnitudes(vectors: np.ndarray) -> np.ndarray:
     magnitudes_array[:, MagnitudeType.THREE_DIMENSIONAL] = three_dimensional_magnitude
 
     # Squeeze out single dimensions, if only a single vector is passed in.
-    magnitudes_array = np.squeeze(magnitudes_array, axis=0)
+    if n == 1:
+        magnitudes_array = np.squeeze(magnitudes_array, axis=0)
 
     return magnitudes_array
 
@@ -543,7 +544,8 @@ def compute_vector_orientation_angles(
     angular_coordinates[..., AngularIndex.THETA] = theta
 
     # If there is only one vector, squeeze out the extra axis
-    angular_coordinates = np.squeeze(angular_coordinates)
+    if n == 1:
+        angular_coordinates = np.squeeze(angular_coordinates)
 
     return angular_coordinates
 
@@ -583,6 +585,9 @@ def compute_spherical_coordinates(
         Compute the magnitude (norm) of vectors in Cartesian coordinates.
     """
 
+    # Get the number of vectors
+    n = len(vectors)
+
     # Compute the orientation angles
     orientations = compute_vector_orientation_angles(vectors, use_degrees)
 
@@ -593,7 +598,8 @@ def compute_spherical_coordinates(
     spherical_coordinates = np.hstack([orientations, magnitudes])
 
     # If there is only one vector, squeeze out the extra dimension
-    spherical_coordinates = np.squeeze(spherical_coordinates, axis=0)
+    if n == 1:
+        spherical_coordinates = np.squeeze(spherical_coordinates, axis=0)
 
     # And return it all
     return spherical_coordinates
