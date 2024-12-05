@@ -3,7 +3,7 @@
 # This code is licensed under the MIT License. See the `LICENSE` file for
 # more details about copying.
 
-"""Equal-area Rectangle Plotting.
+"""Sphere plotting with (almost) equal-area rectangles.
 
 This module provides the functions necessary to produce an approximately
 equal area rectangular-based projection of a sphere, with face colours
@@ -18,7 +18,7 @@ References
    45(7), 275-283. https://doi.org/10.1016/j.comgeo.2012.01.011
 
 """
-import enum
+# import enum
 from typing import List, Optional, Tuple, Type
 
 import matplotlib.colors
@@ -34,10 +34,24 @@ from .sphere_base import SphereBase
 
 
 class TregenzaSphereBase(SphereBase):
-    """Representation of a Tregenza Sphere.
+    """Base class for the Tregenza sphere.
 
-    Represent and interact with a Tregenza Sphere, similar to those in the
-    work by Beckers & Beckers. [#Beckers]_
+    The Tregenza sphere provides a discretisation of the sphere based on
+    mostly rectangular patches of almost equal area. This class defines the
+    interface for the Tregenza sphere and includes all the functions
+    necessary to use it for histogram binning and 3D representation.
+
+
+    Notes
+    -----
+    This sphere design is based on the tiling presented by Beckers &
+    Beckers. [#Beckers]_
+
+    While this class can be instantiated directly, we **strongly**
+    recommend that you consider one of the derived classes presented below.
+    By using these, you will avoid the tedious task of computing the
+    optimal number of bins per row, as well as computing the almucantar
+    angles for the rings.
     """
 
     _rings: pd.DataFrame
@@ -297,6 +311,22 @@ class TregenzaSphereBase(SphereBase):
         return weighted_face_data
 
     def create_mesh(self) -> pv.PolyData:
+        """Create Tregenza sphere mesh.
+
+        Warnings
+        --------
+        This mesh construction relies on an approximation that uses a
+        rectangle (or polygon_ for each patch. This causes some issues near
+        the sphere poles. In the original work by Beckers and Beckers,
+        [#Beckers]_ the cap at the pole was a circle and all other patches
+        are sectors of the respective rings. In our implementation, the
+        pole is a polygon with the number of vertices corresponding to the
+        number of patches in the next row. The next row contains a small
+        number of patches, which may appear thin or misshapen, leaving
+        holes in the constructed mesh. These holes are only artifacts of
+        the visualisation. In the conceptual calculation of the histogram
+        binning, the holes do not exist.
+        """
         # So, here's how we're going to do this...
 
         # Construct the inner rings.
@@ -670,6 +700,21 @@ class TregenzaSphereBase(SphereBase):
 
 
 class CoarseTregenzaSphere(TregenzaSphereBase):
+    """Coarse representation of the Tregenza sphere.
+
+    This sphere is constructed with 18 rings (9 in each hemisphere). It
+    contains a total of 520 patches.
+
+    Notes
+    -----
+    This sphere design is based on the tiling presented by Beckers &
+    Beckers. [#Beckers]_
+
+    The almucantar spacing for the regular rings is 11.25 degrees. The
+    first non-cap ring has a start almucantar angle of 5 degrees and an
+    end angle of 11.25 degrees.
+    """
+
     def __init__(
         self,
         number_of_shells: int = 1,
@@ -704,6 +749,21 @@ class CoarseTregenzaSphere(TregenzaSphereBase):
 
 
 class FineTregenzaSphere(TregenzaSphereBase):
+    """Fine representation of the Tregenza sphere.
+
+    This sphere is constructed with 54 rings (27 in each hemisphere). It
+    contains a total of 5806 patches.
+
+    Notes
+    -----
+    This sphere design is based on the tiling presented by Beckers &
+    Beckers. [#Beckers]_
+
+    The almucantar spacing for the regular rings is 3.44 degrees. The
+    first non-cap ring has a starting almucantar angle of 1.50 degrees and
+    an ending angle of 4.00 degrees.
+    """
+
     def __init__(
         self,
         number_of_shells: int = 1,
@@ -756,6 +816,21 @@ class FineTregenzaSphere(TregenzaSphereBase):
 
 
 class UltraFineTregenzaSphere(TregenzaSphereBase):
+    """Ultra-fine representation of the Tregenza sphere.
+
+    This sphere is constructed with 124 rings (62 in each hemisphere). It
+    contains a total of 36956 patches.
+
+    Notes
+    -----
+    This sphere design is based on the tiling presented by Beckers &
+    Beckers. [#Beckers]_
+
+    The almucantar spacing for the regular rings is 1.47 degrees. The
+    first non-cap ring has a starting almucantar angle of 0.60 degrees and
+    an ending angle of 1.80 degrees.
+    """
+
     def __init__(
         self,
         number_of_shells: int = 1,
@@ -842,121 +917,121 @@ class UltraFineTregenzaSphere(TregenzaSphereBase):
         )
 
 
-def run_tregenza_histogram_pipeline(
-    vectors: np.ndarray,
-    sphere: TregenzaSphereBase,
-    weight_by_magnitude: bool = False,
-    is_axial: bool = False,
-    remove_zero_vectors: bool = True,
-    correct_area_weighting: bool = True,
-) -> List[np.ndarray]:
-    """Run the complete histogram construction for the Tregenza sphere.
-
-    Construct a spherical histogram based on a provided Tregenza sphere for
-    the supplied vectors.
-
-    Parameters
-    ----------
-    vectors
-        NumPy array containing the 3D vector components in the order
-        ``(x, y, z)``. This array should have shape ``(n, 3)`` where ``n``
-        is the number of vectors.
-    sphere
-        Tregenza sphere to use for histogram construction.
-    weight_by_magnitude
-        Indicate whether to weight the histogram by 3D magnitude. If
-        `False`, then the histogram will be weighted by count.
-    is_axial
-        Indicate whether the vectors are axial. If `True`, symmetric
-        vectors will be created based on the dataset.
-    remove_zero_vectors
-        Indicate whether to remove zero-vectors. This parameter should be
-        `True` unless the vector list contains no zero-vectors.
-    correct_area_weighting
-        Indicate whether the histogram values should be corrected using the
-        area weights.
-
-    Returns
-    -------
-    list[numpy.ndarray]
-        List of histogram counts for each ring. The list has the same
-        length as the number of rings in the provided Tregenza sphere,
-        and the length of each list entry corresponds to the respective
-        patch count.
-
-    """
-
-    # Perform vector pre-processing
-    if remove_zero_vectors:
-        vectors = util.remove_zero_vectors(vectors)
-
-    if is_axial:
-        vectors = util.convert_vectors_to_axes(vectors)
-        vectors = util.create_symmetric_vectors_from_axes(vectors)
-
-    angular_coordinates = util.compute_vector_orientation_angles(
-        vectors, use_degrees=True
-    )
-
-    if weight_by_magnitude:
-        _, magnitudes = util.normalise_vectors(vectors)
-    else:
-        magnitudes = None
-
-    histogram = sphere.construct_spherical_histogram(
-        spherical_coordinates=angular_coordinates, magnitudes=magnitudes
-    )
-
-    if correct_area_weighting:
-        histogram = sphere.correct_histogram_by_area(histogram)
-
-    return histogram
-
-
-class TregenzaSphereDetailLevel(enum.Enum):
-    """Detail level for Tregenza Sphere."""
-
-    FINE = "Fine"
-    """Fine-detail Tregenza sphere, with 27 rings per hemisphere,
-    represented by :class:`FineTregenzaSphere`."""
-
-    ULTRA_FINE = "Ultra-fine"
-    """Ultra-fine-detail Tregenza sphere, with 62 rings per hemisphere,
-    represented by :class:`UltraFineTregenzaSphere`."""
-
-    def get_tregenza_class(self) -> Type[TregenzaSphereBase]:
-        """Get the class for the specified level of detail.
-
-        Returns
-        -------
-        Type[TregenzaSphereBase]
-            Class inheriting from :class:`TregenzaSphereBase` which
-            captures the correct level of detail.
-
-        Warnings
-        --------
-        This method returns a **type**, not an object. The returned type
-        can be used to instantiate a Tregenza sphere object. To instantiate
-        an object directly, call :meth:`create_tregenza_sphere`.
-        """
-
-        if self == TregenzaSphereDetailLevel.FINE:
-            return FineTregenzaSphere
-        elif self == TregenzaSphereDetailLevel.ULTRA_FINE:
-            return UltraFineTregenzaSphere
-
-    def create_tregenza_sphere(self) -> TregenzaSphereBase:
-        """Create a Tregenza sphere for the specified detail level.
-
-        Returns
-        -------
-        TregenzaSphereBase
-            Object of the correct subclass of :class:`TregenzaSphereBase`
-            representing the desired level of detail.
-        """
-
-        tregenza_sphere_type = self.get_tregenza_class()
-
-        tregenza_sphere: TregenzaSphereBase = tregenza_sphere_type()
-
-        return tregenza_sphere
+# def run_tregenza_histogram_pipeline(
+#     vectors: np.ndarray,
+#     sphere: TregenzaSphereBase,
+#     weight_by_magnitude: bool = False,
+#     is_axial: bool = False,
+#     remove_zero_vectors: bool = True,
+#     correct_area_weighting: bool = True,
+# ) -> List[np.ndarray]:
+#     """Run the complete histogram construction for the Tregenza sphere.
+#
+#     Construct a spherical histogram based on a provided Tregenza sphere for
+#     the supplied vectors.
+#
+#     Parameters
+#     ----------
+#     vectors
+#         NumPy array containing the 3D vector components in the order
+#         ``(x, y, z)``. This array should have shape ``(n, 3)`` where ``n``
+#         is the number of vectors.
+#     sphere
+#         Tregenza sphere to use for histogram construction.
+#     weight_by_magnitude
+#         Indicate whether to weight the histogram by 3D magnitude. If
+#         `False`, then the histogram will be weighted by count.
+#     is_axial
+#         Indicate whether the vectors are axial. If `True`, symmetric
+#         vectors will be created based on the dataset.
+#     remove_zero_vectors
+#         Indicate whether to remove zero-vectors. This parameter should be
+#         `True` unless the vector list contains no zero-vectors.
+#     correct_area_weighting
+#         Indicate whether the histogram values should be corrected using the
+#         area weights.
+#
+#     Returns
+#     -------
+#     list[numpy.ndarray]
+#         List of histogram counts for each ring. The list has the same
+#         length as the number of rings in the provided Tregenza sphere,
+#         and the length of each list entry corresponds to the respective
+#         patch count.
+#
+#     """
+#
+#     # Perform vector pre-processing
+#     if remove_zero_vectors:
+#         vectors = util.remove_zero_vectors(vectors)
+#
+#     if is_axial:
+#         vectors = util.convert_vectors_to_axes(vectors)
+#         vectors = util.create_symmetric_vectors_from_axes(vectors)
+#
+#     angular_coordinates = util.compute_vector_orientation_angles(
+#         vectors, use_degrees=True
+#     )
+#
+#     if weight_by_magnitude:
+#         _, magnitudes = util.normalise_vectors(vectors)
+#     else:
+#         magnitudes = None
+#
+#     histogram = sphere.construct_spherical_histogram(
+#         spherical_coordinates=angular_coordinates, magnitudes=magnitudes
+#     )
+#
+#     if correct_area_weighting:
+#         histogram = sphere.correct_histogram_by_area(histogram)
+#
+#     return histogram
+#
+#
+# class TregenzaSphereDetailLevel(enum.Enum):
+#     """Detail level for Tregenza Sphere."""
+#
+#     FINE = "Fine"
+#     """Fine-detail Tregenza sphere, with 27 rings per hemisphere,
+#     represented by :class:`FineTregenzaSphere`."""
+#
+#     ULTRA_FINE = "Ultra-fine"
+#     """Ultra-fine-detail Tregenza sphere, with 62 rings per hemisphere,
+#     represented by :class:`UltraFineTregenzaSphere`."""
+#
+#     def get_tregenza_class(self) -> Type[TregenzaSphereBase]:
+#         """Get the class for the specified level of detail.
+#
+#         Returns
+#         -------
+#         Type[TregenzaSphereBase]
+#             Class inheriting from :class:`TregenzaSphereBase` which
+#             captures the correct level of detail.
+#
+#         Warnings
+#         --------
+#         This method returns a **type**, not an object. The returned type
+#         can be used to instantiate a Tregenza sphere object. To instantiate
+#         an object directly, call :meth:`create_tregenza_sphere`.
+#         """
+#
+#         if self == TregenzaSphereDetailLevel.FINE:
+#             return FineTregenzaSphere
+#         elif self == TregenzaSphereDetailLevel.ULTRA_FINE:
+#             return UltraFineTregenzaSphere
+#
+#     def create_tregenza_sphere(self) -> TregenzaSphereBase:
+#         """Create a Tregenza sphere for the specified detail level.
+#
+#         Returns
+#         -------
+#         TregenzaSphereBase
+#             Object of the correct subclass of :class:`TregenzaSphereBase`
+#             representing the desired level of detail.
+#         """
+#
+#         tregenza_sphere_type = self.get_tregenza_class()
+#
+#         tregenza_sphere: TregenzaSphereBase = tregenza_sphere_type()
+#
+#         return tregenza_sphere
