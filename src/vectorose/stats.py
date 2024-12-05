@@ -23,6 +23,12 @@ References
 .. [#fisher-lewis-embleton] Fisher, N. I., Lewis, T., & Embleton, B. J.
        J. (1993). Statistical analysis of spherical data ([New ed.], 1.
        paperback ed). Cambridge Univ. Press.
+
+.. [#woodcock-1977] Woodcock, N. H. (1977). Specification of fabric shapes
+       using an eigenvalue method. Geological Society of America Bulletin,
+       88(9), 1231.
+       https://doi.org/10.1130/0016-7606(1977)88<1231:SOFSUA>2.0.CO;2
+
 """
 import dataclasses
 import functools
@@ -117,7 +123,7 @@ def compute_resultant_vector(
         stacked_vectors[positions_to_flip] *= -1
 
     # Now, we need to sum all the components
-    resultant_vector = stacked_vectors.sum(axis=0)
+    resultant_vector = stacked_vectors.sum(axis=0).astype(float)
 
     if compute_mean_resultant:
         n = len(stacked_vectors)
@@ -203,7 +209,10 @@ def compute_orientation_matrix_eigs(
 
 
 class OrientationMatrixParameters(NamedTuple):
-    """Orientation matrix parameters."""
+    """Orientation matrix parameters.
+
+    These parameters were first described by Woodcock. [#woodcock-1977]_
+    """
 
     shape_parameter: float
     """Shape parameter, also known as gamma."""
@@ -213,9 +222,11 @@ class OrientationMatrixParameters(NamedTuple):
 
 
 def compute_orientation_matrix_parameters(eigs: np.ndarray) -> OrientationMatrixParameters:
-    """Compute the orientation matrix parameters.
+    """Compute Woodcock's orientation matrix parameters.
 
-    Compute the gamma and zeta parameters, defined in Fisher, Lewis and
+    Compute the shape and strength parameters based on the orientation
+    matrix, using the process first described by Woodcock [#woodcock-1977]_
+    and using the notation presented by Fisher, Lewis and
     Embleton. [#fisher-lewis-embleton]_
 
     Parameters
@@ -232,7 +243,8 @@ def compute_orientation_matrix_parameters(eigs: np.ndarray) -> OrientationMatrix
     Notes
     -----
     See section 3.4 of Fisher, Lewis and Embleton [#fisher-lewis-embleton]_
-    for computational details.
+    for computational and notational details. For the original description,
+    see Woodcock. [#woodcock-1977]
     """
 
     # Sort the eigenvalues
@@ -802,85 +814,6 @@ def compute_confidence_cone_radius(
 
 
 # TODO: Add function to compute the vertex points for the mean confidence cone
-
-def calculate_coplanarity_index(
-    vector_field: np.ndarray,
-    number_of_samples: int = 3,
-) -> float:
-    """Compute co-planarity index for a set of vectors.
-
-    Using random samples from the vector field, compute the co-planarity
-    index using the average scalar triple products.
-
-    Parameters
-    ----------
-    vector_field
-        The vector field to consider, represented as either an array of
-        shape ``(n, d)`` or an ``n+1``-dimensional array containing the
-        components at their spatial locations, with the components present
-        along the *last* axis.
-    number_of_samples
-        Number of sets of three vectors to sample to compute the scalar
-        triple product.
-
-    Returns
-    -------
-    float
-        The average scalar triple product for the sampled vectors.
-
-    Warnings
-    --------
-    This approach has not been validated yet and should not be used in
-    production code.
-
-    Notes
-    -----
-    Sampling is performed without replacement in a given set, and with
-    replacement between sets. The scalar triple product is used to
-    determine co-planarity, as three vectors :math:`v_1, v_2, v_3` are
-    co-planar if:
-
-    .. math::
-        v_1 \\cdot (v_2 \\times v_3) = 0
-
-    The absolute values of the scalar triple produces are summed in order
-    to compute the average. The co-planarity index is taken as:
-
-    .. math::
-        1 - \\left(v_1 \\cdot (v_2 \\times v_3)\\right)
-
-    Values closer to 1 correspond to coplanar vectors and values closer to
-    zero correspond to low co-planarity.
-    """
-
-    # Flatten vector field
-    vector_field = util.flatten_vector_field(vector_field)
-
-    # Compute the scalar triple products
-    scalar_triple_products: List[float] = []
-
-    for i in range(number_of_samples):
-        # Select the random vectors
-        random_vectors = np.random.default_rng().choice(
-            vector_field, axis=0, size=3, replace=False
-        )
-
-        # Compute the scalar triple product
-        v0 = random_vectors[0]
-        v1 = random_vectors[1]
-        v2 = random_vectors[2]
-
-        scalar_triple_product = np.dot(v0, np.cross(v1, v2))
-
-        # Add to the list
-        scalar_triple_products.append(scalar_triple_product)
-
-    # Compute the average scalar triple product
-    average_scalar_triple = np.sum(np.abs(scalar_triple_products)) / number_of_samples
-
-    coplanarity_index = 1 - average_scalar_triple
-
-    return coplanarity_index
 
 
 @dataclasses.dataclass
