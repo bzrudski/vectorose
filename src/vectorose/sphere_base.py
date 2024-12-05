@@ -528,6 +528,7 @@ class SphereBase(abc.ABC):
         histogram_data: pd.Series,
         magnitude_bins: np.ndarray,
         constant_radius: bool = False,
+        normalise_by_shell: bool = False,
     ) -> List[pv.PolyData]:
         """Create mesh shells for the supplied histogram.
 
@@ -541,6 +542,10 @@ class SphereBase(abc.ABC):
             determine the radius of each shell.
         constant_radius
             Indicate whether all meshes should have the same radius.
+        normalise_by_shell
+            Indicate whether each shell should be normalised with respect
+            to its maximum value.
+
 
         Returns
         -------
@@ -552,9 +557,23 @@ class SphereBase(abc.ABC):
         --------
         The provided histogram must have been constructed with the current
         sphere, or an equivalent sphere.
+
+        Notes
+        -----
+        The option `normalise_by_shell` produces meshes where the faces
+        values are divided by the maximum value in their corresponding
+        shell. The values can therefore be thought of as representing
+        fractions of the respective maxima.
         """
 
         number_of_shells = self.number_of_shells
+
+        if normalise_by_shell:
+            shell_maxima = histogram_data.groupby("shell").max()
+
+            # Warning! Assignment operator /= changes the original!
+            normalised_data = histogram_data / shell_maxima
+            histogram_data = normalised_data
 
         shell_list = []
 
