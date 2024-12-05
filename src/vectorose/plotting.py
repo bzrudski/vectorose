@@ -876,7 +876,7 @@ class SpherePlotter:
         self,
         filename: str,
         title: str,
-        raster: bool,
+        raster: bool = True,
         painter: bool = True,
         window_size: Optional[tuple[int, int]] = None,
         scale: Optional[int] = None,
@@ -928,8 +928,11 @@ class SpherePlotter:
         old_window_size = self._plotter.window_size
         old_scale = self._plotter.scale
 
-        self._plotter.window_size = window_size
-        self._plotter.scale = scale
+        if window_size is not None:
+            self._plotter.window_size = window_size
+
+        if scale is not None:
+            self._plotter.scale = scale
 
         self._plotter.save_graphic(
             filename, title, raster, painter
