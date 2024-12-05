@@ -179,6 +179,26 @@ class SphereProjection(enum.Enum):
     PERSPECTIVE = "persp"
 
 
+class ViewingPlanes(str, enum.Enum):
+    """Built-in viewing angles.
+
+    Each member represents a viewing plane (or the isometric angle) defined
+    in PyVista.
+
+    See Also
+    --------
+    pyvista.Plotter.camera_position :
+        The function used to set the view to one of these planes.
+    """
+    XY = "xy"
+    XZ = "xz"
+    YZ = "yz"
+    YX = "yx"
+    ZX = "zx"
+    ZY = "zy"
+    ISO = "iso"
+
+
 class SpherePlotter:
     """Produce beautiful, fast 3D sphere plots using PyVista."""
 
@@ -227,6 +247,33 @@ class SpherePlotter:
     def radius(self) -> float:
         """Access the sphere radius."""
         return self._largest_radius
+
+    @property
+    def azimuth(self) -> float:
+        """Get or set the azimuth."""
+        return self._plotter.camera.azimuth
+
+    @azimuth.setter
+    def azimuth(self, offset: float):
+        self._plotter.camera.azimuth += offset
+        
+    @property
+    def elevation(self) -> float:
+        """Get or set the elevation."""
+        return self._plotter.camera.elevation
+
+    @elevation.setter
+    def elevation(self, offset: float):
+        self._plotter.camera.elevation += offset
+        
+    @property
+    def roll(self) -> float:
+        """Get or set the roll."""
+        return self._plotter.camera.roll
+
+    @roll.setter
+    def roll(self, offset: float):
+        self._plotter.camera.roll += offset
 
     def __init__(
         self,
@@ -900,9 +947,9 @@ class SpherePlotter:
 
     def set_view(
         self,
-        azim: Optional[float] = None,
-        elev: Optional[float] = None,
-        roll: Optional[float] = None,
+        azim: Optional[float] = 0,
+        elev: Optional[float] = 0,
+        roll: Optional[float] = 0,
     ):
         """Change the view of the current plotter.
 
@@ -911,26 +958,21 @@ class SpherePlotter:
         Parameters
         ----------
         azim
-            New azimuth angle.
+            Change to azimuthal angle.
         elev
-            New elevation angle.
+            Change to elevation angle.
         roll
-            New roll angle.
+            Change to roll angle.
         """
 
-        camera = self._plotter.camera
+        self.azimuth = azim
+        self.elevation = elev
+        self.roll = roll
 
-        if azim is not None:
-            camera.azimuth = azim
-            self._plotter.update()
+    def set_view_plane(self, viewing_plane: ViewingPlanes):
+        """Set the plotter camera to a predefined viewing angle."""
 
-        if elev is not None:
-            camera.elevation = elev
-            self._plotter.update()
-
-        if roll is not None:
-            camera.roll = roll
-            self._plotter.update()
+        self._plotter.camera_position = viewing_plane
 
 
 def produce_1d_scalar_histogram(
