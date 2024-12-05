@@ -37,6 +37,7 @@ ipympl = "^0.9.4"
 pydata-sphinx-theme = "^0.15.3"
 jupyterlab = ">=3"
 black = "^24.10.0"
+sphinxcontrib-bibtex = "^2.6.3"
 
 [tool.semantic_release]
 version_toml = [
