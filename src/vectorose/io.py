@@ -111,9 +111,6 @@ class VideoFileType(enum.Enum):
         Graphics Interchange Format animated image (regardless of whether
         you pronounce if G-IF or J-IF).
 
-    Todo
-    ----
-    Add support for additional export formats.
 
     Warnings
     --------
