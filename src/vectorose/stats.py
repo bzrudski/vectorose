@@ -59,15 +59,12 @@ class HypothesisResult:
 
 def compute_resultant_vector(
     vector_field: np.ndarray,
-    is_axial: bool = False,
     compute_mean_resultant: bool = True,
 ) -> np.ndarray:
     """Compute the resultant vector for a set of orientations.
 
-    Compute the resultant vector from a set of orientations. If the data
-    are vectorial, all components are simply added together. If the data
-    are axial, first all entries with negative Z-coordinates (Y in 2D) are
-    inverted, and then the components are summed.
+    Compute the resultant vector from a set of orientations or direction.
+    This vector is computed as the sum of all constituent vectors.
 
     Parameters
     ----------
@@ -76,12 +73,6 @@ def compute_resultant_vector(
         shape ``(n, d)`` or an ``n+1``-dimensional array containing the
         components at their spatial locations, with the components present
         along the *last* axis.
-    is_axial
-        Indicate whether the data should be considered as axes, instead of
-        vectors. In this case, all entries with a negative Z-component will
-        be inverted, to ensure that all data are located in the upper
-        hemisphere. In the 2D case, the negative Y-component is considered
-        instead.
     compute_mean_resultant
         Indicate whether the mean resultant should be returned instead of
         the non-normalised resultant vector.
@@ -117,11 +108,6 @@ def compute_resultant_vector(
     else:
         stacked_vectors = vector_field.copy()
 
-    # If the data are axial, then we need to invert.
-    if is_axial:
-        positions_to_flip = stacked_vectors[:, -1] < 0
-        stacked_vectors[positions_to_flip] *= -1
-
     # Now, we need to sum all the components
     resultant_vector = stacked_vectors.sum(axis=0).astype(float)
 
@@ -133,7 +119,7 @@ def compute_resultant_vector(
 
 
 def compute_orientation_matrix(
-    vectors: np.ndarray, is_axial: bool = False
+    vectors: np.ndarray
 ) -> np.ndarray:
     """Compute the orientation matrix for a set of vectors.
 
@@ -147,9 +133,6 @@ def compute_orientation_matrix(
     vectors
         Array of shape ``(n, d)`` where ``n`` is the number of vectors and
         ``d`` is the number of dimensions.
-    is_axial
-        Indicate whether the data should be considered as axial. In this
-        case, all entries with a negative last dimension will be inverted.
 
     Returns
     -------
@@ -157,12 +140,6 @@ def compute_orientation_matrix(
         Array of shape ``(d, d)`` corresponding to the orientation matrix.
 
     """
-
-    # Produce axial data, if requested
-    if is_axial:
-        vectors = vectors.copy()
-        positions_to_invert = vectors[:, -1] < 0
-        vectors[positions_to_invert] *= -1
 
     # Compute the orientation matrix using the inner product
     transposed_vectors = vectors.T
@@ -173,7 +150,6 @@ def compute_orientation_matrix(
 
 def compute_orientation_matrix_eigs(
     vector_field: np.ndarray,
-    is_axial: bool = False
 ) -> np.linalg.linalg.EigResult:
     """Compute the eigenvectors and eigenvalues of the orientation matrix.
 
@@ -187,10 +163,6 @@ def compute_orientation_matrix_eigs(
         shape ``(n, d)`` or an ``n+1``-dimensional array containing the
         components at their spatial locations, with the components present
         along the *last* axis.
-    is_axial
-        Indicate whether the data should be considered as axial. In this
-        case, all entries with a negative last dimension will be inverted.
-
 
     Returns
     -------
@@ -203,7 +175,7 @@ def compute_orientation_matrix_eigs(
     NumPy to compute the eigenvectors and eigenvalues.
     """
 
-    orientation_matrix = compute_orientation_matrix(vector_field, is_axial)
+    orientation_matrix = compute_orientation_matrix(vector_field)
 
     return np.linalg.eig(orientation_matrix)
 
