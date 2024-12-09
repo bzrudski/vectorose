@@ -1732,7 +1732,7 @@ def produce_3d_triangle_sphere_plot(
 def produce_3d_tregenza_sphere_plot(
     ax: mpl_toolkits.mplot3d.axes3d.Axes3D,
     tregenza_sphere: TregenzaSphereBase,
-    histogram_data: pd.Series,
+    histogram_data: Optional[pd.Series] = None,
     sphere_alpha: float = 1.0,
     colour_map: str = "viridis",
     norm: Optional[plt.Normalize] = None,
@@ -1776,19 +1776,121 @@ def produce_3d_tregenza_sphere_plot(
 
     """
 
-    # Get the plot on the axes
-    if norm is None:
-        norm = matplotlib.colors.Normalize()
+    # If we have a histogram, work on processing the data
+    face_colours: Optional[np.ndarray]
 
-    norm.autoscale_None(histogram_data)
+    if histogram_data is not None:
+        if norm is None:
+            # Find the maximum and minimum counts
+            min_face_count = histogram_data.min()
+            max_face_count = histogram_data.max()
+            norm = matplotlib.colors.Normalize(
+                vmin=min_face_count, vmax=max_face_count
+            )
+        else:
+            norm.autoscale_None(histogram_data)
 
-    ax = tregenza_sphere.create_plot_mpl(
-        ax=ax,
-        face_data=histogram_data,
-        cmap=colour_map,
-        norm=norm,
-        sphere_alpha=sphere_alpha,
+        # Compute the colours
+        scalar_mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap=colour_map)
+
+        face_colours: np.ndarray = scalar_mapper.to_rgba(histogram_data)
+    else:
+        face_colours = None
+
+    ax.set_xlim3d(-1, 1)
+    ax.set_ylim3d(-1, 1)
+    ax.set_zlim3d(-1, 1)
+
+    # Define the patches we'll plot
+    all_patch_vertices: List[np.ndarray] = []
+
+    rings = tregenza_sphere.to_dataframe()
+
+    phi_values_upper = rings["start"]
+    phi_values_lower = rings["end"]
+    theta_bin_counts = rings["bins"]
+
+    # So, let's start with the top row by starting with the second row.
+    phi_upper = phi_values_upper.iloc[1]
+    number_of_bins = theta_bin_counts.iloc[1]
+    thetas_second_row = np.linspace(0, 360, number_of_bins, endpoint=False)
+
+    phi_upper_second_row = np.ones(thetas_second_row.shape) * phi_upper
+    top_cap_vertices = np.stack([phi_upper_second_row, thetas_second_row], axis=-1)
+
+    top_cap_vertices_cartesian = (
+        util.convert_spherical_to_cartesian_coordinates(
+            top_cap_vertices, use_degrees=True
+        )
     )
+
+    all_patch_vertices.append(top_cap_vertices_cartesian)
+
+    # Now, let's go with the remaining rings
+    number_of_rings = tregenza_sphere.number_of_rings
+
+    # phi_rings = np.append(phi_values, 90)
+    for i in range(1, number_of_rings - 1):
+        # Get the current phi ring and the next phi ring
+        upper_phi = phi_values_upper.iloc[i]
+        lower_phi = phi_values_lower.iloc[i]
+
+        # Get the current theta bounds
+        number_of_bins = theta_bin_counts.iloc[i]
+        current_thetas = np.linspace(0, 360, number_of_bins, endpoint=False)
+        # print(f"Considering ring {i} which contains {number_of_faces + 1} faces")
+
+        # Now, for each face, we need to construct a rectangle with
+        # four vertices, which are related to the bounds.
+        # current_row_faces: list[np.ndarray] = []
+
+        for j in range(number_of_bins):
+            lower_theta = current_thetas[j]
+            upper_theta = current_thetas[(j + 1) % number_of_bins]
+
+            # Define the vertices
+            v1 = (upper_phi, lower_theta)
+            v2 = (upper_phi, upper_theta)
+            v3 = (lower_phi, upper_theta)
+            v4 = (lower_phi, lower_theta)
+
+            face_vertices = np.array([v1, v2, v3, v4])
+
+            face_vertices_cartesian = (
+                util.convert_spherical_to_cartesian_coordinates(
+                    face_vertices, use_degrees=True
+                )
+            )
+
+            all_patch_vertices.append(face_vertices_cartesian)
+
+    # And finally, the bottom patch
+    phi_value = phi_values_upper.iloc[-1]
+    number_of_bins = theta_bin_counts.iloc[-2]
+    thetas_second_last_row = np.linspace(0, 360, number_of_bins, endpoint=False)
+
+    phi_value_bottom_row = np.ones(thetas_second_last_row.shape) * phi_value
+    bottom_cap_vertices = np.stack(
+        [phi_value_bottom_row, thetas_second_last_row], axis=-1
+    )
+
+    bottom_cap_vertices_cartesian = (
+        util.convert_spherical_to_cartesian_coordinates(
+            np.radians(bottom_cap_vertices)
+        )
+    )
+
+    all_patch_vertices.append(bottom_cap_vertices_cartesian)
+
+    patch_collection = mpl_toolkits.mplot3d.art3d.Poly3DCollection(
+        all_patch_vertices,
+        facecolors=face_colours,
+        shade=False,
+        linewidths=0,
+        alpha=sphere_alpha,
+    )
+
+    ax.add_collection3d(patch_collection)
 
     # Define the sphere radius
     sphere_radius = 1
