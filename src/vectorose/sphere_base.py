@@ -79,6 +79,12 @@ class SphereBase(abc.ABC):
             the implementation-specific orientation bin.
         numpy.ndarray
             Histogram bin edges for the magnitude shells.
+
+        Warnings
+        --------
+        All zero-vectors must be removed from the dataset before
+        processing. These vectors have no orientation and thus cannot be
+        properly assigned to an orientation bin.
         """
 
         # Create the histogram
@@ -127,8 +133,8 @@ class SphereBase(abc.ABC):
             :class:`pandas.Series` called ``shell``.
         numpy.ndarray
             Array containing the histogram bin boundaries used to construct
-            the histogram. The length of this array corresponds to
-            :attr:`SphereBase.number_of_shells`.
+            the histogram. The length of this array corresponds is one more
+            than :attr:`SphereBase.number_of_shells`.
         """
         magnitudes = vectors.loc[:, "magnitude"]
 
@@ -151,7 +157,12 @@ class SphereBase(abc.ABC):
             )
         else:
             magnitude_histogram_bins = np.zeros(len(magnitudes), dtype=int)
-            magnitude_bin_edges = np.array([0])
+            # Set the minimum bin to be the smallest dataset value
+            lower_bin = magnitudes.min()
+
+            # Set the upper bin to be just above the maximum value
+            upper_bin = magnitudes.max() + (10 ** -(self.magnitude_precision - 1))
+            magnitude_bin_edges = np.array([lower_bin, upper_bin])
 
         magnitude_histogram_bins = pd.Series(magnitude_histogram_bins, name="shell")
 
@@ -178,7 +189,7 @@ class SphereBase(abc.ABC):
 
         raise NotImplementedError("Subclasses must implement this abstract method!")
 
-    def _construct_histogram_index(self, reverse: bool = False) -> pd.MultiIndex:
+    def _construct_histogram_index(self) -> pd.MultiIndex:
         """Construct the index for the histogram."""
 
         magnitude_index = self._construct_magnitude_index()
@@ -200,10 +211,6 @@ class SphereBase(abc.ABC):
 
         raw_index_arrays = [magnitude_index_complete, orientation_index_complete]
         headers_arrays = [self.magnitude_shell_cols, self.orientation_cols]
-
-        if reverse:
-            raw_index_arrays = list(reversed(raw_index_arrays))
-            headers_arrays = list(reversed(headers_arrays))
 
         # And now combine everything!
         index_array = np.concatenate(raw_index_arrays, axis=-1)
@@ -235,7 +242,6 @@ class SphereBase(abc.ABC):
         self,
         binned_data: pd.DataFrame,
         return_fraction: bool = True,
-        reverse_indexing: bool = False,
     ) -> pd.Series:
         """Construct a histogram based on the labelled data.
 
@@ -250,9 +256,6 @@ class SphereBase(abc.ABC):
         return_fraction
             Indicate whether the values returned should be the raw counts
             or the proportions.
-        reverse_indexing
-            Indicate whether the indexing should be reversed, and the
-            orientation should be before the magnitude shell.
 
         Returns
         -------
@@ -264,14 +267,11 @@ class SphereBase(abc.ABC):
 
         grouping_columns = self.hist_group_cols
 
-        if reverse_indexing:
-            grouping_columns = list(reversed(grouping_columns))
-
         # Use groupby to perform the grouping
         original_histogram = binned_data.groupby(grouping_columns).apply(len)
 
         # Modify the index to account for any missing bins.
-        multi_index = self._construct_histogram_index(reverse=reverse_indexing)
+        multi_index = self._construct_histogram_index()
 
         filled_histogram = original_histogram.reindex(index=multi_index, fill_value=0)
 
@@ -482,7 +482,7 @@ class SphereBase(abc.ABC):
         self,
         histogram: pd.Series,
         radius: float = 1.0,
-        series_name: Optional[str] = "frequency"
+        series_name: Optional[str] = "frequency",
     ) -> pv.PolyData:
         """Create the mesh for a given shell.
 
@@ -526,8 +526,7 @@ class SphereBase(abc.ABC):
     def create_histogram_meshes(
         self,
         histogram_data: pd.Series,
-        magnitude_bins: np.ndarray,
-        constant_radius: bool = False,
+        magnitude_bins: Optional[np.ndarray],
         normalise_by_shell: bool = False,
     ) -> List[pv.PolyData]:
         """Create mesh shells for the supplied histogram.
@@ -539,9 +538,8 @@ class SphereBase(abc.ABC):
             implementation-specific parameters.
         magnitude_bins
             The upper bounds for the magnitude bins. These are used to
-            determine the radius of each shell.
-        constant_radius
-            Indicate whether all meshes should have the same radius.
+            determine the radius of each shell. If None, then all shells
+            will have a radius of 1.
         normalise_by_shell
             Indicate whether each shell should be normalised with respect
             to its maximum value.
@@ -579,7 +577,7 @@ class SphereBase(abc.ABC):
 
         for i in range(number_of_shells):
             shell_histogram = histogram_data.loc[i]
-            shell_radius = 1 if constant_radius else magnitude_bins[i + 1]
+            shell_radius = 1 if magnitude_bins is None else magnitude_bins[i + 1]
 
             shell = self.create_shell_mesh(shell_histogram, shell_radius)
 
