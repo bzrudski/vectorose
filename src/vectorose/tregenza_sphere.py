@@ -21,10 +21,6 @@ References
 # import enum
 from typing import List, Optional, Tuple, Type
 
-import matplotlib.colors
-import matplotlib.pyplot as plt
-import mpl_toolkits.mplot3d
-import mpl_toolkits.mplot3d.art3d
 import numpy as np
 import pandas as pd
 import pyvista as pv
@@ -53,6 +49,9 @@ class TregenzaSphereBase(SphereBase):
     optimal number of bins per row, as well as computing the almucantar
     angles for the rings.
     """
+
+    binning_precision: int = 10
+    """Precision for rounding when computing bin assignments."""
 
     _rings: pd.DataFrame
     """Tregenza sphere ring definitions."""
@@ -96,15 +95,14 @@ class TregenzaSphereBase(SphereBase):
         self._ring_increment = ring_increment
 
         super().__init__(
-            number_of_shells=number_of_shells,
-            magnitude_range=magnitude_range
+            number_of_shells=number_of_shells, magnitude_range=magnitude_range
         )
 
     def _construct_tregenza_sphere(
         self,
         irregular_phi_values: np.ndarray,
         patch_count: np.ndarray,
-        ring_increment: float
+        ring_increment: float,
     ) -> pd.DataFrame:
         """Define a Tregenza sphere.
 
@@ -220,31 +218,37 @@ class TregenzaSphereBase(SphereBase):
         pandas.DataFrame
             The phi ``ring`` and theta ``bin`` for each vector.
 
+        Notes
+        --------
+        To account for floating point errors, when determining the bin
+        index within a ring, there is a rounding step. This step rounds the
+        quotient of the angle and the bin width to a very small precision.
+        This rounding is controlled by :attr:`binning_precision`.
+
         """
 
         # First, let's get the phi ring for each vector
         ring_end_angles = self._rings.loc[:, "end"]
         ring_end_angles = ring_end_angles.iloc[:-1]
         phi = spherical_coordinates.loc[:, "phi"]
-        rings = ring_end_angles.searchsorted(phi)
+        rings = ring_end_angles.searchsorted(phi, side="right")
 
         # Now, let's get the theta spacing for each respective ring.
         theta_increments = self._rings.loc[rings, "theta_inc"]
         theta = spherical_coordinates.loc[:, "theta"]
-        theta_bin = (theta // theta_increments.to_numpy()).astype(int)
+        theta_bin = np.floor(
+            np.round(theta / theta_increments.to_numpy(), self.binning_precision)
+        ).astype(int)
 
-        closest_faces = pd.DataFrame({
-            "ring": rings,
-            "bin": theta_bin
-        })
+        closest_faces = pd.DataFrame({"ring": rings, "bin": theta_bin})
 
         return closest_faces
 
-    def _initial_vector_data_preparation(
-        self, vectors: pd.DataFrame
-    ) -> pd.DataFrame:
+    def _initial_vector_data_preparation(self, vectors: pd.DataFrame) -> pd.DataFrame:
         vectors_array = vectors.loc[:, ["x", "y", "z"]].to_numpy()
-        spherical_coordinates = util.compute_spherical_coordinates(vectors_array, use_degrees=True)
+        spherical_coordinates = util.compute_spherical_coordinates(
+            vectors_array, use_degrees=True
+        )
         spherical_coordinate_data_frame = pd.DataFrame(
             spherical_coordinates, columns=["phi", "theta", "magnitude"]
         )
@@ -284,7 +288,7 @@ class TregenzaSphereBase(SphereBase):
 
         return multi_index
 
-    def correct_histogram_by_area(self, histogram: pd.DataFrame) -> pd.DataFrame:
+    def correct_histogram_by_area(self, histogram: pd.Series) -> pd.Series:
         """Correct histogram by face area.
 
         Weight histogram values by face areas to compensate for slight
@@ -297,7 +301,7 @@ class TregenzaSphereBase(SphereBase):
 
         Returns
         -------
-        pandas.DataFrame
+        pandas.Series
             Corrected histogram values.
 
         """
@@ -305,7 +309,10 @@ class TregenzaSphereBase(SphereBase):
         # Compute the weights
         ring_weights = self._rings.loc[:, "weight"]
         original_index = histogram.index
-        weighted_face_data = histogram.groupby("ring") * ring_weights
+        weighted_face_data = (
+            histogram.groupby("ring", group_keys=False).apply(lambda x: x)
+            * ring_weights
+        )
         weighted_face_data = weighted_face_data.reindex(original_index)
 
         return weighted_face_data
@@ -316,7 +323,7 @@ class TregenzaSphereBase(SphereBase):
         Warnings
         --------
         This mesh construction relies on an approximation that uses a
-        rectangle (or polygon_ for each patch. This causes some issues near
+        rectangle (or polygon) for each patch. This causes some issues near
         the sphere poles. In the original work by Beckers and Beckers,
         [#Beckers]_ the cap at the pole was a circle and all other patches
         are sectors of the respective rings. In our implementation, the
@@ -338,7 +345,9 @@ class TregenzaSphereBase(SphereBase):
 
         # Construct the caps
         top_cap = self._construct_cap(inner_ring_meshes[0], True, 0)
-        bottom_cap = self._construct_cap(inner_ring_meshes[-1], False, self.number_of_rings - 1)
+        bottom_cap = self._construct_cap(
+            inner_ring_meshes[-1], False, self.number_of_rings - 1
+        )
 
         # Combine all the meshes into a single list
         inner_ring_meshes.append(bottom_cap)
@@ -387,13 +396,17 @@ class TregenzaSphereBase(SphereBase):
         bottom_ring = np.stack([bottom_phi, theta], axis=-1)
 
         # Convert the rings to Cartesian coordinates
-        top_ring_cartesian = util.convert_spherical_to_cartesian_coordinates(top_ring,
-                                                                             use_degrees=True)
-        bottom_ring_cartesian = util.convert_spherical_to_cartesian_coordinates(bottom_ring,
-                                                                                use_degrees=True)
+        top_ring_cartesian = util.convert_spherical_to_cartesian_coordinates(
+            top_ring, use_degrees=True
+        )
+        bottom_ring_cartesian = util.convert_spherical_to_cartesian_coordinates(
+            bottom_ring, use_degrees=True
+        )
 
         # Combine everything
-        ring_vertices = np.concatenate([top_ring_cartesian, bottom_ring_cartesian], axis=0)
+        ring_vertices = np.concatenate(
+            [top_ring_cartesian, bottom_ring_cartesian], axis=0
+        )
 
         # Now, establish the connectivity.
         vertex_count_column = 4 * np.ones(number_of_faces, dtype=int)
@@ -403,13 +416,16 @@ class TregenzaSphereBase(SphereBase):
         bottom_right_corner = top_right_corner + number_of_faces
 
         # And now to create a table
-        cells = np.stack([
-            vertex_count_column,
-            top_left_corner,
-            top_right_corner,
-            bottom_right_corner,
-            bottom_left_corner,
-        ], axis=-1)
+        cells = np.stack(
+            [
+                vertex_count_column,
+                top_left_corner,
+                top_right_corner,
+                bottom_right_corner,
+                bottom_left_corner,
+            ],
+            axis=-1,
+        )
 
         # Begin building the mesh
         ring_mesh = pv.PolyData(ring_vertices, cells)
@@ -422,7 +438,9 @@ class TregenzaSphereBase(SphereBase):
 
         return ring_mesh
 
-    def _construct_cap(self, adjacent_ring: pv.PolyData, is_top: bool, index: int) -> pv.PolyData:
+    def _construct_cap(
+        self, adjacent_ring: pv.PolyData, is_top: bool, index: int
+    ) -> pv.PolyData:
         """Construct a Tregenza sphere cap.
 
         Parameters
