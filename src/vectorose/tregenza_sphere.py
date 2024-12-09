@@ -29,7 +29,7 @@ from . import util
 from .sphere_base import SphereBase
 
 
-class TregenzaSphereBase(SphereBase):
+class TregenzaSphere(SphereBase):
     """Base class for the Tregenza sphere.
 
     The Tregenza sphere provides a discretisation of the sphere based on
@@ -367,7 +367,7 @@ class TregenzaSphereBase(SphereBase):
         ----------
         ring
             The parameters associated with the ring to construct, extracted
-            from the :attr:`TregenzaSphereBase._rings` attribute.
+            from the :attr:`TregenzaSphere._rings` attribute.
 
         Returns
         -------
@@ -564,7 +564,7 @@ class TregenzaSphereBase(SphereBase):
         return cartesian_coordinates
 
 
-class CoarseTregenzaSphere(TregenzaSphereBase):
+class CoarseTregenzaSphere(TregenzaSphere):
     """Coarse representation of the Tregenza sphere.
 
     This sphere is constructed with 18 rings (9 in each hemisphere). It
@@ -613,7 +613,7 @@ class CoarseTregenzaSphere(TregenzaSphereBase):
         )
 
 
-class FineTregenzaSphere(TregenzaSphereBase):
+class FineTregenzaSphere(TregenzaSphere):
     """Fine representation of the Tregenza sphere.
 
     This sphere is constructed with 54 rings (27 in each hemisphere). It
@@ -680,7 +680,7 @@ class FineTregenzaSphere(TregenzaSphereBase):
         )
 
 
-class UltraFineTregenzaSphere(TregenzaSphereBase):
+class UltraFineTregenzaSphere(TregenzaSphere):
     """Ultra-fine representation of the Tregenza sphere.
 
     This sphere is constructed with 124 rings (62 in each hemisphere). It
@@ -784,7 +784,7 @@ class UltraFineTregenzaSphere(TregenzaSphereBase):
 
 # def run_tregenza_histogram_pipeline(
 #     vectors: np.ndarray,
-#     sphere: TregenzaSphereBase,
+#     sphere: TregenzaSphere,
 #     weight_by_magnitude: bool = False,
 #     is_axial: bool = False,
 #     remove_zero_vectors: bool = True,
@@ -864,13 +864,13 @@ class UltraFineTregenzaSphere(TregenzaSphereBase):
 #     """Ultra-fine-detail Tregenza sphere, with 62 rings per hemisphere,
 #     represented by :class:`UltraFineTregenzaSphere`."""
 #
-#     def get_tregenza_class(self) -> Type[TregenzaSphereBase]:
+#     def get_tregenza_class(self) -> Type[TregenzaSphere]:
 #         """Get the class for the specified level of detail.
 #
 #         Returns
 #         -------
-#         Type[TregenzaSphereBase]
-#             Class inheriting from :class:`TregenzaSphereBase` which
+#         Type[TregenzaSphere]
+#             Class inheriting from :class:`TregenzaSphere` which
 #             captures the correct level of detail.
 #
 #         Warnings
@@ -885,18 +885,18 @@ class UltraFineTregenzaSphere(TregenzaSphereBase):
 #         elif self == TregenzaSphereDetailLevel.ULTRA_FINE:
 #             return UltraFineTregenzaSphere
 #
-#     def create_tregenza_sphere(self) -> TregenzaSphereBase:
+#     def create_tregenza_sphere(self) -> TregenzaSphere:
 #         """Create a Tregenza sphere for the specified detail level.
 #
 #         Returns
 #         -------
-#         TregenzaSphereBase
-#             Object of the correct subclass of :class:`TregenzaSphereBase`
+#         TregenzaSphere
+#             Object of the correct subclass of :class:`TregenzaSphere`
 #             representing the desired level of detail.
 #         """
 #
 #         tregenza_sphere_type = self.get_tregenza_class()
 #
-#         tregenza_sphere: TregenzaSphereBase = tregenza_sphere_type()
+#         tregenza_sphere: TregenzaSphere = tregenza_sphere_type()
 #
 #         return tregenza_sphere

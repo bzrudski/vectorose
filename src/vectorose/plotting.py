@@ -33,7 +33,7 @@ from scipy.spatial.transform import Rotation
 from vectorose.triangle_sphere import TriangleSphere
 
 from . import util
-from .tregenza_sphere import TregenzaSphereBase
+from .tregenza_sphere import TregenzaSphere
 from .polar_data import produce_phi_theta_1d_histogram_data
 
 # Configure the SVG export, per https://stackoverflow.com/a/35734729
@@ -1731,7 +1731,7 @@ def produce_3d_triangle_sphere_plot(
 
 def produce_3d_tregenza_sphere_plot(
     ax: mpl_toolkits.mplot3d.axes3d.Axes3D,
-    tregenza_sphere: TregenzaSphereBase,
+    tregenza_sphere: TregenzaSphere,
     histogram_data: Optional[pd.Series] = None,
     sphere_alpha: float = 1.0,
     colour_map: str = "viridis",

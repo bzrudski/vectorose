@@ -170,7 +170,7 @@ def test_get_closest_faces_ultra_fine():
 def _test_assign_bins(number_of_shells: int):
     """Test the histogram bin assignment.
 
-    Test of :meth:`TregenzaSphereBase.assign_histogram_bins` to study the
+    Test of :meth:`TregenzaSphere.assign_histogram_bins` to study the
     shape of the output.
 
     Parameters
@@ -224,7 +224,7 @@ def _test_assign_bins(number_of_shells: int):
 def test_assign_bins_many_bins():
     """Test the histogram bin assignment.
 
-    Test of :meth:`TregenzaSphereBase.assign_histogram_bins` to study the
+    Test of :meth:`TregenzaSphere.assign_histogram_bins` to study the
     shape of the output. This test considers multiple histogram shells.
     """
     number_of_shells = 32
@@ -235,7 +235,7 @@ def test_assign_bins_many_bins():
 def test_assign_bins_single_bins():
     """Test the histogram bin assignment.
 
-    Test of :meth:`TregenzaSphereBase.assign_histogram_bins` to study the
+    Test of :meth:`TregenzaSphere.assign_histogram_bins` to study the
     shape of the output. This test considers only one histogram shell.
     """
     number_of_shells = 1
@@ -246,7 +246,7 @@ def test_assign_bins_single_bins():
 def _test_construct_bivariate_histogram(number_of_shells: int, return_fraction: bool):
     """Test the bivariate histogram construction.
 
-    Test of :meth:`TregenzaSphereBase.construct_histogram` to
+    Test of :meth:`TregenzaSphere.construct_histogram` to
     check the histogram construction for the fine Tregenza sphere.
 
     Parameters
@@ -284,7 +284,7 @@ def _test_construct_bivariate_histogram(number_of_shells: int, return_fraction: 
 def test_construct_bivariate_histogram_counts_many_shells():
     """Test the bivariate histogram construction using counts.
 
-    Test of :meth:`TregenzaSphereBase.construct_histogram` to
+    Test of :meth:`TregenzaSphere.construct_histogram` to
     check the histogram construction for the fine Tregenza sphere using
     count values and multiple shells.
     """
@@ -298,7 +298,7 @@ def test_construct_bivariate_histogram_counts_many_shells():
 def test_construct_bivariate_histogram_frequencies_many_shells():
     """Test the bivariate histogram construction using frequencies.
 
-    Test of :meth:`TregenzaSphereBase.construct_histogram` to
+    Test of :meth:`TregenzaSphere.construct_histogram` to
     check the histogram construction for the fine Tregenza sphere using
     frequency values and multiple shells.
     """
@@ -312,7 +312,7 @@ def test_construct_bivariate_histogram_frequencies_many_shells():
 def test_construct_bivariate_histogram_counts_single_shell():
     """Test the bivariate histogram construction using counts.
 
-    Test of :meth:`TregenzaSphereBase.construct_histogram` to
+    Test of :meth:`TregenzaSphere.construct_histogram` to
     check the histogram construction for the fine Tregenza sphere using
     count values and a single shell.
     """
@@ -326,7 +326,7 @@ def test_construct_bivariate_histogram_counts_single_shell():
 def test_construct_bivariate_histogram_frequencies_single_shell():
     """Test the bivariate histogram construction using frequencies.
 
-    Test of :meth:`TregenzaSphereBase.construct_histogram` to
+    Test of :meth:`TregenzaSphere.construct_histogram` to
     check the histogram construction for the fine Tregenza sphere using
     frequency values and a single shell.
     """
@@ -343,7 +343,7 @@ def _test_construct_marginal_magnitude_histogram(
     """Test the magnitude histogram construction.
 
     Test of
-    :meth:`TregenzaSphereBase.construct_marginal_magnitude_histogram` to
+    :meth:`TregenzaSphere.construct_marginal_magnitude_histogram` to
     check the histogram construction for the fine Tregenza sphere.
 
     Parameters
@@ -384,7 +384,7 @@ def test_construct_marginal_magnitude_histogram_counts_many_shells():
     """Test the magnitude histogram construction using counts.
 
     Test of
-    :meth:`TregenzaSphereBase.construct_marginal_magnitude_histogram` to
+    :meth:`TregenzaSphere.construct_marginal_magnitude_histogram` to
     check the histogram construction for the fine Tregenza sphere.
 
     This test considers count values for a histogram with multiple shells.
@@ -400,7 +400,7 @@ def test_construct_marginal_magnitude_histogram_frequencies_many_shells():
     """Test the magnitude histogram construction using frequencies.
 
     Test of
-    :meth:`TregenzaSphereBase.construct_marginal_magnitude_histogram` to
+    :meth:`TregenzaSphere.construct_marginal_magnitude_histogram` to
     check the histogram construction for the fine Tregenza sphere.
 
     This test considers frequency values for a histogram with multiple
@@ -417,7 +417,7 @@ def test_construct_marginal_magnitude_histogram_counts_single_shell():
     """Test the magnitude histogram construction using counts.
 
     Test of
-    :meth:`TregenzaSphereBase.construct_marginal_magnitude_histogram` to
+    :meth:`TregenzaSphere.construct_marginal_magnitude_histogram` to
     check the histogram construction for the fine Tregenza sphere.
 
     This test considers count values for a histogram with a single shell.
@@ -433,7 +433,7 @@ def test_construct_marginal_magnitude_histogram_frequencies_single_shell():
     """Test the magnitude histogram construction using frequencies.
 
     Test of
-    :meth:`TregenzaSphereBase.construct_marginal_magnitude_histogram` to
+    :meth:`TregenzaSphere.construct_marginal_magnitude_histogram` to
     check the histogram construction for the fine Tregenza sphere.
 
     This test considers frequency values for a histogram with a single
@@ -452,7 +452,7 @@ def _test_construct_marginal_orientation_histogram(
     """Test the orientation histogram construction using counts.
 
     Test of
-    :meth:`TregenzaSphereBase.construct_marginal_orientation_histogram` to
+    :meth:`TregenzaSphere.construct_marginal_orientation_histogram` to
     check the histogram construction for the fine Tregenza sphere."""
 
     # Create a set of random vectors
@@ -485,7 +485,7 @@ def test_construct_marginal_orientation_histogram_counts_many_shells():
     """Test the orientation histogram construction using counts.
 
     Test of
-    :meth:`TregenzaSphereBase.construct_marginal_orientation_histogram` to
+    :meth:`TregenzaSphere.construct_marginal_orientation_histogram` to
     check the histogram construction for the fine Tregenza sphere.
 
     This test considers count values and multiple histogram shells.
@@ -501,7 +501,7 @@ def test_construct_marginal_orientation_histogram_frequencies_many_shells():
     """Test the orientation histogram construction using frequencies.
 
     Test of
-    :meth:`TregenzaSphereBase.construct_marginal_orientation_histogram` to
+    :meth:`TregenzaSphere.construct_marginal_orientation_histogram` to
     check the histogram construction for the fine Tregenza sphere.
 
     This test considers frequency values and multiple histogram shells.
@@ -517,7 +517,7 @@ def test_construct_marginal_orientation_histogram_counts_single_shell():
     """Test the orientation histogram construction using counts.
 
     Test of
-    :meth:`TregenzaSphereBase.construct_marginal_orientation_histogram` to
+    :meth:`TregenzaSphere.construct_marginal_orientation_histogram` to
     check the histogram construction for the fine Tregenza sphere.
 
     This test considers count values and a single histogram shell.
@@ -533,7 +533,7 @@ def test_construct_marginal_orientation_histogram_frequencies_single_shell():
     """Test the orientation histogram construction using frequencies.
 
     Test of
-    :meth:`TregenzaSphereBase.construct_marginal_orientation_histogram` to
+    :meth:`TregenzaSphere.construct_marginal_orientation_histogram` to
     check the histogram construction for the fine Tregenza sphere.
 
     This test considers frequency values and a single histogram shell.
@@ -549,7 +549,7 @@ def _test_construct_conditional_orientation_histogram(number_of_shells: int):
     """Test the conditional orientation histogram construction.
 
     Test of
-    :meth:`TregenzaSphereBase.construct_conditional_orientation_histogram` to
+    :meth:`TregenzaSphere.construct_conditional_orientation_histogram` to
     check the histogram construction for the fine Tregenza sphere.
 
     Parameters
@@ -585,7 +585,7 @@ def test_construct_conditional_orientation_histogram_many_shells():
     """Test the conditional orientation histogram construction.
 
     Test of
-    :meth:`TregenzaSphereBase.construct_conditional_orientation_histogram` to
+    :meth:`TregenzaSphere.construct_conditional_orientation_histogram` to
     check the histogram construction for the fine Tregenza sphere.
 
     This test considers multiple orientation shells.
@@ -600,7 +600,7 @@ def test_construct_conditional_orientation_histogram_single_shell():
     """Test the conditional orientation histogram construction.
 
     Test of
-    :meth:`TregenzaSphereBase.construct_conditional_orientation_histogram` to
+    :meth:`TregenzaSphere.construct_conditional_orientation_histogram` to
     check the histogram construction for the fine Tregenza sphere.
 
     This test considers a single orientation shell.
@@ -615,7 +615,7 @@ def _test_construct_conditional_magnitude_histogram(number_of_shells: int):
     """Test the conditional magnitude histogram construction.
 
     Test of
-    :meth:`TregenzaSphereBase.construct_conditional_magnitude_histogram` to
+    :meth:`TregenzaSphere.construct_conditional_magnitude_histogram` to
     check the histogram construction for the fine Tregenza sphere.
 
     Parameters
@@ -652,7 +652,7 @@ def test_construct_conditional_magnitude_histogram_many_shells():
     """Test the conditional magnitude histogram construction.
 
     Test of
-    :meth:`TregenzaSphereBase.construct_conditional_magnitude_histogram` to
+    :meth:`TregenzaSphere.construct_conditional_magnitude_histogram` to
     check the histogram construction for the fine Tregenza sphere.
 
     This test considers many histogram shells.
@@ -667,7 +667,7 @@ def test_construct_conditional_magnitude_histogram_single_shell():
     """Test the conditional magnitude histogram construction.
 
     Test of
-    :meth:`TregenzaSphereBase.construct_conditional_magnitude_histogram` to
+    :meth:`TregenzaSphere.construct_conditional_magnitude_histogram` to
     check the histogram construction for the fine Tregenza sphere.
 
     This test considers a single histogram shell.
@@ -686,7 +686,7 @@ def _test_create_histogram_meshes(
 ):
     """Test the histogram mesh creation.
 
-    Test for :meth:`TregenzaSphereBase.create_histogram_meshes` to assess
+    Test for :meth:`TregenzaSphere.create_histogram_meshes` to assess
     whether the meshes are generated properly. A number of parameters can
     be varied to test for the number of shells, the radii, normalisation by
     shell and the use of counts vs frequencies.
@@ -760,7 +760,7 @@ def _test_create_histogram_meshes(
 def test_create_histogram_meshes_many_shells_no_norm_diff_radius_frequency():
     """Test the histogram mesh creation.
 
-    Test for :meth:`TregenzaSphereBase.create_histogram_meshes` to assess
+    Test for :meth:`TregenzaSphere.create_histogram_meshes` to assess
     whether the meshes are generated properly.
 
     This test considers many shells with different radius, without shell
@@ -780,7 +780,7 @@ def test_create_histogram_meshes_many_shells_no_norm_diff_radius_frequency():
 def test_create_histogram_meshes_many_shells_no_norm_diff_radius_counts():
     """Test the histogram mesh creation.
 
-    Test for :meth:`TregenzaSphereBase.create_histogram_meshes` to assess
+    Test for :meth:`TregenzaSphere.create_histogram_meshes` to assess
     whether the meshes are generated properly.
 
     This test considers many shells with different radius, without shell
@@ -800,7 +800,7 @@ def test_create_histogram_meshes_many_shells_no_norm_diff_radius_counts():
 def test_create_histogram_meshes_many_shells_norm_diff_radius():
     """Test the histogram mesh creation.
 
-    Test for :meth:`TregenzaSphereBase.create_histogram_meshes` to assess
+    Test for :meth:`TregenzaSphere.create_histogram_meshes` to assess
     whether the meshes are generated properly.
 
     This test considers many shells with different radius, with shell
@@ -820,7 +820,7 @@ def test_create_histogram_meshes_many_shells_norm_diff_radius():
 def test_create_histogram_meshes_many_shells_norm_same_radius():
     """Test the histogram mesh creation.
 
-    Test for :meth:`TregenzaSphereBase.create_histogram_meshes` to assess
+    Test for :meth:`TregenzaSphere.create_histogram_meshes` to assess
     whether the meshes are generated properly.
 
     This test considers many shells with different radius, with shell
@@ -840,7 +840,7 @@ def test_create_histogram_meshes_many_shells_norm_same_radius():
 def test_create_histogram_meshes_single_shell_no_norm_diff_radius_counts():
     """Test the histogram mesh creation.
 
-    Test for :meth:`TregenzaSphereBase.create_histogram_meshes` to assess
+    Test for :meth:`TregenzaSphere.create_histogram_meshes` to assess
     whether the meshes are generated properly.
 
     This test considers a single shell without shell normalisation, while
@@ -862,7 +862,7 @@ def test_create_histogram_meshes_single_shell_no_norm_diff_radius_counts():
 def test_create_histogram_meshes_single_shell_norm_diff_radius():
     """Test the histogram mesh creation.
 
-    Test for :meth:`TregenzaSphereBase.create_histogram_meshes` to assess
+    Test for :meth:`TregenzaSphere.create_histogram_meshes` to assess
     whether the meshes are generated properly.
 
     This test considers a single shell with radius set to constant, with
@@ -882,7 +882,7 @@ def test_create_histogram_meshes_single_shell_norm_diff_radius():
 def test_convert_vectors_to_cartesian_array_non_unit():
     """Test the vector conversion to Cartesian array.
 
-    Test for :meth:`TregenzaSphereBase.convert_vectors_to_cartesian_array`
+    Test for :meth:`TregenzaSphere.convert_vectors_to_cartesian_array`
     which converts vectors in spherical coordinates to vectors in Cartesian
     coordinates. In this test, the vectors are not normalised to unit
     length.
@@ -909,7 +909,7 @@ def test_convert_vectors_to_cartesian_array_non_unit():
 def test_convert_vectors_to_cartesian_array_normalised():
     """Test the vector conversion to Cartesian array.
 
-    Test for :meth:`TregenzaSphereBase.convert_vectors_to_cartesian_array`
+    Test for :meth:`TregenzaSphere.convert_vectors_to_cartesian_array`
     which converts vectors in spherical coordinates to vectors in Cartesian
     coordinates. In this test, the vectors are normalised to unit length.
     """
@@ -938,7 +938,7 @@ def test_convert_vectors_to_cartesian_array_normalised():
 def test_correct_histogram_by_area():
     """Test the Tregenza Sphere face area correction.
 
-    Test for :meth:`TregenzaSphereBase.correct_histogram_by_area` which
+    Test for :meth:`TregenzaSphere.correct_histogram_by_area` which
     corrects the computed histogram result by a weighting associated with
     the face areas.
     """
