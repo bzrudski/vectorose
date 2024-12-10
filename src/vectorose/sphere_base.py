@@ -140,8 +140,15 @@ class SphereBase(abc.ABC):
 
         # Define the magnitude bin edges
         if self.number_of_shells > 1:
+            if self.magnitude_range is None:
+                offset = 10 ** -(self.magnitude_precision or 8)
+                max_magnitude = magnitudes.max() + offset
+                min_magnitude = magnitudes.min() - offset
+                magnitude_range = (min_magnitude, max_magnitude)
+            else:
+                magnitude_range = self.magnitude_range
             magnitude_bin_edges = np.histogram_bin_edges(
-                magnitudes, bins=self.number_of_shells, range=self.magnitude_range
+                magnitudes, bins=self.number_of_shells, range=magnitude_range
             )
 
             # Don't consider the initial bin edge.
