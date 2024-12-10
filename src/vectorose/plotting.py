@@ -34,7 +34,6 @@ from vectorose.triangle_sphere import TriangleSphere
 
 from . import util
 from .tregenza_sphere import TregenzaSphere
-from .polar_data import produce_phi_theta_1d_histogram_data
 
 # Configure the SVG export, per https://stackoverflow.com/a/35734729
 plt.rcParams["svg.fonttype"] = "none"
@@ -1041,7 +1040,6 @@ def produce_polar_histogram_plot(
     axis_ticks: np.ndarray = np.arange(0, 360, 30),
     axis_ticks_unit: AngularUnits = AngularUnits.DEGREES,
     colour: str = "blue",
-    mirror_histogram: bool = True,
 ) -> matplotlib.projections.polar.PolarAxes:
     """Produce 1D polar histogram.
 
@@ -1078,13 +1076,9 @@ def produce_polar_histogram_plot(
     colour
         Colour used for the histogram bars. Must be a valid matplotlib
         colour [#f1]_.
-    mirror_histogram
-        Indicate whether the histogram should be mirrored to plot data on
-        the complete circle.
 
     Returns
     -------
-
     matplotlib.projections.polar.PolarAxes
         The ``PolarAxes`` used for plotting.
 
@@ -1109,20 +1103,20 @@ def produce_polar_histogram_plot(
     ax.axes.yaxis.set_ticklabels([])
 
     # Prepare the data for plotting, mirroring if necessary
-    if mirror_histogram:
-        # Duplicate the bins and the data.
-        mirrored_bins = bins.copy()
-        mirrored_data = data.copy()
-
-        # Offset the mirrored bins and flip the signs
-        mirrored_bins = -(mirrored_bins + bin_width)
-
-        # Flip the mirrored bins, but NOT the data
-        mirrored_bins = np.flip(mirrored_bins)
-
-        # Tack the bins and values onto the respective arrays
-        bins = np.concatenate([mirrored_bins, bins])
-        data = np.concatenate([mirrored_data, data])
+    # if mirror_histogram:
+    #     # Duplicate the bins and the data.
+    #     mirrored_bins = bins.copy()
+    #     mirrored_data = data.copy()
+    #
+    #     # Offset the mirrored bins and flip the signs
+    #     mirrored_bins = -(mirrored_bins + bin_width)
+    #
+    #     # Flip the mirrored bins, but NOT the data
+    #     mirrored_bins = np.flip(mirrored_bins)
+    #
+    #     # Tack the bins and values onto the respective arrays
+    #     bins = np.concatenate([mirrored_bins, bins])
+    #     data = np.concatenate([mirrored_data, data])
 
     if label_axis:
         # start, end = ax.get_xlim()
@@ -1140,107 +1134,14 @@ def produce_polar_histogram_plot(
     return ax
 
 
-def produce_polar_histogram_plot_from_2d_bins(
-    ax: matplotlib.projections.polar.PolarAxes,
-    angle: util.AngularIndex,
-    data: np.ndarray,
-    bins: np.ndarray,
-    bin_angle_unit: AngularUnits = AngularUnits.DEGREES,
-    weight_by_magnitude: bool = True,
-    **kwargs: Dict[str, Any],
-) -> matplotlib.projections.polar.PolarAxes:
-    """Produce polar histogram from 2D binned data
-
-    Produce a polar histogram for the specified angle, starting from the 2D
-    histogram data. This function takes in existing Matplotlib axes and
-    plots the histogram on them.
-
-    Parameters
-    ----------
-    ax
-        Matplotlib polar axes on which the histogram will be plotted.
-
-    angle
-        Indicate which angle to extract from the data. See
-        :class:``AngularIndex`` for details.
-
-    data
-        2D histogram binned data of shape ``(n, n, 3)`` where
-        ``n`` is the half-number of bins used in the binning process.
-
-    bins
-        Bounds of the bins used to construct the histograms. If
-        the array is 2D, then the angular indexing will be used to
-        extract the phi bin boundaries. If ``n + 1`` entries are
-        present, the last value is removed to ensure that only the lower
-        bound of each bin is kept.
-
-    bin_angle_unit
-        Unit for the bin angles. See :class:`AngularUnits`.
-
-    weight_by_magnitude
-        Indicate whether the histograms should be weighted by count or by
-        magnitude. If magnitude is used, the phi histogram is weighted by
-        3D magnitude while the theta histogram is weighted by the projected
-        magnitude in the XY plane.
-
-    **kwargs
-        Keyword arguments for the plotting. See
-        :func:`produce_polar_histogram_plot` for more details.
-
-    Returns
-    -------
-    matplotlib.projections.polar.PolarAxes
-        A reference to the axes ``ax`` used for plotting.
-
-    Warnings
-    --------
-    The axes passed in ``ax`` must be of type
-    :class:`matplotlib.projections.polar.PolarAxes`. To create these axes,
-    ensure to set ``projection="Polar"``.
-
-    See Also
-    --------
-    produce_polar_histogram_plot:
-        Produce a polar plot from 1D data. See documentation for the
-        keyword arguments that can be passed to this function.
-    """
-
-    # Compute the 1D histograms from the binned data
-    one_dimensional_histograms = produce_phi_theta_1d_histogram_data(
-        data, weight_by_magnitude=weight_by_magnitude
-    )
-
-    # Select the relevant 1D histogram
-    selected_histogram_data = one_dimensional_histograms[angle]
-
-    if bin_angle_unit == AngularUnits.DEGREES:
-        bins = np.radians(bins)
-
-    data_shape = selected_histogram_data.shape
-    bin_shape = bins.shape
-
-    if len(bin_shape) == 2:
-        bins = bins[angle]
-
-    if len(bins) > data_shape[0]:
-        bins = bins[:-1]
-
-    ax = produce_polar_histogram_plot(
-        ax=ax, data=selected_histogram_data, bins=bins, **kwargs
-    )
-
-    return ax
-
-
-def produce_polar_histogram_plots(
-    binned_data: np.ndarray,
-    bins: np.ndarray,
+def produce_phi_theta_polar_histogram_plots(
+    phi_data: pd.DataFrame,
+    theta_data: pd.DataFrame,
     zero_position_2d: CardinalDirection = CardinalDirection.NORTH,
     rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
     use_degrees: bool = True,
+    use_counts: bool = False,
     plot_title: Optional[str] = None,
-    mirror_polar_plots: bool = True,
 ):
     """Produce and show the polar phi and theta histograms.
 
@@ -1249,17 +1150,10 @@ def produce_polar_histogram_plots(
 
     Parameters
     ----------
-    binned_data
-        The binned histogram data for the :math:`\\phi,\\theta` plane. This
-        NumPy array should have size ``(n, n, 3)`` where ``n`` is the
-        half-number of histogram bins used to construct the histogram.
-        See :func:`.create_binned_orientation` for more details. See
-        :class:`MagnitudeType` for the indexing rules along the last axis.
-    bins
-        The boundaries of the bins. This array should be of size
-        ``(2, n + 1)`` where ``n`` represents the half-number of bins.
-        See :class:`AngularIndex` for the indexing rules along the first
-        axis.
+    phi_data
+        Histogram data for the phi angle.
+    theta_data
+        Histogram data for the theta angle.
     zero_position_2d
         The :class:`CardinalDirection` where zero should be placed in the
         1D polar histograms (default: North).
@@ -1269,28 +1163,28 @@ def produce_polar_histogram_plots(
     use_degrees
         Indicate whether the values are in degrees. If ``True``, values are
         assumed to be in degrees. Otherwise, radians are assumed.
+    use_counts
+        Indicate whether the bar heights should reflect the counts, as
+        opposed to the frequencies.
     plot_title
         Title of the overall plot (optional).
-    mirror_polar_plots
-        Indicate whether the polar histogram data should be mirrored to
-        fill the complete plot.
 
     See Also
     --------
     produce_polar_histogram_plot :
         Create 1D polar histograms in isolation from 1D histogram data.
-    .create_binned_orientation :
-        Bin vectors into a 2D ``(phi, theta)`` histogram. The return
-        values from that function may be passed as arguments to this
-        function.
     """
 
-    # Compute the 1D histograms from the binned data
-    one_dimensional_histograms = produce_phi_theta_1d_histogram_data(
-        binned_data,
-    )
-    phi_histogram: np.ndarray = one_dimensional_histograms[util.AngularIndex.PHI]
-    theta_histogram: np.ndarray = one_dimensional_histograms[util.AngularIndex.THETA]
+    if use_counts:
+        histogram_key = "count"
+    else:
+        histogram_key = "frequency"
+
+    phi_histogram = phi_data[histogram_key].to_numpy()
+    theta_histogram = theta_data[histogram_key].to_numpy()
+
+    phi_bins = phi_data["start"].to_numpy()
+    theta_bins = theta_data["start"].to_numpy()
 
     # Construct the 3D plot
     plt.figure(figsize=(7, 3.5))
@@ -1298,14 +1192,8 @@ def produce_polar_histogram_plots(
     # Construct the 2D plots
     # Need to convert the bins back to radians if things have been done in degrees
     if use_degrees:
-        bins = np.radians(bins)
-
-    # Remove the last element
-    bins = bins[:, :-1]
-
-    # These two bin widths should be IDENTICAL.
-    phi_bins = bins[util.AngularIndex.PHI]
-    theta_bins = bins[util.AngularIndex.THETA]
+        phi_bins = np.radians(phi_bins)
+        theta_bins = np.radians(theta_bins)
 
     # Construct the theta polar plot
     ax1 = plt.subplot(121, projection="polar")
@@ -1316,7 +1204,6 @@ def produce_polar_histogram_plots(
         zero_position=zero_position_2d,
         rotation_direction=rotation_direction,
         plot_title=r"$\theta$ (Angle in $XY$)",
-        mirror_histogram=mirror_polar_plots,
     )
 
     # Construct the phi polar plot
@@ -1328,7 +1215,6 @@ def produce_polar_histogram_plots(
         zero_position=zero_position_2d,
         rotation_direction=rotation_direction,
         plot_title=r"$\phi$ (Angle from $+Z$)",
-        mirror_histogram=mirror_polar_plots,
     )
 
     # Show the plots

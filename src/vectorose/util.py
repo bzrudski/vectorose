@@ -29,6 +29,19 @@ class AngularIndex(enum.IntEnum):
     """Angle theta, incline with respect to positive ``z``; index 1."""
 
 
+class AngleName(str, enum.Enum):
+    """Angular index definition.
+
+    Stores the name of the different angles to avoid ambiguity in code.
+    """
+
+    PHI = "phi"
+    """Angle phi, in-plane with respect to positive ``y``; index 0."""
+
+    THETA = "theta"
+    """Angle theta, incline with respect to positive ``z``; index 1."""
+
+
 class MagnitudeType(enum.IntEnum):
     """Type of vector magnitude."""
 
