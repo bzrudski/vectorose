@@ -6,9 +6,9 @@
 
 # -- Project information -----------------------------------------------------
 
-project = u"vectorose"
-copyright = u"2024, Benjamin Z. Rudski, Joseph Deering"
-author = u"Benjamin Z. Rudski, Joseph Deering"
+project = "vectorose"
+copyright = "2024, Benjamin Z. Rudski, Joseph Deering"
+author = "Benjamin Z. Rudski, Joseph Deering"
 
 # -- General configuration ---------------------------------------------------
 
@@ -21,9 +21,19 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
-    "sphinx.ext.todo"
+    "sphinx.ext.todo",
+    "sphinxcontrib.bibtex",
+    "sphinxcontrib.video",
 ]
 autoapi_dirs = ["../src"]
+autoapi_options = [
+    "members",
+    "undoc-members",
+    "private-members",
+    "show-inheritance",
+    "show-module-summary",
+    "special-members",
+]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -48,20 +58,18 @@ napoleon_use_rtype = False
 
 # We want the types to be pre-processed
 napoleon_preprocess_types = True
-napoleon_custom_sections = [
-    ("Members", "params_style")
-]
+napoleon_custom_sections = [("Members", "params_style")]
 
 # -- Options for intersphinx_mapping -----------------------------------------
 
 # See https://gist.github.com/bskinn/0e164963428d4b51017cebdb6cda5209
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3', None),
-    'numpy': ('https://numpy.org/doc/stable/', None),
-    'matplotlib': ('https://matplotlib.org/stable/', None),
-    'pandas': ('https://pandas.pydata.org/docs', None),
-    'trimesh': ('https://trimesh.org/', None),
-    'pyvista': ('https://docs.pyvista.org/', None),
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "matplotlib": ("https://matplotlib.org/stable/", None),
+    "pandas": ("https://pandas.pydata.org/docs", None),
+    "trimesh": ("https://trimesh.org/", None),
+    "pyvista": ("https://docs.pyvista.org/", None),
 }
 
 # -- Options for to-do -------------------------------------------------------
@@ -70,3 +78,9 @@ todo_include_todos = True
 # -- Options for myst-nb -----------------------------------------------------
 myst_enable_extensions = ["dollarmath", "amsmath", "attrs_inline"]
 myst_dmath_double_inline = True
+myst_heading_anchors = 4
+
+# -- Options for sphinxcontrib-bibtex ----------------------------------------
+bibtex_bibfiles = ["refs.bib"]
+bibtex_default_style = "alpha"
+bibtex_reference_style = "author_year"
