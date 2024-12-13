@@ -20,7 +20,7 @@ from . import util
 
 
 class PolarDiscretiser:
-    """Construct polar histograms based on vectorial data."""
+    """Construct polar histograms based on vectorial and axial data."""
 
     _is_axial: bool
     """Indicate whether the data are axial.
@@ -63,6 +63,11 @@ class PolarDiscretiser:
         """Angular width of the theta bins."""
         return self._theta_increment
 
+    @property
+    def is_axial(self) -> bool:
+        """Indicate whether the discretiser is considering axial data."""
+        return self._is_axial
+
     def __init__(
         self, number_of_phi_bins: int, number_of_theta_bins: int, is_axial: bool
     ):
@@ -75,6 +80,8 @@ class PolarDiscretiser:
         theta_bins, theta_increment = self._generate_theta_bins(number_of_theta_bins)
         self._theta_bins = theta_bins
         self._theta_increment = theta_increment
+
+        self._is_axial = is_axial
 
     @staticmethod
     def _generate_theta_bins(
