@@ -17,6 +17,7 @@ kernelspec:
 # Configure PyVista behind the scenes before starting
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import pyvista as pv
 
 pv.start_xvfb()
@@ -26,6 +27,9 @@ pv.global_theme.font.fmt = "%.6g"
 
 # Set the random seed for reproducibility
 RANDOM_SEED = 20241212
+
+# Control the table display
+pd.options.display.max_rows = 20
 
 ```
 
@@ -762,6 +766,12 @@ demonstration:
   `magnitude_bin_edges`.
 * Our labelled vectors now have non-zero values in the **shell** column.
 
+```{attention}
+When assigning the magnitude bins, we **exclude** the lower bin limit and
+**include** the upper bin limit. This is done to avoid counting zero-length
+vectors.
+```
+
 We now once again need to create the histogram using
 {meth}`.SphereBase.construct_histogram`.
 
@@ -849,6 +859,18 @@ stored in the face.
 We'll see more about what these normalised face values mean in the next
 section.
 ```
+
+## Clean-Up and Summary
+
+One last thing: when you're done plotting, make sure to close the sphere
+plotter using the {meth}`.SpherePlotter.close` method.
+
+```{code-cell} ipython3
+my_sphere_plotter.close()
+```
+
+By doing this, you can make sure that the resources used to generate the
+plot are freed up. This will make it easier to produce additional plots.
 
 Now we've seen how to generate 1D, spherical and nested spherical
 histograms. In the next section, we'll see a bit more about how to generate

@@ -19,6 +19,7 @@ installation.md
 vectors_intro.md
 data_format.md
 plot_types.md
+advanced_histograms.md
 statistics.md
 references.md
 ```
