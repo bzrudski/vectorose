@@ -208,7 +208,7 @@ def _test_create_mesh(subdivisions: int):
     original_mesh = trimesh.primitives.Sphere(subdivisions=subdivisions)
 
     # Check the number of faces
-    assert sphere_mesh.n_faces == len(original_mesh.faces)
+    assert sphere_mesh.n_cells == len(original_mesh.faces)
 
     # Check the number of vertices
     assert sphere_mesh.n_points == len(original_mesh.vertices)
