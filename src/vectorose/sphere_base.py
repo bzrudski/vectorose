@@ -281,6 +281,7 @@ class SphereBase(abc.ABC):
         multi_index = self._construct_histogram_index()
 
         filled_histogram = original_histogram.reindex(index=multi_index, fill_value=0)
+        filled_histogram.name = "frequency"
 
         if return_fraction:
             number_of_vectors = len(binned_data)
@@ -526,7 +527,7 @@ class SphereBase(abc.ABC):
         series_name = series_name or histogram.name
 
         # Set the scalar values
-        shell_mesh.cell_data[series_name] = histogram
+        shell_mesh.cell_data[series_name] = histogram.astype(float)
 
         return shell_mesh
 
