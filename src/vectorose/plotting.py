@@ -701,6 +701,7 @@ class SpherePlotter:
         azimuth: Optional[float] = None,
         elevation: Optional[float] = None,
         hide_sliders: bool = True,
+        add_shell_text: bool = False,
     ):
         """Produce a video revealing all shells in a plot.
 
@@ -730,6 +731,9 @@ class SpherePlotter:
         hide_sliders
             Indicate whether the sliders should be hidden before producing
             the video.
+        add_shell_text
+            Indicate whether to show text at the bottom of the screen
+            indicating the shell number.
         """
 
         if hide_sliders:
@@ -773,7 +777,20 @@ class SpherePlotter:
         i: int
         for i in shell_order:
             self._update_active_sphere(i)
+
+            shell_text_actor: Optional[vtk.vtkTextActor]
+
+            if add_shell_text:
+                shell_text_actor = self._plotter.add_text(
+                    f"Shell {i}", position="lower_edge"
+                )
+            else:
+                shell_text_actor = None
+
             plotter.write_frame()
+
+            if add_shell_text:
+                self._plotter.remove_actor(shell_text_actor)
 
         # Close the plotter's writer
         plotter.mwriter.close()
