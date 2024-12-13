@@ -3,17 +3,16 @@
 # This code is licensed under the MIT License. See the `LICENSE` file for
 # more details about copying.
 
-"""
-Functions for plotting vector roses.
+"""Plotting functions for VectoRose.
 
-This module provides the ability to construct 2D and 3D rose diagrams
-of orientation/vector fields.
-
+After constructing the various histograms using the classes and functions
+present in :mod:`tregenza_sphere`, :mod:`triangle_sphere` and
+:mod:`polar_data`, this module can be used to visualise the results.
 """
 
 import enum
 import functools
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Iterable, List, Optional
 
 import imageio_ffmpeg
 import matplotlib.animation
@@ -30,8 +29,8 @@ import pandas as pd
 import pyvista as pv
 import vtk
 from scipy.spatial.transform import Rotation
-from vectorose.triangle_sphere import TriangleSphere
 
+from .triangle_sphere import TriangleSphere
 from . import util
 from .tregenza_sphere import TregenzaSphere
 
@@ -44,8 +43,7 @@ plt.rcParams["animation.ffmpeg_path"] = imageio_ffmpeg.get_ffmpeg_exe()
 
 
 class CardinalDirection(str, enum.Enum):
-    """
-    Cardinal Directions
+    """Cardinal directions.
 
     This string-based enumerated type is useful when preparing 2D polar
     figures. Members reflect cardinal directions, which may be used to
@@ -58,25 +56,18 @@ class CardinalDirection(str, enum.Enum):
     -------
     NORTH
         Location directly upwards.
-
     NORTH_WEST
         Location in the upper left corner.
-
     WEST
         Location on the left side.
-
     SOUTH_WEST
         Location in the lower left corner.
-
     SOUTH
         Location directly downwards.
-
     SOUTH_EAST
         Location in the lower right corner.
-
     EAST
         Location on the right side.
-
     NORTH_EAST
         Location in the upper right corner.
 
@@ -99,8 +90,7 @@ class CardinalDirection(str, enum.Enum):
 
 
 class RotationDirection(enum.IntEnum):
-    """
-    Rotation Direction
+    """Rotation directions.
 
     This integer-based enumerated type represents two-dimensional rotation
     direction. The convention used is consistent with the Matplotlib
@@ -110,10 +100,10 @@ class RotationDirection(enum.IntEnum):
 
     Members
     -------
-    CLOCKWISE:
+    CLOCKWISE
         Clockwise, or rightward rotation.
 
-    COUNTER_CLOCKWISE:
+    COUNTER_CLOCKWISE
         Counter-clockwise, anti-clockwise, or leftward rotation.
 
     See Also
@@ -128,8 +118,7 @@ class RotationDirection(enum.IntEnum):
 
 
 class AngularUnits(enum.Enum):
-    """
-    Angular Units
+    """Angular units.
 
     This enumerated type represents angular units (degrees or radians).
     It **does not** provide any implementation for converting from one
@@ -138,11 +127,10 @@ class AngularUnits(enum.Enum):
 
     Members
     -------
-    DEGREES:
+    DEGREES
         Represent angles in degrees (typically in the range 0 to 360 or
         -180 to +180).
-
-    RADIANS:
+    RADIANS
         Indicates that angle is in radians (typically in the range 0
         to :math:`2\\pi` or :math:`-\\pi` to :math:`\\pi`).
 
@@ -166,10 +154,8 @@ class SphereProjection(enum.Enum):
 
     Members
     -------
-
     ORTHOGRAPHIC
         Orthographic projection.
-
     PERSPECTIVE
         Perspective projection.
     """
@@ -995,7 +981,7 @@ class SpherePlotter:
 
 
 def produce_1d_scalar_histogram(
-    counts: pd.Series,
+    counts: pd.Series | np.ndarray,
     bin_edges: np.ndarray,
     fill: bool = True,
     ax: Optional[plt.Axes] = None,
@@ -1058,11 +1044,9 @@ def produce_polar_histogram_plot(
     axis_ticks_unit: AngularUnits = AngularUnits.DEGREES,
     colour: str = "blue",
 ) -> matplotlib.projections.polar.PolarAxes:
-    """Produce 1D polar histogram.
+    """Produce a 1D polar histogram plot.
 
-    Produce a 1D polar histogram using the specified data on the
-    provided axes.
-
+    Produce a 1D polar histogram using the specified data on provided axes.
 
     Parameters
     ----------
@@ -1070,9 +1054,9 @@ def produce_polar_histogram_plot(
         Matplotlib :class:`matplotlib.projections.polar.PolarAxes` on which
         to plot the data.
     data
-        Data to plot. This should have the same size as ``bins``.
+        Histogram data to plot. This should have the same size as ``bins``.
     bins
-        *Lower value* of each bin in the histogram.
+        Lower edge of each histogram bin.
     zero_position
         Zero-position on the polar axes, expressed as a member of the
         enumerated class :class:`CardinalDirection`.
@@ -1091,8 +1075,7 @@ def produce_polar_histogram_plot(
         :class:`AngularUnits` indicating what unit should be used for
         specifying the axis ticks. Default is :attr:`AngularUnits.DEGREES`.
     colour
-        Colour used for the histogram bars. Must be a valid matplotlib
-        colour [#f1]_.
+        Histogram bar colour. Must be a valid matplotlib colour [#f1]_.
 
     Returns
     -------
@@ -1119,28 +1102,10 @@ def produce_polar_histogram_plot(
     ax.set_title(plot_title)
     ax.axes.yaxis.set_ticklabels([])
 
-    # Prepare the data for plotting, mirroring if necessary
-    # if mirror_histogram:
-    #     # Duplicate the bins and the data.
-    #     mirrored_bins = bins.copy()
-    #     mirrored_data = data.copy()
-    #
-    #     # Offset the mirrored bins and flip the signs
-    #     mirrored_bins = -(mirrored_bins + bin_width)
-    #
-    #     # Flip the mirrored bins, but NOT the data
-    #     mirrored_bins = np.flip(mirrored_bins)
-    #
-    #     # Tack the bins and values onto the respective arrays
-    #     bins = np.concatenate([mirrored_bins, bins])
-    #     data = np.concatenate([mirrored_data, data])
-
     if label_axis:
-        # start, end = ax.get_xlim()
 
         if axis_ticks_unit is AngularUnits.DEGREES:
             axis_ticks = np.radians(axis_ticks)
-            # axis_ticks_increment = np.radians(axis_ticks_increment)
 
         ax.xaxis.set_ticks(axis_ticks)
     else:
@@ -1160,7 +1125,7 @@ def produce_phi_theta_polar_histogram_plots(
     use_counts: bool = False,
     plot_title: Optional[str] = None,
 ):
-    """Produce and show the polar phi and theta histograms.
+    """Produce and show the 1D polar phi and theta histograms.
 
     This function takes in 2D binned histogram input and shows a 2-panel
     figure containing the theta and phi polar histograms.
@@ -1536,7 +1501,7 @@ def produce_3d_triangle_sphere_plot(
     """Produce a 3D sphere plot based on a triangle mesh.
 
     Using the provided axes, plot a sphere with face colours corresponding
-    to the provided values. This sphere has constant radius.
+    to the provided values. This plot is generated using Matplotlib.
 
     Parameters
     ----------
@@ -1644,7 +1609,8 @@ def produce_3d_tregenza_sphere_plot(
     """Produce a 3D sphere plot based on a Tregenza sphere.
 
     Using the provided axes, plot a Tregenza sphere with face colours
-    corresponding to the provided histogram values.
+    corresponding to the provided histogram values. This plot is generated
+    using Matplotlib.
 
     Parameters
     ----------
@@ -1808,10 +1774,10 @@ def produce_3d_tregenza_sphere_plot(
     return ax
 
 
-def construct_uv_sphere(
+def construct_uv_sphere_vertices(
     phi_steps: int = 80, theta_steps: int = 160, radius: float = 1
 ) -> np.ndarray:
-    """Construct a sphere with rectangular faces.
+    """Compute the vertices for a UV sphere with rectangular faces.
 
     Construct a UV sphere where each ring has the same number of faces.
 
@@ -2086,7 +2052,7 @@ def produce_uv_spherical_2d_data_plot(
     # )
     #
 
-    sphere_cartesian_coordinates = construct_uv_sphere(
+    sphere_cartesian_coordinates = construct_uv_sphere_vertices(
         phi_steps=number_of_phi_dividers,
         theta_steps=number_of_theta_dividers,
         radius=sphere_radius,
@@ -2188,22 +2154,17 @@ def animate_sphere_plot(
     sphere_figure
         The :class:`matplotlib.figure.Figure` containing the sphere
         plot.
-
     sphere_axes
         The :class:`mpl_toolkits.mplot3d.axes3d.Axes3D` containing the
         sphere plot. These axes **must** be 3D axes.
-
     rotation_direction
         Direction for the **sphere** to rotate.
         See :class:`RotationDirection` for more information.
-
     angle_increment
         Increment of the angle in **degrees** for the rotation at each
         frame. This value should be positive.
-
     animation_delay
         Time delay between frames in milliseconds.
-
     reset_initial_orientation
         Indicate whether the sphere should be reset to its original
         orientation before recording the animation. This argument should
