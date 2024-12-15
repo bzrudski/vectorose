@@ -7,6 +7,12 @@
 
 This module provides utility functions for manipulating vectors in
 Cartesian and spherical coordinates.
+
+References
+----------
+.. [#fisher-lewis-embleton] Fisher, N. I., Lewis, T., & Embleton, B. J.
+   J. (1993). Statistical analysis of spherical data ([New ed.], 1.
+   paperback ed). Cambridge Univ. Press.
 """
 
 import enum
@@ -346,12 +352,6 @@ def convert_vectors_to_axes(vectors: np.ndarray) -> np.ndarray:
     numpy.ndarray
         Array of the same shape as the original, but with all vectors
         oriented towards a non-negative Z value.
-
-    References
-    ----------
-    .. [#fisher-lewis-embleton] Fisher, N. I., Lewis, T., & Embleton, B. J.
-       J. (1993). Statistical analysis of spherical data ([New ed.], 1.
-       paperback ed). Cambridge Univ. Press.
     """
 
     # Get the vector components
@@ -792,3 +792,68 @@ def rotate_vectors(
 
     # Return the rotated components
     return rotated_vectors
+
+
+def compute_arc_lengths(vector: np.ndarray, vector_collection: np.ndarray) -> np.ndarray:
+    """Compute the arc lengths between a vector and many vectors.
+
+    For each vector in a set of vectors, compute the arc length to a
+    specified vector. The arc length is the angular distance on the surface
+    of the unit sphere.
+
+    Parameters
+    ----------
+    vector
+        Array of shape ``(3,)`` containing the reference vector from which
+        all arc lengths are measured.
+    vector_collection
+        Array of shape ``(n, 3)`` containing ``n`` three-dimensional
+        vectors. The arc lengths of each vector will be measured with
+        respect to `vector`.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array of shape ``(n,)`` containing the arc length from the
+        reference `vector` to each of the vectors in the provided
+        collection.
+
+    Warnings
+    --------
+    The angular distance reported can also be interpreted as the angle in
+    **radians** between the reference vector and each respective vector.
+
+    Notes
+    -----
+    The results can only be interpreted on the unit sphere. While vectors
+    of any length may be passed in, the arc length interpretation relies
+    on a unit sphere. Otherwise, the results can still be interpreted as
+    angles between the vector tails, but **should not** be considered any
+    sort of magnitude-linked arc length.
+
+    The explanation for this method comes in part from Section 5.3.1(ii) in
+    Fisher, Lewis and Embleton [#fisher-lewis-embleton]_. This method
+    relies on the relationship between dot-products and angles, as
+
+    .. math::
+
+        \\mathbf{u} \\cdot \\mathbf{v} = \\|\\mathbf{u}\\| \cdot
+        \\|\\mathbf{v}\\| \\cos \\theta
+
+    where :math:`\\theta` is the angle between the tails of vectors
+    :math:`\\mathbf{u}` and :math:`\\mathbf{v}`.
+    """
+
+    number_of_vectors = len(vector_collection)
+
+    # Compute the dot products between each vector and the new vector
+    dot_products = np.dot(vector_collection, vector)
+
+    # To mitigate any floating point errors, divide by norms
+    vectors_magnitudes = np.linalg.norm(vector_collection, axis=-1)
+    new_vector_magnitudes = np.repeat(np.linalg.norm(vector), number_of_vectors)
+    angle_cosines = dot_products / (new_vector_magnitudes * vectors_magnitudes)
+
+    # Now, get the arc lengths, knowing that we are on a unit sphere.
+    arc_lengths = np.arccos(angle_cosines)
+    return arc_lengths

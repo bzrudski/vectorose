@@ -21,10 +21,7 @@ def test_magnitude_computation():
     """
 
     # Define two vectors
-    vectors = np.array([
-        [0, 1, 0],
-        [3, 4, 5]
-    ])
+    vectors = np.array([[0, 1, 0], [3, 4, 5]])
 
     expected_magnitudes_3d = [1, 5 * np.sqrt(2)]
     expected_magnitudes_2d = [1, 5]
@@ -451,3 +448,37 @@ def test_rotate_vectors_partial_rotation():
 
     # And now check the equality
     assert np.all(np.isclose(rotated_vectors, expected_result))
+
+
+def test_compute_arc_lengths():
+    """Test the arc length calculation.
+
+    Unit test for :func:`util.compute_arc_lengths`.
+    """
+
+    my_reference_vector = np.array([1, 0, 0])
+
+    my_collection_of_vectors = np.array(
+        [
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 1 / np.sqrt(2), 1 / np.sqrt(2)],
+            [1 / np.sqrt(2), 1 / np.sqrt(2), 0],
+            [np.sqrt(3) / 2, 1 / 2, 0],
+        ]
+    )
+
+    expected_arc_lengths = np.array([0, np.pi / 2, np.pi / 2, np.pi / 4, np.pi / 6])
+
+    calculated_arc_lenghts = vr.util.compute_arc_lengths(
+        my_reference_vector, my_collection_of_vectors
+    )
+
+    # Check the length
+    assert len(calculated_arc_lenghts) == len(expected_arc_lengths)
+
+    # And now check the values
+    assert np.all(np.isclose(calculated_arc_lenghts, expected_arc_lengths))
+
+
+# TODO: Add tests that send in only one vector to the functions that squeeze
