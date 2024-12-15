@@ -16,6 +16,7 @@ detailed demonstrations of how to use VectoRose.
 :maxdepth: 1
 
 installation.md
+quickstart.md
 vectors_intro.md
 data_format.md
 plot_types.md
