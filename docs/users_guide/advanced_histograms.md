@@ -312,18 +312,216 @@ But now, what if we don't want to disregard the magnitude completely? Well,
 VectoRose includes functions for constructing **conditional histograms**.
 As with the marginal histograms, we can compute conditional histograms of
 either variable, either studying the orientation for specific magnitude
-values or studying the magnitudes for specific orientations.
+values or studying the magnitudes for specific orientations. In both cases,
+VectoRose produces histogram counts similar in structure to the *bivariate*
+histogram. The key difference is in the **normalisation**.
+
+For the **conditional magnitude** histogram, the counts are normalised by
+orientation bin, so that adding the frequency values in the same bin across
+different shells yields a probability of 1.
+
+For the **conditional orientation** histogram, the counts are normalised by
+shell, so that adding the frequencies within a single shell yields a
+probability of 1.
+
+```{attention}
+Unlike the marginal and bivariate cases, the conditional histograms do not
+offer the possibility of examining count values. Obtaining the count values
+corresponding to each direction bin or magnitude shell can simply be done
+by indexing the bivariate histogram.
+```
 
 ```{important}
-VectoRose 
-  ```{todo}
-  Talk about how it does it for all orientations and shells, then have to
-  choose which ones to look at.
-  ```
+As you'll see in the discussion below, VectoRose computes all conditional
+histograms for shells and orientation bins. So, you don't actually select
+the desired magnitudes and orientations *before* calling the relevant
+{class}`.SphereBase` methods, but rather after. This is **not** the only
+way of computing conditional histograms, but we have included this process
+for convenience.
 ```
 
 ### Conditional Magnitude Histograms
 
 To study the magnitudes in a specific orientation, we can construct
 **conditional magnitude histograms** using the
-{meth}`.SphereBase.construct_conditional_magnitude_histogram` method.
+{meth}`.SphereBase.construct_conditional_magnitude_histogram` method. Let's
+construct the conditional magnitude histogram for our sample dataset.
+
+```{code-cell} ipython3
+my_conditional_magnitude_histogram = my_sphere.construct_conditional_magnitude_histogram(
+    labelled_vectors
+)
+
+my_conditional_magnitude_histogram.to_frame()
+```
+
+Now we can see that we still have values for every shell and every
+orientation bin, but the values have been normalised. We can use indexing
+to extract an individual bin.
+
+```{tip}
+Have an angle in mind that looks interesting based on the spherical axes,
+but don't know what bin it corresponds to? If you're using a
+{class}`.TregenzaSphere`, you can get the ring and the bin for a specific
+angle using the {meth}`.TregenzaSphere.get_closest_faces` method.
+```
+
+In our case, the bin around $(\phi, \theta) = (50, 0)$ looks interesting.
+Using {meth}`.TregenzaSphere.get_closest_faces` after some pre-processing,
+we find that this angle falls in ring 15, bin 0. Let's extract that bin.
+Since our histogram has a multi-level index, we need to index by **ring**,
+then **bin** and finally by **shell**. Since we want all shells, we can
+just leave off the last index. Alternatively, we *could* put a colon `:`,
+but we don't have to.
+
+```{code-cell} ipython3
+my_selected_direction_bin = my_conditional_magnitude_histogram[15, 0]
+
+my_selected_direction_bin.to_frame()
+```
+
+Now, just a sanity check so that you can believe what I said about the
+normalisation:
+
+```{code-cell} ipython3
+my_selected_direction_bin.sum()
+```
+
+The frequencies do indeed sum up to 1.
+
+```{attention}
+The sum should only ever not equal 1 if there is not a single vector that
+falls in that orientation, across all shells. In this case, the sum will
+be equal to 0.
+```
+
+Now, to plot the magnitudes, we can simply call our function
+{func}`.produce_1d_scalar_histogram` from {mod}`.plotting`, as we did in
+the marginal case. Remember, we need to pass in the magnitude bins, too!
+
+```{code-cell} ipython3
+---
+mystnb:
+    figure:
+        align: center
+---
+ax = vr.plotting.produce_1d_scalar_histogram(
+    my_selected_direction_bin, magnitude_bins
+)
+ax.set_title("Magnitude Histogram for Ring 15, Bin 0")
+ax.set_xlabel("Magnitude")
+ax.set_ylabel("Frequency")
+```
+
+Now, you may be thinking that selecting a single bin is quite narrow. There
+are a few possible approaches to construct slightly broader conditional
+histograms. You may select multiple bins, add the frequencies and
+re-normalise or choose a coarser sphere discretisation. You may also cast a
+wider net and pre-select vectors within a certain distance of a direction
+of interest. We will cover these approaches in other examples.
+
+### Conditional Direction Histograms
+
+Now, let's approach the opposite question. Let's say we are interested in
+a particular magnitude level and we want to study the orientations of
+vectors within that magnitude range. We can do this using the method
+{meth}`.SphereBase.construct_conditional_orientation_histogram`. As we did
+before, let's apply this method to our sample data.
+
+```{code-cell} ipython3
+my_conditional_orientation_histogram = my_sphere.construct_conditional_orientation_histogram(
+    labelled_vectors
+)
+
+my_conditional_orientation_histogram.to_frame()
+```
+
+Let's say we only want to look at vectors with a magnitude in the bin just
+below 0.8. First, we need to find what shell that corresponds to. We can do
+that using a simple search using NumPy's {func}`numpy.searchsorted`
+function. We exclude the first bin for technical reasons.
+
+```{code-cell} ipython3
+desired_shell_index = np.searchsorted(magnitude_bins[1:], 0.8, side="right")
+
+print(f"The desired shell is shell {desired_shell_index}.")
+```
+
+Now that we have the index, we can select the shell.
+
+```{code-cell} ipython3
+my_selected_shell_histogram = my_conditional_orientation_histogram[desired_shell_index]
+
+my_selected_shell_histogram.to_frame()
+```
+
+As we did in the magnitude case, let's run a sanity check to make sure our
+frequencies add up properly.
+
+```{code-cell} ipython3
+my_selected_shell_histogram.sum()
+```
+
+The selected shell is indeed a true histogram using frequency values.
+
+We now plot it similar to how we plotted the marginal orientation histogram
+by constructing a mesh and then using a {class}`.SpherePlotter`.
+
+```{code-cell} ipython3
+my_conditional_shell_mesh = my_sphere.create_shell_mesh(
+    my_selected_shell_histogram
+)
+
+my_conditional_sphere_plotter = vr.plotting.SpherePlotter(
+    my_conditional_shell_mesh
+)
+my_conditional_sphere_plotter.produce_plot()
+my_conditional_sphere_plotter.show()
+```
+
+This plot shows the distribution of orientations **only for the selected
+vectors**. All vectors with a magnitude outside the selected bin are
+ignored. It is as if we are only looking at one shell of the bivariate
+histogram and we have normalised the values based on that shell.
+
+```{tip}
+This approach works very well for a single shell. We have provided an
+additional option to perform a similar normalisation on all shells in the
+**bivariate histogram**. When constructing the histogram meshes using the
+method {meth}`.SphereBase.create_histogram_meshes`, the argument
+`normalise_by_shell` can be set to `True`. In this case, all the values are
+rescaled relative to the shell maximum. The produced shells all resemble
+their respective conditional shells, while the face values, all ranging
+between 0 and 1, can be interpreted as the fraction of the respective shell
+maximum value achieved.
+```
+
+## Summary
+
+At this point, we've now seen how to generate many different types of plots
+using VectoRose.
+
+* The **bivariate histogram** shows how the magnitude and direction change
+  together using *nested spheres*.
+* The **marginal histograms** show how one of magnitude or direction change
+  without any regard to the other variable.
+* The **conditional histograms** reveal insight about one of the variables,
+  while the value of the other has been pre-determined.
+
+We have presented the major steps of a simple workflow for constructing the
+various plots.
+
+```{important}
+While we have presented one simple workflow, this page is by no means
+exhaustive. There are many different approaches that can be used to select
+subsets of the vectors for analysis. But, in any case, you will need to use
+some subclass of {class}`.SphereBase`, so knowing its methods is critical.
+```
+
+At this point, we have covered the basics of visual analysis of non-unit
+axial and vectorial data. Now, let's move into the world of **statistical
+analysis**. In the next section, we'll see some statistics that we can
+compute on our vectorial data. In this next section, the ideas of
+**joint**, **marginal** and **conditional** histograms and distributions
+will be important. Make sure that you are comfortable with these concepts
+before proceeding.
