@@ -262,11 +262,15 @@ class SpherePlotter:
 
     def __init__(
         self,
-        sphere_meshes: List[pv.PolyData],
+        sphere_meshes: List[pv.PolyData] | pv.PolyData,
         visible_shells: Optional[List[int]] = None,
         off_screen: bool = False,
         cmap: str = "viridis",
     ):
+        # If only a single mesh has been passed it, wrap in a list.
+        if isinstance(sphere_meshes, pv.PolyData):
+            sphere_meshes = [sphere_meshes]
+
         self._sphere_meshes = sphere_meshes
         self._sphere_actors = []
         self._selected_shell = len(sphere_meshes) - 1
@@ -599,6 +603,26 @@ class SpherePlotter:
         values.
         """
         self._update_active_sphere(index + 1)
+
+    def set_active_shell_opacity(self, opacity: float):
+        """Set the opacity of the active shell.
+
+        Parameters
+        ----------
+        opacity
+            Desired sphere opacity between 0 (transparent) and 1 (opaque).
+        """
+        self._update_active_sphere_opacity(opacity)
+
+    def set_inactive_shell_opacity(self, opacity: float):
+        """Set the opacity of all inactive shells.
+
+        Parameters
+        ----------
+        opacity
+            Desired sphere opacity between 0 (transparent) and 1 (opaque).
+        """
+        self._update_inactive_sphere_opacity(opacity)
 
     def produce_rotating_video(
         self,
