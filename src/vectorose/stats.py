@@ -32,7 +32,7 @@ References
 """
 import dataclasses
 import functools
-from typing import List, NamedTuple, Optional, Tuple
+from typing import NamedTuple, Optional, Tuple
 
 from scipy.optimize import NonlinearConstraint, minimize, fsolve
 from scipy.stats import chi2, vonmises_fisher
@@ -339,12 +339,8 @@ def _compute_sum_of_arc_lengths(new_vector: np.ndarray, vectors: np.ndarray) -> 
         The sum of arc lengths from all vectors to the specified vector.
     """
 
-    dot_products = np.sum(new_vector * vectors, axis=-1)
+    arc_lengths = util.compute_arc_lengths(new_vector, vectors)
 
-    # print(f"Min dot product: {dot_products.min()}")
-    # print(f"Max dot product: {dot_products.max()}")
-
-    arc_lengths = np.arccos(dot_products)
     sum_of_arc_lengths = np.sum(arc_lengths)
 
     return sum_of_arc_lengths
