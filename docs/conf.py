@@ -27,6 +27,7 @@ extensions = [
     "sphinx_design",
     "sphinx_gallery.gen_gallery",
     "pyvista.ext.viewer_directive",
+    "sphinx_copybutton",
 ]
 autoapi_dirs = ["../src"]
 autoapi_options = [
