@@ -6,8 +6,8 @@
 :hidden:
 
 users_guide/users_guide.md
-example.ipynb
 autoapi/index
+auto_examples/index
 changelog.md
 contributing.md
 conduct.md

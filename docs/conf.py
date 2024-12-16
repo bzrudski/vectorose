@@ -24,6 +24,9 @@ extensions = [
     "sphinx.ext.todo",
     "sphinxcontrib.bibtex",
     "sphinxcontrib.video",
+    "sphinx_design",
+    "sphinx_gallery.gen_gallery",
+    "pyvista.ext.viewer_directive",
 ]
 autoapi_dirs = ["../src"]
 autoapi_options = [
@@ -38,7 +41,13 @@ autoapi_options = [
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    # "auto_examples/*.py",
+    "auto_examples/*.ipynb",
+]
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -76,7 +85,7 @@ intersphinx_mapping = {
 todo_include_todos = True
 
 # -- Options for myst-nb -----------------------------------------------------
-myst_enable_extensions = ["dollarmath", "amsmath", "attrs_inline"]
+myst_enable_extensions = ["dollarmath", "amsmath", "attrs_inline", "deflist"]
 myst_dmath_double_inline = True
 myst_heading_anchors = 4
 
@@ -84,3 +93,23 @@ myst_heading_anchors = 4
 bibtex_bibfiles = ["refs.bib"]
 bibtex_default_style = "alpha"
 bibtex_reference_style = "author_year"
+
+# -- Options for sphinx-gallery ----------------------------------------------
+
+import pyvista as pv
+from pyvista.plotting.utilities.sphinx_gallery import DynamicScraper
+pv.BUILDING_GALLERY = True
+pv.OFF_SCREEN = True
+
+
+sphinx_gallery_conf = {
+    "examples_dirs": "../examples",
+    "gallery_dirs": "auto_examples/",
+    "image_scrapers": (
+        "matplotlib",
+        DynamicScraper(),
+        # "pyvista"
+    ),
+    "run_stale_examples": False,
+    "filename_pattern": r"\.py"
+}
