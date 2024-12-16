@@ -187,7 +187,7 @@ def test_vector_import_excel_only_components(tmp_path):
         vector_path,
         component_columns=[1, 2, 3],
         contains_headers=True,
-        sheet="VectorSheet"
+        sheet="VectorSheet",
     )
 
     # Check the shape
