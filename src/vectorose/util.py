@@ -93,7 +93,10 @@ def compute_vector_magnitudes(vectors: np.ndarray) -> np.ndarray:
 
     """
 
-    n = len(vectors)
+    if vectors.ndim > 1:
+        n = len(vectors)
+    else:
+        n = 1
 
     three_dimensional_magnitude = np.linalg.norm(vectors, axis=-1)
     in_plane_magnitude = np.linalg.norm(vectors[..., :2], axis=-1)
@@ -599,20 +602,26 @@ def compute_spherical_coordinates(
     """
 
     # Get the number of vectors
-    n = len(vectors)
+    if vectors.ndim > 1:
+        n = len(vectors)
+    else:
+        n = 1
 
     # Compute the orientation angles
     orientations = compute_vector_orientation_angles(vectors, use_degrees)
 
     # Compute the magnitudes
-    magnitudes = np.linalg.norm(vectors, axis=-1)[:, None]
+    magnitudes = np.atleast_1d(np.linalg.norm(vectors, axis=-1))[:, None]
+
+    if n == 1:
+        magnitudes = np.squeeze(magnitudes, axis=0)
 
     # Combine everything
     spherical_coordinates = np.hstack([orientations, magnitudes])
 
     # If there is only one vector, squeeze out the extra dimension
-    if n == 1:
-        spherical_coordinates = np.squeeze(spherical_coordinates, axis=0)
+    # if n == 1:
+    #     spherical_coordinates = np.squeeze(spherical_coordinates, axis=0)
 
     # And return it all
     return spherical_coordinates
