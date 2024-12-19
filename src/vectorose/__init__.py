@@ -1,3 +1,5 @@
+"""VectoRose: A new tool for visualising and analysing directional data."""
+
 from vectorose import polar_data
 from vectorose import plotting
 from vectorose import io
