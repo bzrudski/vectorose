@@ -149,7 +149,7 @@ class PolarDiscretiser:
         start_phi = 0
         end_phi = 90 if is_axial else 180
         phi_bin_edges, phi_step = np.linspace(
-            start_phi, end_phi, number_of_phi_bins + 1, endpoint=True, retstep=True
+            start_phi, end_phi, number_of_phi_bins, endpoint=True, retstep=True
         )
 
         phi_bin_starts = phi_bin_edges
