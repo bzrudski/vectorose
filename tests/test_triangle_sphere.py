@@ -1,4 +1,4 @@
-"""Tests for VectoRose triangle histogram plotting.
+"""Tests for VectoRose triangle histogram construction.
 
 This module contains the automated tests for the
 :mod:`vectorose.triangle_sphere` module, which provides the triangle-based

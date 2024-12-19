@@ -470,15 +470,15 @@ def test_compute_arc_lengths():
 
     expected_arc_lengths = np.array([0, np.pi / 2, np.pi / 2, np.pi / 4, np.pi / 6])
 
-    calculated_arc_lenghts = vr.util.compute_arc_lengths(
+    calculated_arc_lengths = vr.util.compute_arc_lengths(
         my_reference_vector, my_collection_of_vectors
     )
 
     # Check the length
-    assert len(calculated_arc_lenghts) == len(expected_arc_lengths)
+    assert len(calculated_arc_lengths) == len(expected_arc_lengths)
 
     # And now check the values
-    assert np.all(np.isclose(calculated_arc_lenghts, expected_arc_lengths))
+    assert np.all(np.isclose(calculated_arc_lengths, expected_arc_lengths))
 
 
 # TODO: Add tests that send in only one vector to the functions that squeeze
