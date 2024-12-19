@@ -25,6 +25,28 @@ messages that appear when installing or importing, please read them and
 share them on [GitHub Issues](https://github.com/bzrudski/vectorose/issues)
 so that we can try to resolve them.
 
+```{attention}
+Due to our dependencies, VectoRose cannot run natively on macOS computers
+with Apple Silicon M1 processors. To install VectoRose on macOS, you must
+have Rosetta installed as well as an Intel-compatible Python environment.
+```
+
+## Jupyter Setup
+
+You can easily use VectoRose in [Jupyter Lab](https://jupyter.org/) to
+visualise results interactively. Make sure that you have `jupyter` and
+`jupyterlab` installed. Try to run your code in Jupyter Lab. If it does not
+work, add the following to the first cell in your notebook:
+
+```python
+import pyvista as pv
+pv.start_xvfb()
+pv.set_jupyter_backend("trame")
+```
+
+For more details on using the PyVista plotting packing with Jupyter Lab,
+check out [this page](https://docs.pyvista.org/user-guide/jupyter/).
+
 ## Development Setup
 
 To set up VectoRose for development, clone our GitHub repository:
