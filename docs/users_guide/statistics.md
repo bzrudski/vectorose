@@ -187,7 +187,9 @@ hypothesis* that the magnitude **is** correlated with the direction is
 tested against the *null hypothesis* that these quantities are
 uncorrelated.
 
-```{note} To clarify...
+```{admonition} To clarify...
+:class: note
+
 Under the **alternate hypothesis**, there is a relationship
 between the magnitude and the orientation, with different magnitudes
 present at specific orientations and certain orientations being present
@@ -660,3 +662,17 @@ with vector magnitude.
 We've now reached the end of the basics of VectoRose. Make sure to check
 out the {doc}`Example Gallery<../auto_examples/index>` to see more in-depth
 examples of how to use VectoRose.
+
+```{admonition} **Help Wanted!**
+:class: important
+
+Know of an approach for analysing directional data that you want to see
+implemented? Open an issue at
+[https://github.com/bzrudski/vectorose/issues](
+https://github.com/bzrudski/vectorose/issues).
+Please share a reference describing the test and someone will hopefully try
+to implement it.
+
+If you have an implementation, then great! Please add it to the
+{mod}`.stats` module and open a pull request!
+```
