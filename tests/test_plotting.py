@@ -9,8 +9,9 @@ using Matplotlib.
 """
 import os
 
+import matplotlib as mpl
+import matplotlib.container
 import matplotlib.pyplot as plt
-import mpl_toolkits.mplot3d.art3d
 import numpy as np
 import pandas as pd
 import pyvista as pv
@@ -61,7 +62,7 @@ def dummy_mesh(setup_pyvista_environment) -> pv.PolyData:
 
 @pytest.fixture
 def label_vectors(vectors):
-    """Generate labelled vectors for testing."""
+    """Generate labelled vectors for testing the Tregenza sphere."""
     number_of_shells = 32
     sphere = vr.tregenza_sphere.FineTregenzaSphere(
         number_of_shells=number_of_shells, magnitude_range=(0, 1)
@@ -72,7 +73,7 @@ def label_vectors(vectors):
 
 @pytest.fixture
 def label_vectors_triangulated(vectors):
-    """Generate labelled vectors for testing."""
+    """Generate labelled vectors for testing the triangulated sphere."""
     number_of_shells = 32
     number_of_subdivisions = 5
     sphere = vr.triangle_sphere.TriangleSphere(
@@ -82,6 +83,22 @@ def label_vectors_triangulated(vectors):
     )
     labelled_vectors, magnitude_bins = sphere.assign_histogram_bins(vectors)
     return labelled_vectors, magnitude_bins, sphere
+
+
+@pytest.fixture
+def label_vectors_polar(vectors):
+    """Generate labelled vectors for testing the polar histograms."""
+    number_of_phi_bins = 18
+    number_of_theta_bins = 36
+    is_axial = False
+
+    polar_discretiser = vr.polar_data.PolarDiscretiser(
+        number_of_phi_bins, number_of_theta_bins, is_axial
+    )
+
+    labelled_vectors = polar_discretiser.assign_histogram_bins(vectors)
+
+    return labelled_vectors, polar_discretiser
 
 
 @pytest.fixture
@@ -95,13 +112,6 @@ def mock_nested_histogram_meshes(
     sphere_meshes = sphere.create_histogram_meshes(hist, magnitude_bins)
 
     return sphere_meshes
-
-
-# @pytest.fixture
-# def mock_magnitude_histogram(
-#     label_vectors: tuple[pd.DataFrame, np.ndarray, vr.tregenza_sphere.TregenzaSphere]
-# ):
-#     """Generate 1D magnitude histogram data."""
 
 
 def test_sphere_plotter_initialisation_one_mesh(dummy_mesh):
@@ -202,6 +212,163 @@ def test_export_shells_video(mock_nested_histogram_meshes, tmp_path):
     plotter.produce_shells_video(export_name)
 
     assert os.path.exists(export_name)
+
+
+def test_produce_1d_scalar_histogram(
+    tmp_path,
+    label_vectors: tuple[pd.DataFrame, np.ndarray, vr.tregenza_sphere.TregenzaSphere],
+):
+    """Test for plotting a 1D scalar histogram.
+
+    Test for :func:`.plotting.produce_1d_scalar_histogram` to ensure that
+    the histogram is properly constructed.
+    """
+
+    labelled_vectors, magnitude_bins, sphere = label_vectors
+
+    magnitude_hist = sphere.construct_marginal_magnitude_histogram(labelled_vectors)
+
+    # Plot the histogram plot
+    fig = plt.figure()
+    ax = plt.axes()
+    ax = vr.plotting.produce_1d_scalar_histogram(magnitude_hist, magnitude_bins, ax=ax)
+    fig.add_axes(ax)
+    fig.savefig(os.path.join(tmp_path, "test_plot.png"))
+
+    # Test the number of bars, like in the Py-Pkgs book
+    expected_number_of_bars = len(magnitude_bins) - 1
+
+    # Try to get the bar container from the plot
+    bar_container = ax.containers[0]
+
+    assert isinstance(bar_container, mpl.container.BarContainer), "Expected bar plot."
+
+    assert (
+        len(bar_container.datavalues) == expected_number_of_bars
+    ), "Wrong number of bars plotted."
+
+    assert np.all(
+        np.isclose(bar_container.datavalues, magnitude_hist.to_numpy())
+    ), "Unexpected bar heights."
+
+
+def _test_produce_polar_histogram_plot(hist, tmp_path):
+    """Test the polar histogram plotting."""
+
+    data = hist["count"].to_numpy()
+    bins = hist["start"].to_numpy()
+
+    # Produce the polar plot
+    fig = plt.figure()
+    ax = plt.axes(projection="polar")
+    ax = vr.plotting.produce_polar_histogram_plot(ax, data, bins)
+    fig.add_axes(ax)
+    fig.savefig(os.path.join(tmp_path, "test_plot.png"))
+
+    # Test the number of bars, like in the Py-Pkgs book
+    expected_number_of_bars = len(bins)
+
+    # Try to get the bar container from the plot
+    bar_container = ax.containers[0]
+    assert isinstance(bar_container, mpl.container.BarContainer), "Expected bar plot."
+    assert (
+        len(bar_container.datavalues) == expected_number_of_bars
+    ), "Wrong number of bars plotted."
+    assert np.all(np.isclose(bar_container.datavalues, data)), "Unexpected bar heights."
+
+
+def test_produce_polar_histogram_plot_phi(
+    tmp_path,
+    label_vectors_polar: tuple[pd.DataFrame, vr.polar_data.PolarDiscretiser],
+):
+    """Test for plotting a 1D polar histogram for phi angles.
+
+    Test for :func:`.plotting.produce_polar_histogram_plot` to ensure that
+    the histogram is properly constructed.
+    """
+
+    labelled_vectors, polar_discretiser = label_vectors_polar
+
+    phi_histogram = polar_discretiser.construct_phi_histogram(labelled_vectors)
+
+    _test_produce_polar_histogram_plot(phi_histogram, tmp_path)
+
+
+def test_produce_polar_histogram_plot_theta(
+    tmp_path,
+    label_vectors_polar: tuple[pd.DataFrame, vr.polar_data.PolarDiscretiser],
+):
+    """Test for plotting a 1D polar histogram for theta angles.
+
+    Test for :func:`.plotting.produce_polar_histogram_plot` to ensure that
+    the histogram is properly constructed.
+    """
+
+    labelled_vectors, polar_discretiser = label_vectors_polar
+
+    theta_histogram = polar_discretiser.construct_theta_histogram(labelled_vectors)
+
+    _test_produce_polar_histogram_plot(theta_histogram, tmp_path)
+
+
+def test_produce_phi_theta_polar_histogram_plots(
+    label_vectors_polar: tuple[pd.DataFrame, vr.polar_data.PolarDiscretiser],
+):
+    """Test for plotting the phi and theta polar histograms.
+
+    Test for :func:`.plotting.test_produce_phi_theta_polar_histogram_plots`
+    to ensure that the histograms are properly constructed.
+    """
+
+    labelled_vectors, polar_discretiser = label_vectors_polar
+
+    phi_histogram = polar_discretiser.construct_phi_histogram(labelled_vectors)
+    theta_histogram = polar_discretiser.construct_theta_histogram(labelled_vectors)
+
+    vr.plotting.produce_phi_theta_polar_histogram_plots(
+        phi_histogram, theta_histogram, use_counts=False
+    )
+
+    fig = plt.gcf()
+
+    # Make sure that there are indeed two plots
+    assert len(fig.axes) == 2
+
+    # Check the theta plot
+    theta_axes = fig.axes[0]
+    theta_data = theta_histogram["frequency"]
+    theta_bins = theta_histogram["start"]
+
+    # Test the number of bars, like in the Py-Pkgs book
+    expected_number_of_bars = len(theta_bins)
+
+    # Try to get the bar container from the plot
+    bar_container = theta_axes.containers[0]
+    assert isinstance(bar_container, mpl.container.BarContainer), "Expected bar plot."
+    assert (
+        len(bar_container.datavalues) == expected_number_of_bars
+    ), "Wrong number of bars plotted."
+    assert np.all(
+        np.isclose(bar_container.datavalues, theta_data)
+    ), "Unexpected bar heights."
+
+    # Check the phi plot
+    phi_axes = fig.axes[1]
+    phi_data = phi_histogram["frequency"]
+    phi_bins = phi_histogram["start"]
+
+    # Test the number of bars, like in the Py-Pkgs book
+    expected_number_of_bars = len(phi_bins)
+
+    # Try to get the bar container from the plot
+    bar_container = phi_axes.containers[0]
+    assert isinstance(bar_container, mpl.container.BarContainer), "Expected bar plot."
+    assert (
+        len(bar_container.datavalues) == expected_number_of_bars
+    ), "Wrong number of bars plotted."
+    assert np.all(
+        np.isclose(bar_container.datavalues, phi_data)
+    ), "Unexpected bar heights."
 
 
 def test_tregenza_plotting_mpl(
