@@ -39,6 +39,32 @@ def test_magnitude_computation():
     assert np.all(np.isclose(computed_magnitudes_2d, expected_magnitudes_2d))
 
 
+def test_magnitude_computation_one_vector():
+    """Test the magnitude function.
+
+    Unit test for :func:`util.compute_vector_magnitudes` for a single
+    vector.
+    """
+
+    # Define two vectors
+    vectors = np.array([3, 4, 5])
+
+    expected_magnitudes_3d = 5 * np.sqrt(2)
+    expected_magnitudes_2d = 5
+
+    magnitudes = vr.util.compute_vector_magnitudes(vectors)
+
+    # Check the 3D magnitudes
+    computed_magnitudes_3d = magnitudes[vr.util.MagnitudeType.THREE_DIMENSIONAL]
+
+    assert np.isclose(computed_magnitudes_3d, expected_magnitudes_3d)
+
+    # Check the in-plane magnitudes
+    computed_magnitudes_2d = magnitudes[vr.util.MagnitudeType.IN_PLANE]
+
+    assert np.isclose(computed_magnitudes_2d, expected_magnitudes_2d)
+
+
 def test_flatten_vector_field():
     """Test the vector field flattening.
 
@@ -74,6 +100,53 @@ def test_remove_zero_vectors():
 
     # Generate zero-vectors
     my_zero_vectors = np.zeros_like(my_random_non_zero_vectors)
+
+    # Combine the two sets of vectors
+    my_combined_vectors = np.concatenate(
+        [my_random_non_zero_vectors, my_zero_vectors], axis=0
+    )
+
+    # Remove the zero vectors
+    non_zero_vectors_cleaned = vr.util.remove_zero_vectors(my_combined_vectors)
+
+    # Check to make sure the two arrays have the same shape
+    assert my_random_non_zero_vectors.shape == non_zero_vectors_cleaned.shape
+
+    # Check that the non-zero vectors all have a magnitude greater than zero
+    non_zero_norms = np.linalg.norm(non_zero_vectors_cleaned, axis=-1)
+    assert np.all(non_zero_norms > 0)
+
+    # Check that the non-zero vectors are all equal to the originals
+    assert np.all(my_random_non_zero_vectors == non_zero_vectors_cleaned)
+
+
+def test_remove_zero_vectors_location():
+    """Test the zero-vector removal with locations.
+
+    Unit test for :func:`util.remove_zero_vectors`.
+    """
+
+    # Generate the spatial locations
+    l = 10
+    w = 10
+    h = 100
+
+    indices = np.indices((l, w, h))
+    indices = np.moveaxis(indices, 0, -1).reshape(-1, 3)
+
+    # Generate random non-zero vectors
+    my_random_non_zero_vectors = np.random.default_rng(RANDOM_SEED).uniform(
+        low=1e-2, high=1, size=(10000, 3)
+    )
+
+    # Slide in the indices
+    my_random_non_zero_vectors = np.concatenate(
+        [indices, my_random_non_zero_vectors], axis=-1
+    )
+
+    # Generate zero-vectors
+    my_zero_vectors = np.zeros((10000, 3))
+    my_zero_vectors = np.concatenate([indices, my_zero_vectors], axis=-1)
 
     # Combine the two sets of vectors
     my_combined_vectors = np.concatenate(
@@ -200,26 +273,89 @@ def test_normalise_vectors_with_zeros():
     assert np.all(np.isclose(non_zero_norms, 1))
 
 
-def test_generate_representative_unit_vectors_magnitudes():
-    """Test the representative unit vector field generation.
+def test_normalise_vectors_no_zero_with_location():
+    """Test the vector normalisation.
 
-    Test :func:`util.generate_representative_unit_vectors` to verify that
-    all vectors have unit magnitude.
+    Unit test for :func:`util.normalise_vectors`.
+
+    Warnings
+    --------
+    This test only verifies the normalisation. As the magnitude is computed
+    using :func:`numpy.linalg.norm`, we trust that the NumPy team has
+    tested that behaviour.
     """
 
     # Generate random vectors
     my_random_vectors = np.random.default_rng(RANDOM_SEED).integers(
         low=2, high=100, size=(1000, 3)
-    )
+    ).astype(float)
 
-    # Generate the representative unit vectors
-    my_unit_vectors = vr.util.generate_representative_unit_vectors(
-        my_random_vectors, 3000
-    )
+    l = w = h = 10
+    indices = np.indices((l, w, h))
+    indices = np.moveaxis(indices, 0, -1).reshape(-1, 3)
 
-    # Check the magnitudes
-    magnitudes = np.linalg.norm(my_unit_vectors, axis=-1)
-    assert np.all(np.isclose(magnitudes, 1))
+    my_random_vectors = np.concatenate([indices, my_random_vectors], axis=-1)
+
+    # Normalise the vectors
+    normalised_vectors, magnitudes = vr.util.normalise_vectors(my_random_vectors)
+
+    # Check the magnitudes of the normalised vectors
+    normalised_vector_norms = np.linalg.norm(normalised_vectors[:, -3:], axis=-1)
+    assert np.all(np.isclose(normalised_vector_norms, 1))
+
+
+def test_normalise_one_vector_no_location():
+    """Test the vector normalisation for a single vector.
+
+    Unit test for :func:`util.normalise_vectors`.
+
+    Warnings
+    --------
+    This test only verifies the normalisation. As the magnitude is computed
+    using :func:`numpy.linalg.norm`, we trust that the NumPy team has
+    tested that behaviour.
+    """
+
+    # Generate random vectors
+    my_vector = np.array([1, 2, 2])
+    expected_result = np.array([1/3, 2/3, 2/3])
+
+    # Normalise the vectors
+    normalised_vector, magnitude = vr.util.normalise_vectors(my_vector)
+
+    # Check the magnitudes of the normalised vectors
+    normalised_vector_norm = np.linalg.norm(normalised_vector, axis=-1)
+    assert np.all(np.isclose(normalised_vector_norm, 1))
+
+    # Check that the vector is correct
+    assert np.all(np.isclose(normalised_vector, expected_result))
+
+
+def test_normalise_one_vector_with_location():
+    """Test the vector normalisation for a single vector.
+
+    Unit test for :func:`util.normalise_vectors`.
+
+    Warnings
+    --------
+    This test only verifies the normalisation. As the magnitude is computed
+    using :func:`numpy.linalg.norm`, we trust that the NumPy team has
+    tested that behaviour.
+    """
+
+    # Generate random vectors
+    my_vector = np.array([1, 2, 3, 1, 2, 2]).astype(float)
+    expected_result = np.array([1, 2, 3, 1/3, 2/3, 2/3])
+
+    # Normalise the vectors
+    normalised_vector, magnitude = vr.util.normalise_vectors(my_vector)
+
+    # Check the magnitudes of the normalised vectors
+    normalised_vector_norm = np.linalg.norm(normalised_vector[-3:], axis=-1)
+    assert np.all(np.isclose(normalised_vector_norm, 1))
+
+    # Check that the vector is correct
+    assert np.all(np.isclose(normalised_vector, expected_result))
 
 
 def test_convert_vectors_to_axes():
@@ -330,6 +466,75 @@ def test_compute_vector_orientation_angles():
     assert np.all(computed_spherical_coords == expected_output)
 
 
+def test_compute_vector_orientation_angles_one_vector():
+    """Test spherical coordinate calculation.
+
+    Unit test for :func:`util.compute_vector_orientation_angles`.
+    """
+
+    # Create the test input vectors and output angles
+    input_vectors = np.array([0, 0, 1])
+
+    expected_output = np.radians([0, 0])
+
+    # Run the conversion
+    computed_spherical_coords = vr.util.compute_vector_orientation_angles(input_vectors)
+
+    # Check the output
+    assert np.all(computed_spherical_coords == expected_output)
+
+
+def test_compute_spherical_coordinates():
+    """Test spherical coordinate calculation.
+
+    Unit test for :func:`util.compute_spherical_coordinates`.
+    """
+
+    # Create the test input vectors and output angles
+    input_vectors = np.array(
+        [[0, 0, 2], [0, 0, -4], [0, 0.5, 0], [0, -1, 0], [0.3, 0, 0], [-1, 0, 0]]
+    )
+
+    expected_output = np.array(
+        [
+            [0, 0, 2],
+            [180, 0, 4],
+            [90, 0, 0.5],
+            [90, 180, 1],
+            [90, 90, 0.3],
+            [90, 270, 1],
+        ]
+    )
+
+    # Run the conversion
+    computed_spherical_coords = vr.util.compute_spherical_coordinates(
+        input_vectors, use_degrees=True
+    )
+
+    # Check the output
+    assert np.all(np.isclose(computed_spherical_coords, expected_output))
+
+
+def test_compute_spherical_coordinates_one_vector():
+    """Test spherical coordinate calculation.
+
+    Unit test for :func:`util.compute_spherical_coordinates`.
+    """
+
+    # Create the test input vectors and output angles
+    input_vectors = np.array([0, 0, 5])
+
+    expected_output = np.array([0, 0, 5])
+
+    # Run the conversion
+    computed_spherical_coords = vr.util.compute_spherical_coordinates(
+        input_vectors, use_degrees=True
+    )
+
+    # Check the output
+    assert np.all(np.isclose(computed_spherical_coords, expected_output))
+
+
 def test_convert_to_math_spherical_coordinates():
     """Test conversion from custom spherical coordinates to FLE system.
 
@@ -349,6 +554,31 @@ def test_convert_to_math_spherical_coordinates():
     # And now perform the conversion
     converted_angles = vr.util.convert_to_math_spherical_coordinates(
         input_angles, use_degrees=False
+    )
+
+    # And check the equality
+    assert np.all(converted_angles == expected_outputs)
+
+
+def test_convert_to_math_spherical_coordinates_degrees():
+    """Test conversion from custom spherical coordinates to FLE system.
+
+    Unit test for :func:`util.convert_to_math_spherical_coordinates`.
+    """
+
+    # Define our input angles
+    input_angles = np.array(
+        [[0, 0], [180, 0], [90, 0], [45, 45], [90, 180], [90, 90], [90, 270]]
+    )
+
+    # Define the expected outputs
+    expected_outputs = np.array(
+        [[90, 0], [90, 180], [90, 90], [45, 45], [270, 90], [0, 90], [180, 90]]
+    )
+
+    # And now perform the conversion
+    converted_angles = vr.util.convert_to_math_spherical_coordinates(
+        input_angles, use_degrees=True
     )
 
     # And check the equality
@@ -375,6 +605,32 @@ def test_convert_to_vectorose_spherical_coordinates():
     # And now perform the conversion
     converted_angles = vr.util.convert_math_spherical_coordinates_to_vr_coordinates(
         input_angles, use_degrees=False
+    )
+
+    # And check the equality
+    assert np.all(converted_angles == expected_outputs)
+
+
+def test_convert_to_vectorose_spherical_coordinates_degrees():
+    """Test conversion from FLE system to the custom spherical coordinates.
+
+    Unit test for
+    :func:`util.convert_math_spherical_coordinates_to_vr_coordinates`.
+    """
+
+    # Define our input angles
+    input_angles = np.array(
+        [[90, 0], [90, 180], [90, 90], [45, 45], [270, 90], [0, 90], [180, 90]]
+    )
+
+    # Define the expected outputs
+    expected_outputs = np.array(
+        [[0, 0], [180, 0], [90, 0], [45, 45], [90, 180], [90, 90], [90, 270]]
+    )
+
+    # And now perform the conversion
+    converted_angles = vr.util.convert_math_spherical_coordinates_to_vr_coordinates(
+        input_angles, use_degrees=True
     )
 
     # And check the equality

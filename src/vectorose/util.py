@@ -248,7 +248,7 @@ def normalise_vectors(vectors: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     vectors = np.atleast_2d(vectors)
 
     # Compute the vector magnitudes
-    vector_components = vectors[:, -3:]
+    vector_components = vectors[..., -3:]
     vector_magnitudes = np.linalg.norm(vector_components, axis=-1)
 
     # Divide by the magnitudes
@@ -261,8 +261,8 @@ def normalise_vectors(vectors: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
     # Create a new array with the modified components if necessary
     if normalised_components.shape != vectors.shape:
-        normalised_vectors = normalised_components.copy()
-        normalised_vectors[:, -3:] = normalised_components
+        normalised_vectors = vectors.copy()
+        normalised_vectors[..., -3:] = normalised_components
     else:
         normalised_vectors = normalised_components
 
@@ -270,70 +270,6 @@ def normalise_vectors(vectors: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         normalised_vectors = np.squeeze(normalised_vectors)
 
     return normalised_vectors, vector_magnitudes
-
-
-def generate_representative_unit_vectors(
-    vectors: np.ndarray,
-    number_of_samples: Optional[int] = None,
-) -> np.ndarray:
-    """Generate a representative sample of unit vectors.
-
-    Using the magnitudes of a set of non-zero, non-unit vectors as weight,
-    create a sample of unit vectors whose frequency is proportional to the
-    magnitudes.
-
-    Parameters
-    ----------
-    vectors
-        Array of shape ``(n, 3)`` containing non-normalised vectors in
-        Cartesian coordinates.
-    number_of_samples
-        Number of vectors to draw randomly. If `None`, then the minimum of
-        the ceiling of the number of vectors divided by the minimum of the
-        normalised magnitudes, or simple ``10e7`` is used.
-
-    Returns
-    -------
-    numpy.ndarray
-        The randomly sampled vectors in an array of shape ``(m, 3)`` where
-        ``m`` is either the value of `number_of_samples` or the
-        automatically computed number described above if
-        `number_of_samples` is `None`.
-
-    Notes
-    -----
-    This function is included to allow computing directional statistics on
-    the inputted vector fields. Most described approaches rely on
-    collections of *unit* vectors. Simply normalising the vectors may alter
-    the meaning of the presented data. The rationale behind this function
-    is to sample unit vectors of direction with probability proportional to
-    the respective magnitudes. This process produces a collection of unit
-    vectors whose distribution of orientations matches the weights imposed
-    by the original magnitudes.
-
-    """
-
-    unit_vectors, magnitudes = normalise_vectors(vectors)
-
-    normalised_magnitudes = normalise_array(magnitudes, axis=0)
-
-    if number_of_samples is None:
-        number_of_vectors = len(normalised_magnitudes)
-        number_of_samples = np.ceil(
-            number_of_vectors / normalised_magnitudes.min()
-        )
-
-        number_of_samples = np.min([number_of_samples, 1e7]).astype(int)
-
-    selected_vectors = np.random.default_rng().choice(
-        unit_vectors,
-        size=number_of_samples,
-        replace=True,
-        p=normalised_magnitudes,
-        axis=0,
-    )
-
-    return selected_vectors
 
 
 def convert_vectors_to_axes(vectors: np.ndarray) -> np.ndarray:
