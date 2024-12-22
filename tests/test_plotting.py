@@ -426,7 +426,9 @@ def test_triangulated_plotting_mpl(
     # Plot the sphere
     fig = plt.figure()
     ax = plt.axes(projection="3d")
-    ax = vr.plotting.produce_3d_triangle_sphere_plot(ax, sphere, orientation_hist)
+    ax = vr.plotting.produce_3d_triangle_sphere_plot(
+        ax, sphere, orientation_hist, plot_colour_bar=True
+    )
     fig.add_axes(ax)
     fig.savefig(os.path.join(tmp_path, "test_plot.png"))
 
@@ -440,6 +442,10 @@ def test_triangulated_plotting_mpl(
 
     # Check to make sure the number of patches is as expected
     assert actual_number_of_patches == expected_number_of_patches
+
+    # Check that there are two axes plotted: one for the plot, and one for
+    # the colour bar.
+    assert len(fig.axes) == 2
 
     plt.close(fig)
 
