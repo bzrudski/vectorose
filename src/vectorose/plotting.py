@@ -264,7 +264,7 @@ class SpherePlotter:
         self,
         sphere_meshes: List[pv.PolyData] | pv.PolyData,
         visible_shells: Optional[List[int]] = None,
-        off_screen: bool = False,
+        off_screen: bool = None,
         cmap: str = "viridis",
     ):
         # If only a single mesh has been passed it, wrap in a list.
@@ -1585,12 +1585,12 @@ def produce_3d_triangle_sphere_plot(
 
     # Now, prepare the sphere for plotting
     sphere_mesh = sphere.create_mesh()
-    vertices: np.ndarray = sphere_mesh.verts
+    vertices: np.ndarray = sphere_mesh.points
     x_coordinates = vertices[:, 0]
     y_coordinates = vertices[:, 1]
     z_coordinates = vertices[:, 2]
 
-    triangles = sphere_mesh.faces
+    triangles = sphere_mesh.faces.reshape(-1, 4)[:, 1:]
 
     # Plot the sphere
     ax.plot_trisurf(
@@ -1819,7 +1819,7 @@ def construct_uv_sphere_vertices(
     numpy.ndarray
         Array containing the Cartesian coordinates of the sphere vertices
         in a format to plot using :meth:`Axes3D.plt_surface`. This array
-        will have shape ``(phi_steps + 1, theta_steps + 1, 3)`` where the
+        will have shape ``(theta_steps + 1, phi_steps + 1, 3)`` where the
         last axis corresponds to the ``X, Y, Z`` components.
 
     Warnings
@@ -1955,172 +1955,6 @@ def construct_uv_sphere_mesh(
     uv_sphere_mesh = pv.PolyData(sphere_cartesian_coordinates, cell_array)
 
     return uv_sphere_mesh
-
-
-def produce_uv_spherical_2d_data_plot(
-    ax: mpl_toolkits.mplot3d.axes3d.Axes3D,
-    sphere_radius: float,
-    data: np.ndarray,
-    min_value: Optional[float] = None,
-    max_value: Optional[float] = None,
-    colour_map: str = "viridis",
-    sphere_projection: SphereProjection = SphereProjection.ORTHOGRAPHIC,
-    norm: Optional[plt.Normalize] = None,
-    sphere_alpha: float = 1.0,
-    **kwargs: Optional[dict[str, Any]],
-) -> mpl_toolkits.mplot3d.axes3d.Axes3D:
-    """Produce a UV spherical histogram plot on the provided axes.
-
-    Using the provided axes, produce a spherical plot of provided 2D
-    histogram data. This plot has a constant radius and is coloured using
-    the provided data using the specified colour map. The data can
-    optionally be normalised to fit a new range.
-
-    Parameters
-    ----------
-    ax
-        Matplotlib :class:`Axes3D` on which to plot the 3D spherical
-        histogram. The projection of these axes **must** be 3D.
-    sphere_radius
-        Radius of the sphere to plot.
-    data
-        Array of shape ``(n, n)`` where ``n`` represents the half-number of
-        histogram bins. We assume that the half-number of bins
-        is the **same** in both phi and theta. This
-        function separates the data to plot half of it on the sphere.
-    min_value
-        Minimum value for data normalisation. If not specified, the minimum
-        of the data is automatically used instead.
-    max_value
-        Maximum value for data normalisation. If not specified, the maximum
-        of the data is automatically used instead.
-    colour_map
-        Name of the Matplotlib colour map to be used for colouring the
-        histogram data.
-    norm
-        Optional :class:`matplotlib.colors.Normalize` object to use to
-        normalise the colours.
-    sphere_projection
-        3D projection method to be used for the spherical figure. Options
-        are orthographic and perspective projection.
-        See :class:`SphereProjection`.
-    sphere_alpha
-        Opacity of the sphere.
-    **kwargs
-        Keyword arguments for the plot labelling.
-        See :func:`.produce_labelled_3d_plot` for options.
-
-    Returns
-    -------
-    mpl_toolkits.mplot3d.axes3d.Axes3D
-        A reference to the :class:`Axes3D` object passed in as ``ax``.
-
-    Warnings
-    --------
-    The provided axes must have the projection set to 3D
-    using ``projection="3d"``.
-
-    This function should not be used for any meaningful histogram
-    construction. The faces have large discrepancies in area and should
-    **not** be used for interpreting data.
-
-    The provided data must occupy the entire sphere. No manipulations will
-    be performed in this function to get the face colours to match the
-    number of faces.
-
-    See Also
-    --------
-    .produce_labelled_3d_plot:
-        Label the axes of the 3D plot.
-    .produce_3d_triangle_sphere_plot:
-        Similar function for an icosphere.
-
-    Notes
-    -----
-    The data provided to this function is stored as a square array of shape
-    ``(n, n)``. To generate the sphere colouring data, we duplicate the
-    data and invert it with respect to the ``phi`` axis. The copying
-    provides the values for :math:`\\theta \\in [-180^\\circ, 0^\\circ]`.
-    We then invert the array to correct the ``phi`` values.
-    """
-
-    # Get the data to plot on the sphere.
-    half_number_of_bins, number_of_bins = data.shape
-
-    # Well, we want to have the phi go from zero to 180 only! But, we
-    # want theta to go from -180 to +180. So, we're going to do just
-    # that (but remember, we're in radians, so it'll be 0 to pi for phi
-    # and -pi to pi for theta).
-
-    # In terms of the number of bins, we want there to be half as many
-    # bins in phi as in theta (I think...), since the phi bins only
-    # actually cover half the sphere while the theta bins go all the way
-    # around.
-
-    # In the mgrid, we are defining where the bin **dividers** go, not
-    # where the bins are! So, recall that we need to have one more
-    # divider than the number of bins.
-    number_of_phi_dividers = half_number_of_bins + 1
-    number_of_theta_dividers = number_of_bins + 1
-
-    # sphere_phi, sphere_theta = np.mgrid[
-    #     0 : np.pi : number_of_phi_dividers * 1j,
-    #     -np.pi : np.pi : number_of_theta_dividers * 1j,
-    # ]
-    #
-    # sphere_angles = np.stack([sphere_phi, sphere_theta], axis=-1)
-
-    # Get the cartesian coordinates of the sphere
-    # sphere_cartesian_coordinates = util.convert_spherical_to_cartesian_coordinates(
-    #     angular_coordinates=sphere_angles, radius=sphere_radius
-    # )
-    #
-
-    sphere_cartesian_coordinates = construct_uv_sphere_vertices(
-        phi_steps=number_of_phi_dividers,
-        theta_steps=number_of_theta_dividers,
-        radius=sphere_radius,
-    )
-
-    sphere_x = sphere_cartesian_coordinates[..., 0]
-    sphere_y = sphere_cartesian_coordinates[..., 1]
-    sphere_z = sphere_cartesian_coordinates[..., 2]
-
-    try:
-        mpl_colour_map = plt.get_cmap(colour_map)
-    except ValueError:
-        mpl_colour_map = plt.get_cmap("gray")
-
-    if norm is None:
-        norm = plt.Normalize(vmin=min_value, vmax=max_value)
-    else:
-        norm.vmax = max_value or norm.vmax
-        norm.vmin = min_value or norm.vmin
-
-    normalised_sphere_intensities = norm(data)
-    sphere_face_colours = mpl_colour_map(normalised_sphere_intensities)
-
-    # Construct the 3D plot
-    ax.set_proj_type(sphere_projection.value)
-
-    surface = ax.plot_surface(
-        sphere_x,
-        sphere_y,
-        sphere_z,
-        rstride=1,
-        cstride=1,
-        facecolors=sphere_face_colours,
-        alpha=sphere_alpha,
-        shade=False,
-    )
-    # surface.set_edgecolor("white")
-    # surface.set_linewidth(0.25)
-
-    ax = produce_labelled_3d_plot(ax=ax, radius=sphere_radius, norm=norm, **kwargs)
-
-    ax.set_aspect("equal")
-
-    return ax
 
 
 def __update_sphere_viewing_angle(
