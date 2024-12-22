@@ -41,11 +41,9 @@ class VectorFileType(enum.Enum):
     CSV
         Comma-separated value file, in which the columns will be separated
         by a tab "\\t". File extension: ``*.csv``.
-
     NPY
         NumPy array, which can easily be loaded into NumPy. File extension:
         ``*.npy``.
-
     EXCEL
         Microsoft Excel spreadsheet (compatible with Excel 2007 or later).
         File extension: ``*.xlsx``.
@@ -73,13 +71,10 @@ class ImageFileType(enum.Enum):
     -------
     PNG
         Portable Network Graphics (png) image (raster).
-
     TIFF
         Tagged Image File Format (tiff) image (raster).
-
     SVG
         Scalable Vector Graphic (svg) image (vector).
-
     PDF
         Portable Document Format (pdf) file (vector).
 
@@ -106,7 +101,6 @@ class VideoFileType(enum.Enum):
     -------
     MP4
         Moving Picture Experts Group (MPEG) 4 video format.
-
     GIF
         Graphics Interchange Format animated image (regardless of whether
         you pronounce if G-IF or J-IF).
@@ -136,7 +130,6 @@ def __infer_filetype_from_filename(
     ----------
     filename
         String containing the filename.
-
     file_type_enum
         Enumerated type representing the desired file type. This enumerated
         type should have string values representing various file
@@ -237,7 +230,6 @@ def import_vector_field(
     component_columns: Sequence[int] = DEFAULT_COMPONENT_COLUMNS,
     component_axis: int = -1,
     separator: str = "\t",
-    silence_exceptions: bool = True,
 ) -> Optional[np.ndarray]:
     """Import a vector field.
 
@@ -251,41 +243,29 @@ def import_vector_field(
     ----------
     filepath
         File path to the vector field file.
-
     default_file_type
         File type to attempt if the type cannot be inferred from the
         filename.
-
     contains_headers
         Indicate whether the file contains headers. This option is only
         considered if the vectors are in a CSV or Excel file.
-
     sheet
         Name or index of the sheet to consider if the vectors are in an
         Excel file.
-
     location_columns
         Column indices for the vector *spatial coordinates* in the order
         ``(x, y, z)``. If this is set to :class:`None`, the vectors are
         assumed to be located at the origin. By default, the first three
         columns are assumed to refer to ``(x, y, z)``, respectively.
-
     component_columns
         Column indices referring to the vector *components* in the order
         ``(vx, vy, vz)``. By default, the last three columns
         ``(-3, -2, -1)`` are assumed to be the ``(vx, vy, vz)``.
-
     component_axis
         Axis along which the components are defined, in the case of a NumPy
         array which has more than 2 dimensions.
-
     separator
         Column separator to use if the vector field is a CSV file.
-
-    silence_exceptions
-        Indicate whether to silence exceptions. If `True`, then `None` will
-        be returned if an error is encountered. Otherwise, any exceptions
-        will be raised to the calling code.
 
     Returns
     -------
@@ -319,50 +299,38 @@ def import_vector_field(
         filetype = default_file_type
 
     if filetype is VectorFileType.NPY:
-        try:
-            vector_field: np.ndarray = np.load(filepath)
+        vector_field: np.ndarray = np.load(filepath)
 
-            # Check the dimension of the vector field array
-            if vector_field.ndim > 2:
-                # Get the vector dimension
-                d = vector_field.shape[component_axis]
+        # Check the dimension of the vector field array
+        if vector_field.ndim > 2:
+            # Get the vector dimension
+            d = vector_field.shape[component_axis]
 
-                # Flatten the array
-                vector_field = np.moveaxis(vector_field, component_axis, -1).reshape(
-                    -1, d
-                )
+            # Flatten the array
+            vector_field = np.moveaxis(vector_field, component_axis, -1).reshape(
+                -1, d
+            )
 
-                # Remove any rows containing NaN
-                vector_field = vector_field[~np.any(np.isnan(vector_field), axis=1)]
-        except (OSError, ValueError):
-            # Invalid NumPy array, so return None.
-            if not silence_exceptions:
-                raise
-
-            return None
+            # Remove any rows containing NaN
+            vector_field = vector_field[~np.any(np.isnan(vector_field), axis=1)]
 
     # Use Pandas in the other cases
     else:
         header_row: Optional[int] = 0 if contains_headers else None
-        try:
-            # Reading function depends on whether CSV or Excel
-            if filetype is VectorFileType.CSV:
-                vector_field_dataframe = pd.read_csv(
-                    filepath, header=header_row, sep=separator
-                )
-            elif filetype is VectorFileType.EXCEL:
-                vector_field_dataframe = pd.read_excel(
-                    filepath, sheet_name=sheet, header=header_row
-                )
-            else:
-                return None
-
-            # Remove NaN values
-            vector_field = vector_field_dataframe.dropna().to_numpy()
-        except (OSError, ValueError):
-            if not silence_exceptions:
-                raise
+        # Reading function depends on whether CSV or Excel
+        if filetype is VectorFileType.CSV:
+            vector_field_dataframe = pd.read_csv(
+                filepath, header=header_row, sep=separator
+            )
+        elif filetype is VectorFileType.EXCEL:
+            vector_field_dataframe = pd.read_excel(
+                filepath, sheet_name=sheet, header=header_row
+            )
+        else:
             return None
+
+        # Remove NaN values
+        vector_field = vector_field_dataframe.dropna().to_numpy()
 
     n, d = vector_field.shape
 
@@ -399,21 +367,16 @@ def export_mpl_animation(
     ----------
     animation
         The :class:`matplotlib.animation.Animation` animation to export.
-
     filename
         The destination for the video export. This filename will be used to
         infer the export file type.
-
     file_type
         The default filetype to consider if unable to resolve the file type
         from the file name.
-
     dpi
         Resolution of the exported video in dots-per-inch (DPI).
-
     fps
         Desired frame rate in the exported video.
-
     export_kwargs
         Additional keyword arguments
         to :meth:`matplotlib.animation.Animation.save`.
