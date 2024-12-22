@@ -201,7 +201,29 @@ class TregenzaSphere(SphereBase):
         return rings
 
     def to_dataframe(self) -> pd.DataFrame:
-        """Get the data frame representation of the sphere."""
+        """Get the data frame representation of the sphere.
+
+        Returns
+        -------
+        pandas.DataFrame
+            Representation of the sphere as a table. See **Notes** for
+            details.
+
+        Notes
+        -----
+        The :class:`pandas.DataFrame` contains as index the ring number.
+        For each row, the following columns are present:
+
+            * ``bins`` -- the number of bins in each ring;
+            * ``start`` -- the starting phi value for each ring;
+            * ``end`` -- the ending phi angle of each ring;
+            * ``theta_inc`` -- the theta increment within each ring;
+            * ``face_area`` -- the area of the faces in each ring;
+            * ``weight`` -- the correction weight for the faces in each
+                ring;
+            * ``regular`` -- an indication of whether the ring has a
+                regular almucantar spacing or not.
+        """
 
         return self._rings.copy()
 

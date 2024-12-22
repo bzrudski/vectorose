@@ -63,7 +63,15 @@ class TriangleSphere(SphereBase):
         return face_series
 
     def to_dataframe(self) -> pd.DataFrame:
-        """Get the data frame representation of the sphere."""
+        """Get the data frame representation of the sphere.
+
+        Notes
+        -----
+        The produced table contains one row for each face in the
+        triangulated sphere. The column headers are ``x1``, ``y1``, ``z1``,
+        ``x2``, ``y2``, ``z2``, ``x3``, ``y3``, ``z3``, reflecting the
+        Cartesian coordinates of each vertex forming the face.
+        """
 
         return self._faces.copy()
 
