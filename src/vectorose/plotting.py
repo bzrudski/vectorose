@@ -175,6 +175,7 @@ class ViewingPlanes(str, enum.Enum):
     pyvista.Plotter.camera_position :
         The function used to set the view to one of these planes.
     """
+
     XY = "xy"
     XZ = "xz"
     YZ = "yz"
@@ -241,7 +242,7 @@ class SpherePlotter:
     @azimuth.setter
     def azimuth(self, offset: float):
         self._plotter.camera.azimuth += offset
-        
+
     @property
     def elevation(self) -> float:
         """Get or set the elevation."""
@@ -250,7 +251,7 @@ class SpherePlotter:
     @elevation.setter
     def elevation(self, offset: float):
         self._plotter.camera.elevation += offset
-        
+
     @property
     def roll(self) -> float:
         """Get or set the roll."""
@@ -960,9 +961,7 @@ class SpherePlotter:
         if scale is not None:
             self._plotter.scale = scale
 
-        self._plotter.save_graphic(
-            filename, title, raster, painter
-        )
+        self._plotter.save_graphic(filename, title, raster, painter)
 
         # Reset the parameters
         self._plotter.window_size = old_window_size
@@ -1033,7 +1032,8 @@ def produce_1d_scalar_histogram(
         Indicate whether to use a logarithmic scale for the y-axis.
     **kwargs
         Keyword arguments for plotting the histogram.
-        See :class:`matplotlib.patches.StepPatch` for details.
+        See :func:`matplotlib.axes.bar` and
+        :class:`matplotlib.patches.Rectangle` for more details.
 
     Returns
     -------
@@ -1042,16 +1042,16 @@ def produce_1d_scalar_histogram(
 
     See Also
     --------
-    matplotlib.pyplot.stairs: combine bins into a stair-like plot.
+    matplotlib.pyplot.bar: create a bar plot using provided heights.
 
     """
 
     ax = ax or plt.axes()
-
-    ax.stairs(counts, bin_edges, fill=fill, **kwargs)
+    bin_widths = bin_edges - np.roll(bin_edges, 1)
+    ax.bar(bin_edges[:-1], counts, bin_widths[1:], align="edge", fill=fill, **kwargs)
 
     if log:
-        ax.set_yscale('log')
+        ax.set_yscale("log")
 
     return ax
 
@@ -1127,7 +1127,6 @@ def produce_polar_histogram_plot(
     ax.axes.yaxis.set_ticklabels([])
 
     if label_axis:
-
         if axis_ticks_unit is AngularUnits.DEGREES:
             axis_ticks = np.radians(axis_ticks)
 
@@ -1148,6 +1147,7 @@ def produce_phi_theta_polar_histogram_plots(
     use_degrees: bool = True,
     use_counts: bool = False,
     plot_title: Optional[str] = None,
+    fig: Optional[plt.Figure] = None,
 ):
     """Produce and show the 1D polar phi and theta histograms.
 
@@ -1174,6 +1174,9 @@ def produce_phi_theta_polar_histogram_plots(
         opposed to the frequencies.
     plot_title
         Title of the overall plot (optional).
+    fig
+        Figure on which to produce the plots. If `None`, a new figure is
+        created.
 
     See Also
     --------
@@ -1193,7 +1196,7 @@ def produce_phi_theta_polar_histogram_plots(
     theta_bins = theta_data["start"].to_numpy()
 
     # Construct the 3D plot
-    plt.figure(figsize=(7, 3.5))
+    fig = fig or plt.figure(figsize=(7, 3.5))
 
     # Construct the 2D plots
     # Need to convert the bins back to radians if things have been done in degrees
@@ -1202,7 +1205,7 @@ def produce_phi_theta_polar_histogram_plots(
         theta_bins = np.radians(theta_bins)
 
     # Construct the theta polar plot
-    ax1 = plt.subplot(121, projection="polar")
+    ax1 = fig.add_subplot(121, projection="polar")
     ax1 = produce_polar_histogram_plot(
         ax=ax1,
         data=theta_histogram,
@@ -1213,7 +1216,7 @@ def produce_phi_theta_polar_histogram_plots(
     )
 
     # Construct the phi polar plot
-    ax2 = plt.subplot(122, projection="polar")
+    ax2 = fig.add_subplot(122, projection="polar")
     ax2 = produce_polar_histogram_plot(
         ax=ax2,
         data=phi_histogram,
@@ -1224,9 +1227,9 @@ def produce_phi_theta_polar_histogram_plots(
     )
 
     # Show the plots
-    plt.suptitle(plot_title, fontweight="bold", fontsize=14)
-    plt.subplots_adjust(left=0.05, right=0.95, wspace=0.25)
-    plt.show()
+    fig.suptitle(plot_title, fontweight="bold", fontsize=14)
+    fig.subplots_adjust(left=0.05, right=0.95, wspace=0.25)
+    return fig
 
 
 def produce_labelled_3d_plot(
@@ -1677,9 +1680,7 @@ def produce_3d_tregenza_sphere_plot(
             # Find the maximum and minimum counts
             min_face_count = histogram_data.min()
             max_face_count = histogram_data.max()
-            norm = matplotlib.colors.Normalize(
-                vmin=min_face_count, vmax=max_face_count
-            )
+            norm = matplotlib.colors.Normalize(vmin=min_face_count, vmax=max_face_count)
         else:
             norm.autoscale_None(histogram_data)
 
@@ -1711,10 +1712,8 @@ def produce_3d_tregenza_sphere_plot(
     phi_upper_second_row = np.ones(thetas_second_row.shape) * phi_upper
     top_cap_vertices = np.stack([phi_upper_second_row, thetas_second_row], axis=-1)
 
-    top_cap_vertices_cartesian = (
-        util.convert_spherical_to_cartesian_coordinates(
-            top_cap_vertices, use_degrees=True
-        )
+    top_cap_vertices_cartesian = util.convert_spherical_to_cartesian_coordinates(
+        top_cap_vertices, use_degrees=True
     )
 
     all_patch_vertices.append(top_cap_vertices_cartesian)
@@ -1749,10 +1748,8 @@ def produce_3d_tregenza_sphere_plot(
 
             face_vertices = np.array([v1, v2, v3, v4])
 
-            face_vertices_cartesian = (
-                util.convert_spherical_to_cartesian_coordinates(
-                    face_vertices, use_degrees=True
-                )
+            face_vertices_cartesian = util.convert_spherical_to_cartesian_coordinates(
+                face_vertices, use_degrees=True
             )
 
             all_patch_vertices.append(face_vertices_cartesian)
@@ -1767,10 +1764,8 @@ def produce_3d_tregenza_sphere_plot(
         [phi_value_bottom_row, thetas_second_last_row], axis=-1
     )
 
-    bottom_cap_vertices_cartesian = (
-        util.convert_spherical_to_cartesian_coordinates(
-            np.radians(bottom_cap_vertices)
-        )
+    bottom_cap_vertices_cartesian = util.convert_spherical_to_cartesian_coordinates(
+        np.radians(bottom_cap_vertices)
     )
 
     all_patch_vertices.append(bottom_cap_vertices_cartesian)
@@ -1906,12 +1901,9 @@ def construct_uv_sphere_mesh(
     first_ring_starts = np.arange(1, theta_steps + 1)
     first_ring_ends = np.roll(first_ring_starts, -1)
     apex = np.zeros(theta_steps, dtype=int)
-    top_fan_cells = np.stack([
-        face_count,
-        apex,
-        first_ring_starts,
-        first_ring_ends
-    ], axis=-1)
+    top_fan_cells = np.stack(
+        [face_count, apex, first_ring_starts, first_ring_ends], axis=-1
+    )
     cells.append(top_fan_cells)
 
     # Define each row
@@ -1925,13 +1917,16 @@ def construct_uv_sphere_mesh(
         bottom_left_corner = upper_ring + theta_steps
         bottom_right_corner = top_right_corner + theta_steps
 
-        ring_cells = np.stack([
-            vertex_count_column,
-            top_left_corner,
-            top_right_corner,
-            bottom_right_corner,
-            bottom_left_corner
-        ], axis=-1)
+        ring_cells = np.stack(
+            [
+                vertex_count_column,
+                top_left_corner,
+                top_right_corner,
+                bottom_right_corner,
+                bottom_left_corner,
+            ],
+            axis=-1,
+        )
 
         cells.append(ring_cells)
 
@@ -1941,12 +1936,9 @@ def construct_uv_sphere_mesh(
     last_ring_starts = np.arange(bottom_apex_index - theta_steps, bottom_apex_index)
     last_ring_ends = np.roll(last_ring_starts, -1)
     bottom_apex = bottom_apex_index * np.ones(theta_steps, dtype=int)
-    bottom_fan_cells = np.stack([
-        face_count,
-        bottom_apex,
-        last_ring_starts,
-        last_ring_ends
-    ], axis=-1)
+    bottom_fan_cells = np.stack(
+        [face_count, bottom_apex, last_ring_starts, last_ring_ends], axis=-1
+    )
     cells.append(bottom_fan_cells)
 
     cell_array = np.concatenate(cells, axis=-1)
