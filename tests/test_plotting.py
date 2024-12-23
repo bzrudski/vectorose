@@ -103,6 +103,7 @@ def label_vectors_polar(vectors):
 
 @pytest.fixture
 def mock_nested_histogram_meshes(
+    setup_pyvista_environment,
     label_vectors: tuple[pd.DataFrame, np.ndarray, vr.tregenza_sphere.TregenzaSphere]
 ) -> list[pv.PolyData]:
     """Generate several nested dummy meshes for testing."""
@@ -144,21 +145,311 @@ def test_sphere_plotter_initialisation_many_meshes(mock_nested_histogram_meshes)
     assert plotter.sphere_meshes == mock_nested_histogram_meshes
 
 
-#
-# def test_add_spherical_axes_phi_theta(dummy_mesh):
-#     """Test the spherical axis plotting functionality.
-#
-#     Test for :meth:`.SpherePlotter.add_spherical_axes` with both the phi
-#     and the theta axes.
-#     """
-#
-#     plotter = vr.plotting.SpherePlotter(dummy_mesh)
-#
-#     # Add the spherical axes
-#     plotter.add_spherical_axes(plot_phi=True, plot_theta=True)
-#
-#     # Check that they've actually been added
-#     assert False
+def test_no_spherical_axes(mock_nested_histogram_meshes):
+    """Test the spherical axis properties.
+
+    Test for the properties :prop:`.SpherePlotter.phi_axis_visible` and
+    :prop:`.SpherePlotter.theta_axis_visible` when the axes are not added.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    # Don't add the spherical axes
+
+    # Check that they've not been added
+    assert not plotter.phi_axis_visible, "Incorrect phi axis visibility."
+    assert not plotter.theta_axis_visible, "Incorrect theta axis visibility."
+    assert not plotter.axis_labels_visible, "Incorrect axis label visibility."
+
+
+def test_add_spherical_axes_phi_theta(mock_nested_histogram_meshes):
+    """Test the spherical axis plotting functionality.
+
+    Test for :meth:`.SpherePlotter.add_spherical_axes` with both the phi
+    and the theta axes.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    # Add the spherical axes
+    plotter.add_spherical_axes(plot_phi=True, plot_theta=True)
+
+    # Check that they've actually been added
+    assert plotter.phi_axis_visible, "Incorrect phi axis visibility."
+    assert plotter.theta_axis_visible, "Incorrect theta axis visibility."
+    assert plotter.axis_labels_visible, "Incorrect axis label visibility."
+
+
+def test_add_spherical_axes_only_phi(mock_nested_histogram_meshes):
+    """Test the spherical axis plotting functionality.
+
+    Test for :meth:`.SpherePlotter.add_spherical_axes` with only the phi
+    axis but no theta axis.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    # Add the spherical axes
+    plotter.add_spherical_axes(plot_phi=True, plot_theta=False)
+
+    # Check that they've actually been added
+    assert plotter.phi_axis_visible, "Incorrect phi axis visibility."
+    assert not plotter.theta_axis_visible, "Incorrect theta axis visibility."
+    assert plotter.axis_labels_visible, "Incorrect axis label visibility."
+
+
+def test_add_spherical_axes_only_theta(mock_nested_histogram_meshes):
+    """Test the spherical axis plotting functionality.
+
+    Test for :meth:`.SpherePlotter.add_spherical_axes` with only the theta
+    axis but no phi axis.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    # Add the spherical axes
+    plotter.add_spherical_axes(plot_phi=False, plot_theta=True)
+
+    # Check that they've actually been added
+    assert not plotter.phi_axis_visible, "Incorrect phi axis visibility."
+    assert plotter.theta_axis_visible, "Incorrect theta axis visibility."
+    assert plotter.axis_labels_visible, "Incorrect axis label visibility."
+
+
+def test_spherical_axes_hiding_phi_theta(mock_nested_histogram_meshes):
+    """Test the spherical axis hiding functionality.
+
+    Test for :meth:`.SpherePlotter.hide_axes` with both the phi and theta
+    axes.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    # Add the spherical axes
+    plotter.add_spherical_axes(plot_phi=True, plot_theta=True)
+
+    # Check that they've actually been added
+    assert plotter.phi_axis_visible, "Incorrect phi axis visibility."
+    assert plotter.theta_axis_visible, "Incorrect theta axis visibility."
+    assert plotter.axis_labels_visible, "Incorrect axis label visibility."
+
+    # Hide the axes
+    plotter.hide_axes()
+
+    # Check that everything is now hidden
+    assert not plotter.phi_axis_visible, "Incorrect phi axis visibility."
+    assert not plotter.theta_axis_visible, "Incorrect theta axis visibility."
+    assert not plotter.axis_labels_visible, "Incorrect axis label visibility."
+
+    # Un-hide the axes
+    plotter.show_axes()
+
+    # Check that everything is now visible
+    assert plotter.phi_axis_visible, "Incorrect phi axis visibility."
+    assert plotter.theta_axis_visible, "Incorrect theta axis visibility."
+    assert plotter.axis_labels_visible, "Incorrect axis label visibility."
+
+
+def test_clear_spherical_axes(mock_nested_histogram_meshes):
+    """Test the spherical axis removal.
+
+    Test for :meth:`.SpherePlotter.clear_spherical_axes` after both the phi
+    and theta axes have been added.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    # Add the spherical axes
+    plotter.add_spherical_axes(plot_phi=True, plot_theta=True)
+
+    # Check that they've actually been added
+    assert plotter.phi_axis_visible, "Incorrect phi axis visibility."
+    assert plotter.theta_axis_visible, "Incorrect theta axis visibility."
+    assert plotter.axis_labels_visible, "Incorrect axis label visibility."
+
+    # Remove the axes
+    plotter.clear_axes()
+    assert not plotter.phi_axis_visible, "Incorrect phi axis visibility."
+    assert not plotter.theta_axis_visible, "Incorrect theta axis visibility."
+    assert not plotter.axis_labels_visible, "Incorrect axis label visibility."
+
+
+def test_sliders_visibility_no_sliders(mock_nested_histogram_meshes):
+    """Test the slider visibility property when no sliders are added.
+
+    Test for :prop:`.SpherePlotter.sliders_visible` when no sliders are
+    added.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot(add_sliders=False)
+
+    # Check that they've actually been added
+    assert not plotter.sliders_visible, "Incorrect slider visibility."
+
+
+def test_sliders_visibility_with_sliders(mock_nested_histogram_meshes):
+    """Test the slider visibility property when sliders are added.
+
+    Test for :prop:`.SpherePlotter.sliders_visible` when sliders are
+    added.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot(add_sliders=True)
+
+    # Check that they've actually been added
+    assert plotter.sliders_visible, "Incorrect slider visibility."
+
+
+def test_sliders_visibility_with_sliders_hiding(mock_nested_histogram_meshes):
+    """Test the slider visibility property when sliders are added.
+
+    Test for :prop:`.SpherePlotter.sliders_visible`, as well as the methods
+    :meth:`.SpherePlotter.show_sliders` and
+    :meth:`.SpherePlotter.hide_sliders` when sliders are added.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot(add_sliders=True)
+
+    # Check that they've actually been added
+    assert plotter.sliders_visible, "Incorrect slider visibility."
+
+    # Hide the sliders
+    plotter.hide_sliders()
+
+    # Check that they've been hidden
+    assert not plotter.sliders_visible, "Incorrect slider visibility."
+
+    # Un-hide the sliders
+    plotter.show_sliders()
+
+    assert plotter.sliders_visible, "Incorrect slider visibility."
+
+
+def test_sliders_visibility_no_sliders_hiding(mock_nested_histogram_meshes):
+    """Test the slider visibility when sliders are not added.
+
+    Test for :prop:`.SpherePlotter.sliders_visible`, as well as the methods
+    :meth:`.SpherePlotter.show_sliders` and
+    :meth:`.SpherePlotter.hide_sliders` when sliders are not added.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot(add_sliders=False)
+
+    # Check that they've actually been added
+    assert not plotter.sliders_visible, "Incorrect slider visibility."
+
+    # Hide the sliders
+    plotter.hide_sliders()
+
+    # Check that they've been hidden
+    assert not plotter.sliders_visible, "Incorrect slider visibility."
+
+    # Un-hide the sliders
+    plotter.show_sliders()
+
+    assert not plotter.sliders_visible, "Incorrect slider visibility."
+
+
+def test_shell_activation(mock_nested_histogram_meshes):
+    """Test the shell activation.
+
+    Test for the property :prop:`.SphereBase.active_shell` to ensure that
+    the values are properly set and retrieved.
+    """
+
+    number_of_shells = len(mock_nested_histogram_meshes)
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    for i in range(number_of_shells):
+        plotter.active_shell = i
+
+        assert plotter.active_shell == i, "Incorrect shell activated."
+
+
+def test_active_shell_opacity(mock_nested_histogram_meshes):
+    """Test the active shell opacity.
+
+    Test of the property :prop:`.SphereBase.active_shell_opacity`.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    opacities = [0, 0.2, 0.4, 0.6, 0.8, 1.0]
+
+    for opacity in opacities:
+        plotter.active_shell_opacity = opacity
+
+        assert plotter.active_shell_opacity == opacity, "Incorrect opacity value."
+
+
+def test_inactive_shell_opacity(mock_nested_histogram_meshes):
+    """Test the inactive shell opacity.
+
+    Test of the property :prop:`.SphereBase.inactive_shell_opacity`.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    opacities = [0, 0.2, 0.4, 0.6, 0.8, 1.0]
+
+    for opacity in opacities:
+        plotter.inactive_shell_opacity = opacity
+
+        assert plotter.inactive_shell_opacity == opacity, "Incorrect opacity value."
+
+
+def test_scalar_bar_visibility(mock_nested_histogram_meshes):
+    """Test the scalar bar visibility property when the bar is added.
+
+    Test for :prop:`.SpherePlotter.scalar_bars_visible` when scalar bars
+    are added.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    # Check that they've actually been added
+    assert plotter.scalar_bars_visible, "Incorrect scalar bar visibility."
+
+
+def test_scalar_bar_hiding(mock_nested_histogram_meshes):
+    """Test the scalar bar hiding.
+
+    Test for :meth:`.SpherePlotter.show_scalar_bars` and
+    :meth:`.SpherePlotter.hide_scalar_bars` when a scalar bar is present.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    # Check that they've actually been added
+    assert plotter.scalar_bars_visible, "Incorrect scalar bar visibility."
+
+    # Hide the scalar bars
+    plotter.hide_scalar_bars()
+
+    # Check that they're no longer visible
+    assert not plotter.scalar_bars_visible, "Incorrect scalar bar visibility."
+
+    # Un-hide the scalar bars
+    plotter.show_scalar_bars()
+
+    # Give another check on the visibility
+    assert plotter.scalar_bars_visible, "Incorrect scalar bar visibility."
 
 
 def test_export_screenshot(mock_nested_histogram_meshes, tmp_path):
