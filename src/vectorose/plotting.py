@@ -186,7 +186,17 @@ class ViewingPlanes(str, enum.Enum):
 
 
 class SpherePlotter:
-    """Produce beautiful, fast 3D sphere plots using PyVista."""
+    """Produce beautiful, fast 3D sphere plots using PyVista.
+
+
+    Warnings
+    --------
+    The behaviour of the :prop:`.roll`, :prop:`.elevation` and
+    :prop:`.azimuth` is unstable and not completely as expected. Always
+    double-check your viewing angles using the onscreen Cartesian axis
+    indicators to assess whether the property values make sense.
+
+    """
 
     _sphere_meshes: List[pv.PolyData]
     """The meshes representing individual shells."""
@@ -194,8 +204,8 @@ class SpherePlotter:
     _largest_radius: float
     """The largest radius of a plotted sphere."""
 
-    _selected_shell: int
-    """The index of the currently-selected shell."""
+    _active_shell: int
+    """The index of the currently-active shell."""
 
     _visible_shells: List[int]
     """The indicies of the shells to plot as visible."""
@@ -228,6 +238,97 @@ class SpherePlotter:
     def sphere_meshes(self) -> List[pv.PolyData]:
         """Access the wrapped sphere meshes."""
         return self._sphere_meshes
+
+    @property
+    def phi_axis_visible(self) -> bool:
+        """Indicate whether the phi axis is visible."""
+        if self._phi_axis_actor is None:
+            return False
+        return self._phi_axis_actor.visibility
+    
+    @property
+    def theta_axis_visible(self) -> bool:
+        """Indicate whether the theta axis is visible."""
+        if self._theta_axis_actor is None:
+            return False
+        return self._theta_axis_actor.visibility
+
+    @property
+    def axis_labels_visible(self) -> bool:
+        """Indicate whether the axis labels are visible."""
+        if self._point_label_actor is None:
+            return False
+        return self._point_label_actor.GetVisibility()
+
+    @property
+    def sliders_visible(self) -> bool:
+        """Indicate whether the sliders are visible.
+
+        If the plot was created without sliders, this always evaluates to
+        `False`.
+        """
+
+        sliders = self._plotter.slider_widgets
+
+        if len(sliders) == 0:
+            return False
+
+        return all(slider.GetEnabled() for slider in sliders)
+
+    @property
+    def scalar_bars_visible(self) -> bool:
+        """Indicate whether the scalar bars are visible.
+
+        If there are no scalar bars, this will always return `False`.
+        """
+
+        scalar_bars = self._plotter.scalar_bars
+
+        if len(scalar_bars) == 0:
+            return False
+
+        return all(scalar_bars[k].GetVisibility() for k in scalar_bars.keys())
+
+
+    @property
+    def active_shell(self) -> int:
+        """Get or set the active shell index.
+
+        Warnings
+        --------
+        This property describes the **index**, not the shell number. The
+        values provided here are offset by one compared with the slider
+        values.
+        """
+        return self._active_shell
+
+    @active_shell.setter
+    def active_shell(self, index: int):
+        self._update_active_sphere(index + 1)
+
+    @property
+    def active_shell_opacity(self) -> float:
+        """Get the active shell opacity.
+
+        Active sphere opacity between 0 (transparent) and 1 (opaque).
+        """
+        return self._active_shell_opacity
+
+    @active_shell_opacity.setter
+    def active_shell_opacity(self, opacity: float):
+        self._update_active_sphere_opacity(opacity)
+
+    @property
+    def inactive_shell_opacity(self) -> float:
+        """Get the opacity of the inactive shells.
+
+        Inactive sphere opacity between 0 (transparent) and 1 (opaque).
+        """
+        return self._inactive_shell_opacity
+
+    @inactive_shell_opacity.setter
+    def inactive_shell_opacity(self, opacity: float):
+        self._update_inactive_sphere_opacity(opacity)
 
     @property
     def radius(self) -> float:
@@ -274,7 +375,7 @@ class SpherePlotter:
 
         self._sphere_meshes = sphere_meshes
         self._sphere_actors = []
-        self._selected_shell = len(sphere_meshes) - 1
+        self._active_shell = len(sphere_meshes) - 1
         self._active_shell_opacity = 1
         self._inactive_shell_opacity = 0
         self._phi_axis_actor = None
@@ -299,7 +400,7 @@ class SpherePlotter:
         """Update the opacity level of the active sphere."""
 
         self._active_shell_opacity = new_opacity
-        actor = self._sphere_actors[self._selected_shell]
+        actor = self._sphere_actors[self._active_shell]
         actor.prop.opacity = new_opacity
 
     def _update_inactive_sphere_opacity(self, new_opacity: float):
@@ -308,18 +409,18 @@ class SpherePlotter:
         self._inactive_shell_opacity = new_opacity
 
         for i, actor in enumerate(self._sphere_actors):
-            if i == self._selected_shell:
+            if i == self._active_shell:
                 continue
 
             actor.prop.opacity = new_opacity
 
     def _update_active_sphere(self, new_selected_shell_number: float):
         """Update the active sphere number."""
-        current_shell = self._selected_shell
+        current_shell = self._active_shell
         new_shell = np.round(new_selected_shell_number).astype(int) - 1
 
         if new_shell != current_shell:
-            self._selected_shell = new_shell
+            self._active_shell = new_shell
             self._update_active_sphere_opacity(self._active_shell_opacity)
             self._update_inactive_sphere_opacity(self._inactive_shell_opacity)
 
@@ -335,6 +436,7 @@ class SpherePlotter:
         if self._point_label_actor is not None:
             self._point_label_actor.SetVisibility(show_axes)
 
+    # TODO: Create a new class to encapsulate the spherical axes.
     def add_spherical_axes(
         self,
         plot_phi: bool = True,
@@ -529,7 +631,7 @@ class SpherePlotter:
                 plotter.add_slider_widget(
                     self._update_active_sphere,
                     [1, number_of_shells],
-                    value=self._selected_shell + 1,
+                    value=self._active_shell + 1,
                     title="Active shell",
                     pointa=(0.1, 0.9),
                     pointb=(0.3, 0.9),
@@ -555,7 +657,7 @@ class SpherePlotter:
         plotter.add_camera_orientation_widget()
         plotter.enable_parallel_projection()
 
-        self._update_active_sphere(self._selected_shell + 1)
+        self._update_active_sphere(self._active_shell + 1)
 
     def show(self, *args, **kwargs):
         """Show the plotter window.
@@ -588,42 +690,6 @@ class SpherePlotter:
 
         if deep_clean:
             self._plotter.deep_clean()
-
-    def activate_shell(self, index: int):
-        """Activate the shell with the specified index.
-
-        Parameters
-        ----------
-        index
-            The index of the shell to mark as active.
-
-        Warnings
-        --------
-        This function accepts the **index**, not the shell number. The
-        values provided here are offset by one compared with the slider
-        values.
-        """
-        self._update_active_sphere(index + 1)
-
-    def set_active_shell_opacity(self, opacity: float):
-        """Set the opacity of the active shell.
-
-        Parameters
-        ----------
-        opacity
-            Desired sphere opacity between 0 (transparent) and 1 (opaque).
-        """
-        self._update_active_sphere_opacity(opacity)
-
-    def set_inactive_shell_opacity(self, opacity: float):
-        """Set the opacity of all inactive shells.
-
-        Parameters
-        ----------
-        opacity
-            Desired sphere opacity between 0 (transparent) and 1 (opaque).
-        """
-        self._update_inactive_sphere_opacity(opacity)
 
     def produce_rotating_video(
         self,
@@ -682,7 +748,7 @@ class SpherePlotter:
 
         # Get the vertical shift
         if vertical_shift is None:
-            vertical_shift = self._sphere_meshes[self._selected_shell].length
+            vertical_shift = self._sphere_meshes[self._active_shell].length
 
         plotter.camera.zoom(zoom_factor)
 
