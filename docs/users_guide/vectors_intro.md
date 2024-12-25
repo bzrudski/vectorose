@@ -120,7 +120,7 @@ blowing east is quite different from wind blowing west.
 
 Meanwhile, cardiac fibre orientation {cite:p}`lombaertHumanAtlasCardiac2012b,
 dileepCardiomyocyteOrientationRecovery2023` and bone trabecular anisotropy
-{cite:p}`reznikovTechnicalNoteMapping2022` are both examples of **axial**
+{cite:p}`reznikovTechnicalNoteMapping2022a` are both examples of **axial**
 data. These structures are aligned in a certain spatial orientation, but
 don't have a specified forward and reverse direction.
 
