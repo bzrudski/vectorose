@@ -145,6 +145,42 @@ def test_sphere_plotter_initialisation_many_meshes(mock_nested_histogram_meshes)
     assert plotter.sphere_meshes == mock_nested_histogram_meshes
 
 
+def test_has_produced_plot_no_plot(mock_nested_histogram_meshes):
+    """Test for checking whether the plot has been produced.
+
+    Test for :attr:`.SpherePlotter.has_produced_plot` when a plot has not
+    been produced.
+    """
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+
+    assert not plotter.has_produced_plot, "`has_produced_plot` should be `False`."
+
+
+def test_has_produced_plot(mock_nested_histogram_meshes):
+    """Test for checking whether the plot has been produced.
+
+    Test for :attr:`.SpherePlotter.has_produced_plot` when a plot has been
+    produced.
+    """
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    assert plotter.has_produced_plot, "`has_produced_plot` should be `True`."
+
+
+def test_has_produced_plot_cleared_plot(mock_nested_histogram_meshes):
+    """Test for checking whether the plot has been produced.
+
+    Test for :attr:`.SpherePlotter.has_produced_plot` when a plot has been
+    produced, but then cleared.
+    """
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+    plotter.clear_plotter()
+
+    assert not plotter.has_produced_plot, "`has_produced_plot` should be `False`."
+
+
 def test_no_spherical_axes(mock_nested_histogram_meshes):
     """Test the spherical axis properties.
 
@@ -479,6 +515,56 @@ def test_export_graphic(mock_nested_histogram_meshes, tmp_path):
     assert os.path.exists(export_name)
 
 
+def test_has_movie_file_open_no_movie(mock_nested_histogram_meshes, tmp_path):
+    """Test opening a move file.
+
+    Test for the property :attr:`.SpherePlotter.has_movie_open` when no
+    movie is open.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+    assert not plotter.has_movie_open, "The plotter should not have a movie open."
+
+
+def test_open_movie_file(mock_nested_histogram_meshes, tmp_path):
+    """Test opening a move file.
+
+    Test for :meth:`.SpherePlotter.open_movie_file` and the property
+    :attr:`.SpherePlotter.has_movie_open`.
+    """
+
+    filename = os.path.join(tmp_path, "movie.mp4")
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+    plotter.open_movie_file(filename)
+
+    assert plotter.has_movie_open, "The plotter should have a movie open."
+
+
+def test_close_movie_file(mock_nested_histogram_meshes, tmp_path):
+    """Test closing a move file.
+
+    Test for :meth:`.SpherePlotter.close_movie_file` and the property
+    :attr:`.SpherePlotter.has_movie_open`.
+    """
+
+    filename = os.path.join(tmp_path, "movie.mp4")
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+    plotter.open_movie_file(filename)
+
+    # Write a frame (to ensure that the movie is not empty).
+    plotter.write_frame()
+
+    plotter.close_movie()
+    assert not plotter.has_movie_open, "The plotter should not have a movie open."
+
+    assert os.path.exists(filename)
+
+
 def test_export_rotating_video(mock_nested_histogram_meshes, tmp_path):
     """Test rotating video export for SpherePlotter."""
 
@@ -503,6 +589,84 @@ def test_export_shells_video(mock_nested_histogram_meshes, tmp_path):
     plotter.produce_shells_video(export_name)
 
     assert os.path.exists(export_name)
+
+
+def test_rotate_to_view_phi_degrees(mock_nested_histogram_meshes):
+    """Test for programmatically setting the view phi angle.
+
+    Test for :meth:`.SpherePlotter.rotate_to_view` for a value of phi,
+    expressed in degrees.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    phi_value = 90
+    use_degrees = True
+
+    plotter.rotate_to_view(phi=phi_value, use_degrees=use_degrees)
+
+    assert np.isclose(plotter.current_phi, phi_value)
+
+
+def test_rotate_to_view_phi_radians(mock_nested_histogram_meshes):
+    """Test for programmatically setting the view phi angle.
+
+    Test for :meth:`.SpherePlotter.rotate_to_view` for a value of phi,
+    expressed in radians.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    phi_value = np.pi / 4
+    use_degrees = False
+
+    plotter.rotate_to_view(phi=phi_value, use_degrees=use_degrees)
+
+    assert np.isclose(plotter.current_phi, np.degrees(phi_value))
+
+
+def test_rotate_to_view_theta_degrees(mock_nested_histogram_meshes):
+    """Test for programmatically setting the view theta angle.
+
+    Test for :meth:`.SpherePlotter.rotate_to_view` for a value of theta,
+    expressed in degrees.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    # Ensure we are not at the pole.
+    plotter.rotate_to_view(phi=1, use_degrees=True)
+
+    theta_value = 300
+    use_degrees = True
+
+    plotter.rotate_to_view(theta=theta_value, use_degrees=use_degrees)
+
+    assert np.isclose(plotter.current_theta, theta_value)
+
+
+def test_rotate_to_view_theta_radians(mock_nested_histogram_meshes):
+    """Test for programmatically setting the view theta angle.
+
+    Test for :meth:`.SpherePlotter.rotate_to_view` for a value of theta,
+    expressed in radians.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    # Ensure we are not at the pole.
+    plotter.rotate_to_view(phi=1, use_degrees=True)
+
+    theta_value = 5 * np.pi / 4
+    use_degrees = False
+
+    plotter.rotate_to_view(theta=theta_value, use_degrees=use_degrees)
+
+    assert np.isclose(plotter.current_theta, np.degrees(theta_value))
 
 
 def test_produce_1d_scalar_histogram(
