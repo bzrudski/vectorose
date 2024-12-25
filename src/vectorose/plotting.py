@@ -186,17 +186,7 @@ class ViewingPlanes(str, enum.Enum):
 
 
 class SpherePlotter:
-    """Produce beautiful, fast 3D sphere plots using PyVista.
-
-
-    Warnings
-    --------
-    The behaviour of the :prop:`.roll`, :prop:`.elevation` and
-    :prop:`.azimuth` is unstable and not completely as expected. Always
-    double-check your viewing angles using the onscreen Cartesian axis
-    indicators to assess whether the property values make sense.
-
-    """
+    """Produce beautiful, fast 3D sphere plots using PyVista."""
 
     _sphere_meshes: List[pv.PolyData]
     """The meshes representing individual shells."""
@@ -234,6 +224,9 @@ class SpherePlotter:
     cmap: str
     """The colour map to use when visualising the data."""
 
+    _has_movie_open: bool
+    """Indicate whether a movie is currently a being manually written."""
+
     @property
     def sphere_meshes(self) -> List[pv.PolyData]:
         """Access the wrapped sphere meshes."""
@@ -245,7 +238,7 @@ class SpherePlotter:
         if self._phi_axis_actor is None:
             return False
         return self._phi_axis_actor.visibility
-    
+
     @property
     def theta_axis_visible(self) -> bool:
         """Indicate whether the theta axis is visible."""
@@ -258,7 +251,7 @@ class SpherePlotter:
         """Indicate whether the axis labels are visible."""
         if self._point_label_actor is None:
             return False
-        return self._point_label_actor.GetVisibility()
+        return bool(self._point_label_actor.GetVisibility())
 
     @property
     def sliders_visible(self) -> bool:
@@ -288,7 +281,6 @@ class SpherePlotter:
             return False
 
         return all(scalar_bars[k].GetVisibility() for k in scalar_bars.keys())
-
 
     @property
     def active_shell(self) -> int:
@@ -336,31 +328,44 @@ class SpherePlotter:
         return self._largest_radius
 
     @property
-    def azimuth(self) -> float:
-        """Get or set the azimuth."""
-        return self._plotter.camera.azimuth
-
-    @azimuth.setter
-    def azimuth(self, offset: float):
-        self._plotter.camera.azimuth += offset
+    def has_produced_plot(self) -> bool:
+        """Indicate whether the plot has been produced."""
+        return len(self._sphere_actors) > 0
 
     @property
-    def elevation(self) -> float:
-        """Get or set the elevation."""
-        return self._plotter.camera.elevation
+    def current_phi(self) -> float:
+        """Get the phi value under the current view in degrees.
 
-    @elevation.setter
-    def elevation(self, offset: float):
-        self._plotter.camera.elevation += offset
+        Notes
+        -----
+        This value makes the most sense if the camera has the origin as the
+        focal point.
+        """
+        spherical_coordinates = self._get_spherical_coordinates_from_camera()
+
+        phi = spherical_coordinates[util.AngularIndex.PHI]
+
+        return phi
 
     @property
-    def roll(self) -> float:
-        """Get or set the roll."""
-        return self._plotter.camera.roll
+    def current_theta(self) -> float:
+        """Get the theta value under the current view in degrees.
 
-    @roll.setter
-    def roll(self, offset: float):
-        self._plotter.camera.roll += offset
+        Notes
+        -----
+        This value makes the most sense if the camera has the origin as the
+        focal point.
+        """
+        spherical_coordinates = self._get_spherical_coordinates_from_camera()
+
+        theta = spherical_coordinates[util.AngularIndex.THETA]
+
+        return theta
+
+    @property
+    def has_movie_open(self) -> bool:
+        """Indicate whether a movie is currently being manually written."""
+        return self._has_movie_open
 
     def __init__(
         self,
@@ -375,9 +380,7 @@ class SpherePlotter:
 
         self._sphere_meshes = sphere_meshes
         self._sphere_actors = []
-        self._active_shell = len(sphere_meshes) - 1
-        self._active_shell_opacity = 1
-        self._inactive_shell_opacity = 0
+
         self._phi_axis_actor = None
         self._theta_axis_actor = None
         self._point_label_actor = None
@@ -386,6 +389,11 @@ class SpherePlotter:
         # Determine the visible shells
         self._visible_shells = visible_shells or np.arange(len(sphere_meshes)).tolist()
 
+        # Set the active shell
+        self._active_shell = self._visible_shells[-1]
+        self._active_shell_opacity = 1
+        self._inactive_shell_opacity = 0
+
         # Compute the radius
         bounds = np.abs([m.bounds for m in sphere_meshes])
         self._largest_radius = bounds.max()
@@ -393,8 +401,31 @@ class SpherePlotter:
         # Create the plotter
         self._plotter = pv.Plotter(off_screen=off_screen)
 
-        # Produce the plot
-        # self._produce_plot()
+        # We don't have a movie open when creating the plotter
+        self._has_movie_open = False
+
+    def _get_spherical_coordinates_from_camera(self) -> np.ndarray:
+        """Get the spherical coordinates for the camera location.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of shape ``(3,)`` containing the phi, theta and radius
+            for the camera's position in 3D space.
+
+        Notes
+        -----
+        The values in this function are not recentred if the camera is
+        translated in space.
+        """
+        camera_position = self._plotter.camera_position
+        camera_location = camera_position[0]
+
+        spherical_coordinates = util.compute_spherical_coordinates(
+            np.array(camera_location), use_degrees=True
+        )
+
+        return spherical_coordinates
 
     def _update_active_sphere_opacity(self, new_opacity: float):
         """Update the opacity level of the active sphere."""
@@ -558,8 +589,13 @@ class SpherePlotter:
         self._point_label_actor = None
 
     def clear_plotter(self):
-        """Remove the current plotter."""
-        self._plotter = None
+        """Clear and remove the current plotter."""
+        for sphere_actor in self._sphere_actors:
+            self._plotter.remove_actor(sphere_actor)
+        self._sphere_actors.clear()
+        self.clear_axes()
+
+        self._plotter.clear()
 
     def produce_plot(self, add_sliders: bool = True, series_name: str = "frequency"):
         """Produce the 3D visual plot for the current spheres.
@@ -670,10 +706,19 @@ class SpherePlotter:
             Keyword arguments to pass to the method
             :meth:`pyvista.Plotter.show`.
 
+        Raises
+        ------
+        AssertionError
+            If the plot has not yet been produced using the method
+            :meth:`.produce_plot`.
+
         See Also
         --------
-        pyvista.Plotter.show: Method used to show a PyVista plotter.
+        pyvista.Plotter.show : Method used to show a PyVista plotter.
         """
+
+        assert self.has_produced_plot
+
         self._plotter.show(*args, **kwargs)
 
     def close(self, deep_clean: bool = True):
@@ -690,6 +735,158 @@ class SpherePlotter:
 
         if deep_clean:
             self._plotter.deep_clean()
+
+    def rotate_to_view(
+        self,
+        phi: Optional[float] = None,
+        theta: Optional[float] = None,
+        use_degrees: bool = True,
+        zoom: Optional[float] = None,
+        focal_depth: Optional[float] = None
+    ):
+        """Move the camera to focus on a specific orientation.
+
+        Parameters
+        ----------
+        phi
+            The co-latitude to centre on. If `None`, then the value of phi
+            is unchanged.
+        theta
+            The azimuthal angle to centre on. If `None`, then the value of
+            theta is unchanged.
+        use_degrees
+            Indicate whether the angles should be interpreted in degrees.
+        zoom
+            Factor to zoom the view as a floating point value. See
+            :meth:`pyvista.Camera.zoom` for a full explanation.
+        focal_depth
+            Distance between the camera and the focal point.
+
+        See Also
+        --------
+        pyvista.Plotter.camera_position :
+            Information about the camera from the plotter, used to compute
+            the orientation angles.
+        pyvista.Camera.zoom :
+            Control the camera zoom.
+
+        Notes
+        -----
+        The point of focus of the camera remains at the origin. This method
+        simply changes the position of the camera in space and changes the
+        up direction.
+        """
+
+        # Fill in any missing parameters and convert angles, if necessary
+        if phi is None:
+            phi = self.current_phi
+        elif not use_degrees:
+            phi = np.degrees(phi)
+
+        if theta is None:
+            theta = self.current_theta
+        elif not use_degrees:
+            theta = np.degrees(theta)
+
+        if focal_depth is None:
+            focal_depth = self._plotter.camera.distance
+
+        if zoom is None:
+            zoom = 1
+
+        # Now, find the location in space
+        camera_location = util.convert_spherical_to_cartesian_coordinates(
+            np.array([phi, theta]), focal_depth, use_degrees=True
+        )
+
+        # And now for the up vector
+        up_vector = np.array([0, -1, 0])
+
+        # Tilt it by phi degrees clockwise over x
+        phi_rotation = Rotation.from_euler("x", -phi, degrees=True)
+        theta_rotation = Rotation.from_euler("z", -theta, degrees=True)
+
+        compound_rotation = theta_rotation * phi_rotation
+
+        # And now apply it to the up vector
+        up_vector = compound_rotation.apply(up_vector)
+
+        # And now for setting the camera position
+        camera_position_parameters = [
+            tuple(camera_location.tolist()),
+            (0, 0, 0),
+            tuple(up_vector.tolist())
+        ]
+
+        self._plotter.camera_position = camera_position_parameters
+        self._plotter.camera.zoom(zoom)
+
+        if self._plotter.iren.initialized:
+            self._plotter.update()
+
+    def open_movie_file(
+        self,
+        filename: str,
+        quality: int = 5,
+        fps: int = 24,
+    ):
+        """Open a movie file to record an animation.
+
+        Parameters
+        ----------
+        filename
+            The destination for the created video.
+        quality
+            Image quality for the export, between 0 and 10.
+        fps
+            Frame rate, number of frames per second in the exported video.
+
+        Warnings
+        --------
+        This method only opens the video file. It does not save any of the
+        frames. These must be written using the :meth:`.write_frame` method
+        and then the file must be closed using :meth:`.close_movie`.
+
+        See Also
+        --------
+        pyvista.plotter.open_movie :
+            The wrapped function that actually creates the movie file.
+        .write_frame :
+            Add frames to the open movie.
+        .close_movie :
+            Close and finalise the current movie.
+        """
+
+        self._plotter.open_movie(
+            filename, fps, quality
+        )
+
+        self._has_movie_open = True
+
+    def write_frame(self):
+        """Add a new frame to the current movie.
+
+        Warnings
+        --------
+        The current plotter must have a movie file that is open.
+        """
+
+        assert self.has_movie_open, "No movie is open."
+
+        self._plotter.write_frame()
+
+    def close_movie(self):
+        """Close the movie currently being written.
+
+        Warnings
+        --------
+        The current plotter must have a movie file that is open.
+        """
+
+        assert self.has_movie_open, "No movie is open."
+
+        self._plotter.mwriter.close()
+        self._has_movie_open = False
 
     def produce_rotating_video(
         self,
@@ -744,7 +941,7 @@ class SpherePlotter:
         plotter = self._plotter
 
         # Open a movie
-        plotter.open_movie(filename, fps, quality)
+        self.open_movie_file(filename, quality, fps)
 
         # Get the vertical shift
         if vertical_shift is None:
@@ -761,7 +958,7 @@ class SpherePlotter:
         plotter.orbit_on_path(path, write_frames=True)
 
         # Close the plotter's writer
-        plotter.mwriter.close()
+        self.close_movie()
 
         # Re-show the sliders
         if hide_sliders:
@@ -848,7 +1045,7 @@ class SpherePlotter:
         plotter.camera.zoom(zoom_factor)
 
         # Open the output file
-        plotter.open_movie(filename, framerate=fps, quality=quality)
+        self.open_movie_file(filename, quality, fps)
 
         # Make the movie!
         i: int
@@ -864,13 +1061,13 @@ class SpherePlotter:
             else:
                 shell_text_actor = None
 
-            plotter.write_frame()
+            self.write_frame()
 
             if add_shell_text:
                 self._plotter.remove_actor(shell_text_actor)
 
         # Close the plotter's writer
-        plotter.mwriter.close()
+        self.close_movie()
 
         if hide_sliders:
             self.show_sliders()
@@ -1038,30 +1235,6 @@ class SpherePlotter:
 
         if hide_scalar_bar:
             self.show_scalar_bars()
-
-    def set_view(
-        self,
-        azim: Optional[float] = 0,
-        elev: Optional[float] = 0,
-        roll: Optional[float] = 0,
-    ):
-        """Change the view of the current plotter.
-
-        Each parameter is optional. If omitted, that value is not changed.
-
-        Parameters
-        ----------
-        azim
-            Change to azimuthal angle.
-        elev
-            Change to elevation angle.
-        roll
-            Change to roll angle.
-        """
-
-        self.azimuth = azim
-        self.elevation = elev
-        self.roll = roll
 
     def set_view_plane(self, viewing_plane: ViewingPlanes):
         """Set the plotter camera to a predefined viewing angle."""
