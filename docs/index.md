@@ -6,8 +6,8 @@
 :hidden:
 
 users_guide/users_guide.md
-autoapi/index
 auto_examples/index
+autoapi/index
 changelog.md
 contributing.md
 conduct.md
