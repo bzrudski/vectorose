@@ -114,5 +114,10 @@ sphinx_gallery_conf = {
         # "pyvista"
     ),
     "run_stale_examples": False,
-    "filename_pattern": r"\.py"
+    "filename_pattern": r"\.py",
+    "reference_url": {
+        "vectorose": None,
+    },
+    "download_all_examples": False,
+    "remove_config_comments": True,
 }
