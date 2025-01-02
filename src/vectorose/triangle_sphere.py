@@ -38,18 +38,20 @@ class TriangleSphere(SphereBase):
     def orientation_cols(self) -> List[str]:
         return ["face"]
 
-    def _initial_vector_data_preparation(self, vectors: pd.DataFrame) -> pd.DataFrame:
-        vectors_array = vectors.loc[:, ["x", "y", "z"]].to_numpy()
+    def _initial_vector_component_preparation(
+        self, vectors: pd.DataFrame
+    ) -> pd.DataFrame:
+        vectors_array = vectors.loc[:, ["vx", "vy", "vz"]].to_numpy()
         unit_vectors, magnitudes = util.normalise_vectors(vectors_array)
 
         magnitudes = magnitudes[:, None]
 
+        # Prepare the data to make a new DataFrame
         vector_data = np.concatenate([unit_vectors, magnitudes], axis=-1)
+        columns = ["ux", "uy", "uz", "magnitude"]
 
         # Create a data frame with the unit vectors and magnitudes.
-        unit_vector_data_frame = pd.DataFrame(
-            vector_data, columns=["ux", "uy", "uz", "magnitude"]
-        )
+        unit_vector_data_frame = pd.DataFrame(vector_data, columns=columns)
 
         return unit_vector_data_frame
 
@@ -144,7 +146,10 @@ class TriangleSphere(SphereBase):
         return sphere_mesh
 
     def convert_vectors_to_cartesian_array(
-        self, labelled_vectors: pd.DataFrame, create_unit_vectors: bool = False
+        self,
+        labelled_vectors: pd.DataFrame,
+        create_unit_vectors: bool = False,
+        include_spatial_coordinates: bool = False,
     ) -> np.ndarray:
         # So, the way that the frame is structured is that we have the
         # Cartesian components of the unit vectors as `ux, uy, uz` and then
@@ -162,5 +167,11 @@ class TriangleSphere(SphereBase):
         magnitudes = np.expand_dims(magnitudes, axis=-1)
 
         cartesian_vectors = unit_vectors * magnitudes
+
+        if include_spatial_coordinates:
+            spatial_locations = labelled_vectors[["x", "y", "z"]].to_numpy()
+            cartesian_vectors = np.concatenate(
+                [spatial_locations, cartesian_vectors], axis=-1
+            )
 
         return cartesian_vectors

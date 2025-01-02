@@ -87,8 +87,16 @@ class SphereBase(abc.ABC):
         properly assigned to an orientation bin.
         """
 
+        # Determine if the vectors have locations
+        _, ncols = vectors.shape
+
+        columns = ["vx", "vy", "vz"]
+
+        if ncols > 3:
+            columns = ["x", "y", "z"] + columns
+
         # Create the histogram
-        histogram = pd.DataFrame(vectors, columns=["x", "y", "z"])
+        histogram = pd.DataFrame(vectors, columns=columns)
 
         # Perform any additional histogram preparation
         histogram = self._initial_vector_data_preparation(histogram)
@@ -107,11 +115,65 @@ class SphereBase(abc.ABC):
     def _initial_vector_data_preparation(self, vectors: pd.DataFrame) -> pd.DataFrame:
         """Prepare the vectors for histogram construction.
 
+        Convert the vectors into a representation specific for the
+        histogram spherical implementation. If spatial coordinates are
+        provided for the vectors, these are preserved.
+
+        Parameters
+        ----------
+        vectors
+            DataFrame with ``n`` rows and either 3 or 6 columns. The
+            required vector component columns are ``vx, vy, vz``. Optional
+            spatial coordinate columns are ``x, y, z``. It is preferrable
+            (but not required) for the spatial columns to be the first 3
+            columns.
+
+        Returns
+        -------
+        pandas.DataFrame
+            DataFrame containing ``n`` rows and a subclass-specific
+            number of columns. The columns represent an alternative
+            representation of the vectors to assist in orientation binning.
+            If spatial coordinate columns were present in the original data
+            they will be preserved in the output.
+
+        Warnings
+        --------
+        This method should typically **not** be overridden. The
+        implementation-specific functionality should be written in the
+        method :meth:`_initial_vector_component_preparation`, which is
+        called by this function.
+        """
+
+        processed_vector_data = self._initial_vector_component_preparation(vectors)
+
+        # Add back the locations, if necessary
+        number_of_columns = len(vectors.columns)
+
+        if number_of_columns > 3:
+            location_data = vectors.loc[:, ["x", "y", "z"]]
+            processed_vector_data = location_data.join(processed_vector_data)
+
+        return processed_vector_data
+
+    def _initial_vector_component_preparation(self, vectors: pd.DataFrame) -> pd.DataFrame:
+        """Prepare the vector components for histogram construction.
+
         Override this method to include specific operations that should be
         performed on the vectors in order to construct the histogram in the
         specific implementation.
+
+        Warnings
+        --------
+        This function should **not** perform any tasks related to the
+        vector spatial locations, if those are included in the data. Those
+        are handled separately by :meth:`._initial_vector_data_preparation`
+        which calls this function.
         """
-        return vectors
+
+        vector_components = vectors.loc[:, ["vx", "vy", "vz"]]
+
+        return vector_components
 
     def _compute_magnitude_bins(
         self, vectors: pd.DataFrame
@@ -595,7 +657,8 @@ class SphereBase(abc.ABC):
 
     @abc.abstractmethod
     def convert_vectors_to_cartesian_array(
-        self, labelled_vectors: pd.DataFrame, create_unit_vectors: bool = False
+        self, labelled_vectors: pd.DataFrame, create_unit_vectors: bool = False,
+        include_spatial_locations: bool = False
     ) -> np.ndarray:
         """Convert a set of labelled vectors into Cartesian coordinates.
 
@@ -614,12 +677,21 @@ class SphereBase(abc.ABC):
             Depending on the implementation, this may either remove an
             extraneous normalisation step later, or add an extra
             normalisation step now.
+        include_spatial_locations
+            Indicate whether to include spatial coordinates in the new
+            array. This option may only be called if the vectors have
+            spatial coordinates.
 
         Returns
         -------
         numpy.ndarray
             Array of shape ``(n, d)`` containing the vector components in
             Cartesian coordinates.
+
+        Warnings
+        --------
+        The option `include_spatial_coordinates` is only valid if the
+        `labelled_vectors` include spatial coordinates.
         """
 
         raise NotImplementedError(

@@ -266,8 +266,10 @@ class TregenzaSphere(SphereBase):
 
         return closest_faces
 
-    def _initial_vector_data_preparation(self, vectors: pd.DataFrame) -> pd.DataFrame:
-        vectors_array = vectors.loc[:, ["x", "y", "z"]].to_numpy()
+    def _initial_vector_component_preparation(
+        self, vectors: pd.DataFrame
+    ) -> pd.DataFrame:
+        vectors_array = vectors.loc[:, ["vx", "vy", "vz"]].to_numpy()
         spherical_coordinates = util.compute_spherical_coordinates(
             vectors_array, use_degrees=True
         )
@@ -565,7 +567,10 @@ class TregenzaSphere(SphereBase):
         return patch_areas
 
     def convert_vectors_to_cartesian_array(
-        self, labelled_vectors: pd.DataFrame, create_unit_vectors: bool = False
+        self,
+        labelled_vectors: pd.DataFrame,
+        create_unit_vectors: bool = False,
+        include_spatial_coordinates: bool = False,
     ) -> np.ndarray:
         # Here's how this is going to go... We have spherical coordinates
         # with the columns `phi`, `theta` and `magnitude`. If we want unit
@@ -582,6 +587,12 @@ class TregenzaSphere(SphereBase):
         cartesian_coordinates = util.convert_spherical_to_cartesian_coordinates(
             angular_coordinates, radius=magnitudes, use_degrees=True
         )
+
+        if include_spatial_coordinates:
+            spatial_locations = labelled_vectors[["x", "y", "z"]].to_numpy()
+            cartesian_coordinates = np.concatenate(
+                [spatial_locations, cartesian_coordinates], axis=-1
+            )
 
         return cartesian_coordinates
 
