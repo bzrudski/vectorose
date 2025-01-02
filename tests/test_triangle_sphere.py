@@ -4,8 +4,10 @@ This module contains the automated tests for the
 :mod:`vectorose.triangle_sphere` module, which provides the triangle-based
 spherical histogram construction.
 """
+
 import numpy as np
 import pandas as pd
+import pytest
 import trimesh.primitives
 
 import vectorose as vr
@@ -15,7 +17,8 @@ from vectorose import mock_data
 RANDOM_SEED = 20240827
 
 
-def generate_test_vectors() -> np.ndarray:
+@pytest.fixture
+def random_vectors() -> np.ndarray:
     """Generate test vectors for the unit tests."""
 
     vectors = vr.mock_data.create_vonmises_fisher_vectors_single_direction(
@@ -28,6 +31,21 @@ def generate_test_vectors() -> np.ndarray:
         use_degrees=True,
         seed=RANDOM_SEED,
     )
+    return vectors
+
+
+@pytest.fixture
+def random_vectors_with_locations(random_vectors) -> np.ndarray:
+    """Generate test vectors with locations."""
+
+    number_of_vectors = len(random_vectors)
+
+    random_locations = np.random.default_rng(RANDOM_SEED).uniform(
+        size=(number_of_vectors, 3)
+    )
+
+    vectors = np.concatenate([random_locations, random_vectors], axis=-1)
+
     return vectors
 
 
@@ -91,7 +109,9 @@ def generate_vectors_every_face(
     return vectors
 
 
-def _test_assign_bins(subdivisions: int, number_of_shells: int):
+def _test_assign_bins(
+    subdivisions: int, number_of_shells: int, include_spatial_locations: bool
+):
     """Test the histogram bin assignment.
 
     Test of :meth:`TriangleSphere.assign_histogram_bins` to study that the
@@ -103,6 +123,8 @@ def _test_assign_bins(subdivisions: int, number_of_shells: int):
         Number of subdivisions for creating the sphere.
     number_of_shells
         Number of magnitude shells to consider.
+    include_spatial_locations
+        Indicate whether to generate spatial locations for the vectors.
     """
 
     # Generate sphere
@@ -118,8 +140,28 @@ def _test_assign_bins(subdivisions: int, number_of_shells: int):
     )
     vectors = magnitudes * vectors
 
+    if include_spatial_locations:
+        spatial_locations = np.random.default_rng(RANDOM_SEED).uniform(
+            size=(number_of_vectors, 3)
+        )
+        vectors = np.concatenate([spatial_locations, vectors], axis=-1)
+
     # Label the vectors
     labelled_vectors, magnitude_bin_edges = sphere.assign_histogram_bins(vectors)
+
+    # Check that we have the right columns
+    assert "ux" in labelled_vectors
+    assert "uy" in labelled_vectors
+    assert "uz" in labelled_vectors
+    assert "magnitude" in labelled_vectors
+
+    assert "shell" in labelled_vectors
+    assert "face" in labelled_vectors
+
+    if include_spatial_locations:
+        assert "x" in labelled_vectors
+        assert "y" in labelled_vectors
+        assert "z" in labelled_vectors
 
     # Check the shape of the labelled bins
     assert len(labelled_vectors) == number_of_vectors
@@ -140,52 +182,108 @@ def _test_assign_bins(subdivisions: int, number_of_shells: int):
     assert min_shell <= max_shell < number_of_shells
 
 
-def test_assign_bins_5_subdivisions_many_shells():
-    """Test the orientation bin assignment.
+def test_assign_bins_5_subdivisions_many_shells_no_locations():
+    """Test the orientation bin assignment without locations.
 
     Test of :meth:`TriangleSphere.assign_histogram_bins` with five
     subdivisions and multiple shells.
     """
     subdivisions = 5
     number_of_shells = 32
+    include_locations = False
 
-    _test_assign_bins(subdivisions, number_of_shells)
+    _test_assign_bins(subdivisions, number_of_shells, include_locations)
 
 
-def test_assign_bins_5_subdivisions_one_shell():
-    """Test the orientation bin assignment.
+def test_assign_bins_5_subdivisions_one_shell_no_locations():
+    """Test the orientation bin assignment without locations.
 
     Test of :meth:`TriangleSphere.assign_histogram_bins` with five
     subdivisions and one shell.
     """
     subdivisions = 5
     number_of_shells = 1
+    include_locations = False
 
-    _test_assign_bins(subdivisions, number_of_shells)
+    _test_assign_bins(subdivisions, number_of_shells, include_locations)
 
 
-def test_assign_bins_3_subdivisions_many_shells():
-    """Test the orientation bin assignment.
+def test_assign_bins_3_subdivisions_many_shells_no_locations():
+    """Test the orientation bin assignment without locations.
 
     Test of :meth:`TriangleSphere.assign_histogram_bins` with three
     subdivisions and multiple shells.
     """
     subdivisions = 3
     number_of_shells = 32
+    include_locations = False
 
-    _test_assign_bins(subdivisions, number_of_shells)
+    _test_assign_bins(subdivisions, number_of_shells, include_locations)
 
 
-def test_assign_bins_3_subdivisions_one_shell():
-    """Test the orientation bin assignment.
+def test_assign_bins_3_subdivisions_one_shell_no_locations():
+    """Test the orientation bin assignment without locations.
 
     Test of :meth:`TriangleSphere.assign_histogram_bins` with three
     subdivisions and one shell.
     """
     subdivisions = 3
     number_of_shells = 1
+    include_locations = False
 
-    _test_assign_bins(subdivisions, number_of_shells)
+    _test_assign_bins(subdivisions, number_of_shells, include_locations)
+
+
+def test_assign_bins_5_subdivisions_many_shells_with_locations():
+    """Test the orientation bin assignment with locations.
+
+    Test of :meth:`TriangleSphere.assign_histogram_bins` with five
+    subdivisions and multiple shells.
+    """
+    subdivisions = 5
+    number_of_shells = 32
+    include_locations = True
+
+    _test_assign_bins(subdivisions, number_of_shells, include_locations)
+
+
+def test_assign_bins_5_subdivisions_one_shell_with_locations():
+    """Test the orientation bin assignment whut locations.
+
+    Test of :meth:`TriangleSphere.assign_histogram_bins` with five
+    subdivisions and one shell.
+    """
+    subdivisions = 5
+    number_of_shells = 1
+    include_locations = True
+
+    _test_assign_bins(subdivisions, number_of_shells, include_locations)
+
+
+def test_assign_bins_3_subdivisions_many_shells_with_locations():
+    """Test the orientation bin assignment with locations.
+
+    Test of :meth:`TriangleSphere.assign_histogram_bins` with three
+    subdivisions and multiple shells.
+    """
+    subdivisions = 3
+    number_of_shells = 32
+    include_locations = True
+
+    _test_assign_bins(subdivisions, number_of_shells, include_locations)
+
+
+def test_assign_bins_3_subdivisions_one_shell_with_locations():
+    """Test the orientation bin assignment whut locations.
+
+    Test of :meth:`TriangleSphere.assign_histogram_bins` with three
+    subdivisions and one shell.
+    """
+    subdivisions = 3
+    number_of_shells = 1
+    include_locations = True
+
+    _test_assign_bins(subdivisions, number_of_shells, include_locations)
 
 
 def _test_create_mesh(subdivisions: int):
@@ -242,7 +340,7 @@ def test_create_mesh_subdivision_5():
 
 
 def _test_construct_bivariate_histogram(
-    subdivisions: int, number_of_shells: int, return_fraction: bool
+    subdivisions: int, number_of_shells: int, return_fraction: bool, vectors: np.ndarray
 ):
     """Test the bivariate histogram construction.
 
@@ -257,13 +355,13 @@ def _test_construct_bivariate_histogram(
         Number of spherical shells to consider.
     return_fraction
         Indicate whether to consider frequencies or counts.
+    vectors
+        Randomly-generated vectors to use for the test.
     """
 
-    # Create a set of random vectors
-    vectors = generate_test_vectors()
     number_of_vectors = len(vectors)
 
-    # Construct a Tregenza sphere
+    # Construct a triangulated sphere
     sphere = vr.triangle_sphere.TriangleSphere(
         number_of_subdivisions=subdivisions, number_of_shells=number_of_shells
     )
@@ -285,7 +383,7 @@ def _test_construct_bivariate_histogram(
         assert frequency_sum == expected_result
 
 
-def test_construct_bivariate_histogram_counts_many_shells():
+def test_construct_bivariate_histogram_counts_many_shells(random_vectors):
     """Test the bivariate histogram construction using counts.
 
     Test of :meth:`TriangleSphere.construct_histogram` to
@@ -298,11 +396,11 @@ def test_construct_bivariate_histogram_counts_many_shells():
     return_fraction = False
 
     _test_construct_bivariate_histogram(
-        number_of_subdivisions, number_of_shells, return_fraction
+        number_of_subdivisions, number_of_shells, return_fraction, random_vectors
     )
 
 
-def test_construct_bivariate_histogram_frequencies_many_shells():
+def test_construct_bivariate_histogram_frequencies_many_shells(random_vectors):
     """Test the bivariate histogram construction using frequencies.
 
     Test of :meth:`TriangleSphere.construct_histogram` to
@@ -315,11 +413,11 @@ def test_construct_bivariate_histogram_frequencies_many_shells():
     return_fraction = True
 
     _test_construct_bivariate_histogram(
-        number_of_subdivisions, number_of_shells, return_fraction
+        number_of_subdivisions, number_of_shells, return_fraction, random_vectors
     )
 
 
-def test_construct_bivariate_histogram_counts_single_shell():
+def test_construct_bivariate_histogram_counts_single_shell(random_vectors):
     """Test the bivariate histogram construction using counts.
 
     Test of :meth:`TriangleSphere.construct_histogram` to
@@ -332,11 +430,11 @@ def test_construct_bivariate_histogram_counts_single_shell():
     return_fraction = False
 
     _test_construct_bivariate_histogram(
-        number_of_subdivisions, number_of_shells, return_fraction
+        number_of_subdivisions, number_of_shells, return_fraction, random_vectors
     )
 
 
-def test_construct_bivariate_histogram_frequencies_single_shell():
+def test_construct_bivariate_histogram_frequencies_single_shell(random_vectors):
     """Test the bivariate histogram construction using frequencies.
 
     Test of :meth:`TriangleSphere.construct_histogram` to
@@ -349,12 +447,15 @@ def test_construct_bivariate_histogram_frequencies_single_shell():
     return_fraction = True
 
     _test_construct_bivariate_histogram(
-        number_of_subdivisions, number_of_shells, return_fraction
+        number_of_subdivisions, number_of_shells, return_fraction, random_vectors
     )
 
 
 def _test_construct_marginal_magnitude_histogram(
-    number_of_subdivisions: int, number_of_shells: int, return_fraction: bool
+    number_of_subdivisions: int,
+    number_of_shells: int,
+    return_fraction: bool,
+    vectors: np.ndarray,
 ):
     """Test the magnitude histogram construction.
 
@@ -370,13 +471,13 @@ def _test_construct_marginal_magnitude_histogram(
         Number of spherical shells to consider.
     return_fraction
         Indicate whether to consider frequencies or counts.
+    vectors
+        Randomly-generated vectors to use for the test.
     """
 
-    # Create a set of random vectors
-    vectors = generate_test_vectors()
     number_of_vectors = len(vectors)
 
-    # Construct a Tregenza sphere
+    # Construct a triangulated sphere
     sphere = vr.triangle_sphere.TriangleSphere(
         number_of_subdivisions=number_of_subdivisions, number_of_shells=number_of_shells
     )
@@ -400,7 +501,7 @@ def _test_construct_marginal_magnitude_histogram(
         assert np.isclose(frequency_sum, expected_result)
 
 
-def test_construct_marginal_magnitude_histogram_counts_many_shells():
+def test_construct_marginal_magnitude_histogram_counts_many_shells(random_vectors):
     """Test the magnitude histogram construction using counts.
 
     Test of
@@ -415,11 +516,11 @@ def test_construct_marginal_magnitude_histogram_counts_many_shells():
     return_fraction = False
 
     _test_construct_marginal_magnitude_histogram(
-        number_of_subdivisions, number_of_shells, return_fraction
+        number_of_subdivisions, number_of_shells, return_fraction, random_vectors
     )
 
 
-def test_construct_marginal_magnitude_histogram_frequencies_many_shells():
+def test_construct_marginal_magnitude_histogram_frequencies_many_shells(random_vectors):
     """Test the magnitude histogram construction using frequencies.
 
     Test of
@@ -435,11 +536,11 @@ def test_construct_marginal_magnitude_histogram_frequencies_many_shells():
     return_fraction = True
 
     _test_construct_marginal_magnitude_histogram(
-        number_of_subdivisions, number_of_shells, return_fraction
+        number_of_subdivisions, number_of_shells, return_fraction, random_vectors
     )
 
 
-def test_construct_marginal_magnitude_histogram_counts_single_shell():
+def test_construct_marginal_magnitude_histogram_counts_single_shell(random_vectors):
     """Test the magnitude histogram construction using counts.
 
     Test of
@@ -454,11 +555,13 @@ def test_construct_marginal_magnitude_histogram_counts_single_shell():
     return_fraction = False
 
     _test_construct_marginal_magnitude_histogram(
-        number_of_subdivisions, number_of_shells, return_fraction
+        number_of_subdivisions, number_of_shells, return_fraction, random_vectors
     )
 
 
-def test_construct_marginal_magnitude_histogram_frequencies_single_shell():
+def test_construct_marginal_magnitude_histogram_frequencies_single_shell(
+    random_vectors,
+):
     """Test the magnitude histogram construction using frequencies.
 
     Test of
@@ -474,12 +577,15 @@ def test_construct_marginal_magnitude_histogram_frequencies_single_shell():
     return_fraction = True
 
     _test_construct_marginal_magnitude_histogram(
-        number_of_subdivisions, number_of_shells, return_fraction
+        number_of_subdivisions, number_of_shells, return_fraction, random_vectors
     )
 
 
 def _test_construct_marginal_orientation_histogram(
-    number_of_subdivisions: int, number_of_shells: int, return_fraction: bool
+    number_of_subdivisions: int,
+    number_of_shells: int,
+    return_fraction: bool,
+    vectors: np.ndarray,
 ):
     """Test the orientation histogram construction using counts.
 
@@ -495,13 +601,13 @@ def _test_construct_marginal_orientation_histogram(
         Number of spherical shells to consider.
     return_fraction
         Indicate whether to consider frequencies or counts.
+    vectors
+        Randomly-generated vectors to use for the test.
     """
 
-    # Create a set of random vectors
-    vectors = generate_test_vectors()
     number_of_vectors = len(vectors)
 
-    # Construct a Tregenza sphere
+    # Construct a triangulated sphere
     sphere = vr.triangle_sphere.TriangleSphere(
         number_of_subdivisions=number_of_subdivisions, number_of_shells=number_of_shells
     )
@@ -525,7 +631,7 @@ def _test_construct_marginal_orientation_histogram(
         assert frequency_sum == expected_result
 
 
-def test_construct_marginal_orientation_histogram_counts_many_shells():
+def test_construct_marginal_orientation_histogram_counts_many_shells(random_vectors):
     """Test the orientation histogram construction using counts.
 
     Test of
@@ -540,11 +646,13 @@ def test_construct_marginal_orientation_histogram_counts_many_shells():
     return_fraction = False
 
     _test_construct_marginal_orientation_histogram(
-        number_of_subdivisions, number_of_shells, return_fraction
+        number_of_subdivisions, number_of_shells, return_fraction, random_vectors
     )
 
 
-def test_construct_marginal_orientation_histogram_frequencies_many_shells():
+def test_construct_marginal_orientation_histogram_frequencies_many_shells(
+    random_vectors,
+):
     """Test the orientation histogram construction using frequencies.
 
     Test of
@@ -559,11 +667,11 @@ def test_construct_marginal_orientation_histogram_frequencies_many_shells():
     return_fraction = True
 
     _test_construct_marginal_orientation_histogram(
-        number_of_subdivisions, number_of_shells, return_fraction
+        number_of_subdivisions, number_of_shells, return_fraction, random_vectors
     )
 
 
-def test_construct_marginal_orientation_histogram_counts_single_shell():
+def test_construct_marginal_orientation_histogram_counts_single_shell(random_vectors):
     """Test the orientation histogram construction using counts.
 
     Test of
@@ -578,11 +686,13 @@ def test_construct_marginal_orientation_histogram_counts_single_shell():
     return_fraction = False
 
     _test_construct_marginal_orientation_histogram(
-        number_of_subdivisions, number_of_shells, return_fraction
+        number_of_subdivisions, number_of_shells, return_fraction, random_vectors
     )
 
 
-def test_construct_marginal_orientation_histogram_frequencies_single_shell():
+def test_construct_marginal_orientation_histogram_frequencies_single_shell(
+    random_vectors,
+):
     """Test the orientation histogram construction using frequencies.
 
     Test of
@@ -597,12 +707,12 @@ def test_construct_marginal_orientation_histogram_frequencies_single_shell():
     return_fraction = True
 
     _test_construct_marginal_orientation_histogram(
-        number_of_subdivisions, number_of_shells, return_fraction
+        number_of_subdivisions, number_of_shells, return_fraction, random_vectors
     )
 
 
 def _test_construct_conditional_orientation_histogram(
-    number_of_subdivisions: int, number_of_shells: int
+    number_of_subdivisions: int, number_of_shells: int, vectors: np.ndarray
 ):
     """Test the conditional orientation histogram construction.
 
@@ -617,12 +727,11 @@ def _test_construct_conditional_orientation_histogram(
         triangulated sphere.
     number_of_shells
         The number of histogram shells to consider.
+    vectors
+        Randomly-generated vectors to use for the test.
     """
 
-    # Create a set of random vectors
-    vectors = generate_test_vectors()
-
-    # Construct a Tregenza sphere
+    # Construct a triangulated sphere
     sphere = vr.triangle_sphere.TriangleSphere(
         number_of_subdivisions=number_of_subdivisions, number_of_shells=number_of_shells
     )
@@ -644,7 +753,7 @@ def _test_construct_conditional_orientation_histogram(
     assert np.all(np.logical_or(shell_is_zero, shell_is_approx_one))
 
 
-def test_construct_conditional_orientation_histogram_many_shells():
+def test_construct_conditional_orientation_histogram_many_shells(random_vectors):
     """Test the conditional orientation histogram construction.
 
     Test of
@@ -658,11 +767,11 @@ def test_construct_conditional_orientation_histogram_many_shells():
     number_of_shells = 32
 
     _test_construct_conditional_orientation_histogram(
-        number_of_subdivisions, number_of_shells
+        number_of_subdivisions, number_of_shells, random_vectors
     )
 
 
-def test_construct_conditional_orientation_histogram_single_shell():
+def test_construct_conditional_orientation_histogram_single_shell(random_vectors):
     """Test the conditional orientation histogram construction.
 
     Test of
@@ -676,12 +785,12 @@ def test_construct_conditional_orientation_histogram_single_shell():
     number_of_shells = 1
 
     _test_construct_conditional_orientation_histogram(
-        number_of_subdivisions, number_of_shells
+        number_of_subdivisions, number_of_shells, random_vectors
     )
 
 
 def _test_construct_conditional_magnitude_histogram(
-    number_of_subdivisions: int, number_of_shells: int
+    number_of_subdivisions: int, number_of_shells: int, vectors: np.ndarray
 ):
     """Test the conditional magnitude histogram construction.
 
@@ -696,12 +805,11 @@ def _test_construct_conditional_magnitude_histogram(
         sphere.
     number_of_shells
         Number of histogram shells to construct.
+    vectors
+        Randomly-generated vectors to use for the test.
     """
 
-    # Create a set of random vectors
-    vectors = generate_test_vectors()
-
-    # Construct a Tregenza sphere
+    # Construct a triangulated sphere
     sphere = vr.triangle_sphere.TriangleSphere(
         number_of_subdivisions=number_of_subdivisions, number_of_shells=number_of_shells
     )
@@ -724,7 +832,7 @@ def _test_construct_conditional_magnitude_histogram(
     assert np.all(np.logical_or(bin_is_zero, bin_is_approx_one))
 
 
-def test_construct_conditional_magnitude_histogram_many_shells():
+def test_construct_conditional_magnitude_histogram_many_shells(random_vectors):
     """Test the conditional magnitude histogram construction.
 
     Test of
@@ -738,11 +846,11 @@ def test_construct_conditional_magnitude_histogram_many_shells():
     number_of_shells = 32
 
     _test_construct_conditional_magnitude_histogram(
-        number_of_subdivisions, number_of_shells
+        number_of_subdivisions, number_of_shells, random_vectors
     )
 
 
-def test_construct_conditional_magnitude_histogram_single_shell():
+def test_construct_conditional_magnitude_histogram_single_shell(random_vectors):
     """Test the conditional magnitude histogram construction.
 
     Test of
@@ -756,7 +864,7 @@ def test_construct_conditional_magnitude_histogram_single_shell():
     number_of_shells = 1
 
     _test_construct_conditional_magnitude_histogram(
-        number_of_subdivisions, number_of_shells
+        number_of_subdivisions, number_of_shells, random_vectors
     )
 
 
@@ -766,6 +874,7 @@ def _test_create_histogram_meshes(
     use_constant_radius: bool,
     normalise_by_shell: bool,
     use_frequencies: bool,
+    vectors: np.ndarray,
 ):
     """Test the histogram mesh creation.
 
@@ -790,12 +899,11 @@ def _test_create_histogram_meshes(
     use_frequencies
         Indicate whether to consider frequency data as opposed to count
         values. Ignored if `normalise_by_shell` is set to ``True``.
+    vectors
+        Randomly-generated vectors to use for the test.
     """
 
-    # Create a set of random vectors
-    vectors = generate_test_vectors()
-
-    # Construct a Tregenza sphere
+    # Construct a triangulated sphere
     sphere = vr.triangle_sphere.TriangleSphere(
         number_of_subdivisions=number_of_subdivisions, number_of_shells=number_of_shells
     )
@@ -845,7 +953,9 @@ def _test_create_histogram_meshes(
     assert np.all(np.isclose(radii, expected_radii))
 
 
-def test_create_histogram_meshes_many_shells_no_norm_diff_radius_frequency():
+def test_create_histogram_meshes_many_shells_no_norm_diff_radius_frequency(
+    random_vectors,
+):
     """Test the histogram mesh creation.
 
     Test for :meth:`TriangleSphere.create_histogram_meshes` to assess
@@ -867,10 +977,11 @@ def test_create_histogram_meshes_many_shells_no_norm_diff_radius_frequency():
         use_constant_radius,
         normalise_by_shell,
         use_frequencies,
+        random_vectors,
     )
 
 
-def test_create_histogram_meshes_many_shells_no_norm_diff_radius_counts():
+def test_create_histogram_meshes_many_shells_no_norm_diff_radius_counts(random_vectors):
     """Test the histogram mesh creation.
 
     Test for :meth:`TriangleSphere.create_histogram_meshes` to assess
@@ -892,10 +1003,11 @@ def test_create_histogram_meshes_many_shells_no_norm_diff_radius_counts():
         use_constant_radius,
         normalise_by_shell,
         use_frequencies,
+        random_vectors,
     )
 
 
-def test_create_histogram_meshes_many_shells_norm_diff_radius():
+def test_create_histogram_meshes_many_shells_norm_diff_radius(random_vectors):
     """Test the histogram mesh creation.
 
     Test for :meth:`TriangleSphere.create_histogram_meshes` to assess
@@ -917,10 +1029,11 @@ def test_create_histogram_meshes_many_shells_norm_diff_radius():
         use_constant_radius,
         normalise_by_shell,
         use_frequencies,
+        random_vectors,
     )
 
 
-def test_create_histogram_meshes_many_shells_norm_same_radius():
+def test_create_histogram_meshes_many_shells_norm_same_radius(random_vectors):
     """Test the histogram mesh creation.
 
     Test for :meth:`TriangleSphere.create_histogram_meshes` to assess
@@ -942,10 +1055,13 @@ def test_create_histogram_meshes_many_shells_norm_same_radius():
         use_constant_radius,
         normalise_by_shell,
         use_frequencies,
+        random_vectors,
     )
 
 
-def test_create_histogram_meshes_single_shell_no_norm_diff_radius_counts():
+def test_create_histogram_meshes_single_shell_no_norm_diff_radius_counts(
+    random_vectors,
+):
     """Test the histogram mesh creation.
 
     Test for :meth:`TriangleSphere.create_histogram_meshes` to assess
@@ -969,10 +1085,11 @@ def test_create_histogram_meshes_single_shell_no_norm_diff_radius_counts():
         use_constant_radius,
         normalise_by_shell,
         use_frequencies,
+        random_vectors,
     )
 
 
-def test_create_histogram_meshes_single_shell_norm_diff_radius():
+def test_create_histogram_meshes_single_shell_norm_diff_radius(random_vectors):
     """Test the histogram mesh creation.
 
     Test for :meth:`TriangleSphere.create_histogram_meshes` to assess
@@ -994,21 +1111,84 @@ def test_create_histogram_meshes_single_shell_norm_diff_radius():
         use_constant_radius,
         normalise_by_shell,
         use_frequencies,
+        random_vectors,
     )
 
 
-def test_convert_vectors_to_cartesian_array_non_unit():
-    """Test the vector conversion to Cartesian array.
+#
+#
+# def test_convert_vectors_to_cartesian_array_non_unit(random_vectors):
+#     """Test the vector conversion to Cartesian array.
+#
+#     Test for :meth:`TriangleSphere.convert_vectors_to_cartesian_array`
+#     which converts unit vectors and separate magnitudes coordinates to unit
+#     or non-unit vectors in Cartesian coordinates. In this test, the vectors
+#     are not normalised to unit length.
+#     """
+#
+#     # Create a sphere
+#     sphere = vr.triangle_sphere.TriangleSphere(
+#         number_of_subdivisions=5, number_of_shells=32
+#     )
+#
+#     # Perform the bin assignment on these vectors
+#     labelled_vectors, _ = sphere.assign_histogram_bins(random_vectors)
+#
+#     # And now, convert the vectors back to Cartesian coordinates
+#     cartesian_coordinates = sphere.convert_vectors_to_cartesian_array(
+#         labelled_vectors, False
+#     )
+#
+#     # Check to see if they are close enough to the originals
+#     assert np.all(np.isclose(cartesian_coordinates, random_vectors))
+#
+#
+# def test_convert_vectors_to_cartesian_array_normalised(random_vectors):
+#     """Test the vector conversion to Cartesian array.
+#
+#     Test for :meth:`TriangleSphere.convert_vectors_to_cartesian_array`
+#     which converts unit vectors and separate magnitudes coordinates to unit
+#     or non-unit vectors in Cartesian coordinates. In this test, the vectors
+#     are normalised to unit length.
+#     """
+#
+#     # Create a sphere
+#     sphere = vr.triangle_sphere.TriangleSphere(
+#         number_of_subdivisions=5, number_of_shells=32
+#     )
+#
+#     # Perform the bin assignment on these vectors
+#     labelled_vectors, _ = sphere.assign_histogram_bins(random_vectors)
+#
+#     # And now, convert the vectors back to Cartesian coordinates
+#     cartesian_coordinates = sphere.convert_vectors_to_cartesian_array(
+#         labelled_vectors, True
+#     )
+#
+#     # Normalise the original vectors
+#     unit_vectors, _ = vr.util.normalise_vectors(random_vectors)
+#
+#     # Check to see if they are close enough to the originals
+#     assert np.all(np.isclose(cartesian_coordinates, unit_vectors))
 
-    Test for :meth:`TriangleSphere.convert_vectors_to_cartesian_array`
-    which converts unit vectors and separate magnitudes coordinates to unit
-    or non-unit vectors in Cartesian coordinates. In this test, the vectors
-    are not normalised to unit length.
+
+def _test_convert_vectors_to_cartesian(
+    create_unit_vectors: bool, include_spatial_locations: bool, vectors: np.ndarray
+):
+    """Test converting the labelled vectors to Cartesian coordinates.
+
+    Test for :meth:`TriangleSphere.convert_vectors_to_cartesian_array` with
+    various parameters.
+
+    Parameters
+    ----------
+    create_unit_vectors
+        Indicate whether unit vectors should be created.
+    include_spatial_locations
+        Indicate whether the spatial locations should also be returned.
+    vectors
+        The randomly-generated vectors to use for the test.
     """
-
-    # Generate a collection of non-unit vectors
-    vectors = generate_test_vectors()
-
     # Create a sphere
     sphere = vr.triangle_sphere.TriangleSphere(
         number_of_subdivisions=5, number_of_shells=32
@@ -1019,40 +1199,94 @@ def test_convert_vectors_to_cartesian_array_non_unit():
 
     # And now, convert the vectors back to Cartesian coordinates
     cartesian_coordinates = sphere.convert_vectors_to_cartesian_array(
-        labelled_vectors, False
+        labelled_vectors, create_unit_vectors, include_spatial_locations
     )
 
+    if create_unit_vectors:
+        # Normalise the original vectors
+        comparison_vectors, _ = vr.util.normalise_vectors(vectors)
+    else:
+        comparison_vectors = vectors
+
+    number_of_columns = vectors.shape[-1]
+
+    if number_of_columns > 3 and not include_spatial_locations:
+        comparison_vectors = comparison_vectors[:, -3:]
+
     # Check to see if they are close enough to the originals
-    assert np.all(np.isclose(cartesian_coordinates, vectors))
+    assert np.all(np.isclose(cartesian_coordinates, comparison_vectors))
 
 
-def test_convert_vectors_to_cartesian_array_normalised():
-    """Test the vector conversion to Cartesian array.
+def test_convert_vectors_to_cartesian_array_normalised_no_locations(random_vectors):
+    """Test vector conversion to Cartesian array without spatial locations.
 
     Test for :meth:`TriangleSphere.convert_vectors_to_cartesian_array`
-    which converts unit vectors and separate magnitudes coordinates to unit
-    or non-unit vectors in Cartesian coordinates. In this test, the vectors
-    are normalised to unit length.
+    which converts vectors in spherical coordinates to vectors in Cartesian
+    coordinates. In this test, the vectors are normalised to unit length.
     """
 
-    # Generate a collection of non-unit vectors
-    vectors = generate_test_vectors()
+    vectors = random_vectors
+    create_unit_vectors = True
+    include_spatial_locations = False
 
-    # Create a sphere
-    sphere = vr.triangle_sphere.TriangleSphere(
-        number_of_subdivisions=5, number_of_shells=32
+    _test_convert_vectors_to_cartesian(
+        create_unit_vectors, include_spatial_locations, vectors
     )
 
-    # Perform the bin assignment on these vectors
-    labelled_vectors, _ = sphere.assign_histogram_bins(vectors)
 
-    # And now, convert the vectors back to Cartesian coordinates
-    cartesian_coordinates = sphere.convert_vectors_to_cartesian_array(
-        labelled_vectors, True
+def test_convert_vectors_to_cartesian_array_not_normalised_no_locations(random_vectors):
+    """Test vector conversion to Cartesian array without spatial locations.
+
+    Test for :meth:`TriangleSphere.convert_vectors_to_cartesian_array`
+    which converts vectors in spherical coordinates to vectors in Cartesian
+    coordinates. In this test, the vectors are not normalised to unit
+    length.
+    """
+
+    vectors = random_vectors
+    create_unit_vectors = False
+    include_spatial_locations = False
+
+    _test_convert_vectors_to_cartesian(
+        create_unit_vectors, include_spatial_locations, vectors
     )
 
-    # Normalise the original vectors
-    unit_vectors, _ = vr.util.normalise_vectors(vectors)
 
-    # Check to see if they are close enough to the originals
-    assert np.all(np.isclose(cartesian_coordinates, unit_vectors))
+def test_convert_vectors_to_cartesian_array_not_normalised_with_locations(
+    random_vectors_with_locations,
+):
+    """Test vector conversion to Cartesian array with spatial locations.
+
+    Test for :meth:`TriangleSphere.convert_vectors_to_cartesian_array`
+    which converts vectors in spherical coordinates to vectors in Cartesian
+    coordinates. In this test, the vectors are not normalised to unit
+    length.
+    """
+
+    vectors = random_vectors_with_locations
+    create_unit_vectors = False
+    include_spatial_locations = True
+
+    _test_convert_vectors_to_cartesian(
+        create_unit_vectors, include_spatial_locations, vectors
+    )
+
+
+def test_convert_vectors_to_cartesian_array_not_normalised_ignoring_locations(
+    random_vectors_with_locations,
+):
+    """Test vector conversion to Cartesian array ignoring spatial location.
+
+    Test for :meth:`TriangleSphere.convert_vectors_to_cartesian_array`
+    which converts vectors in spherical coordinates to vectors in Cartesian
+    coordinates. In this test, the vectors are not normalised to unit
+    length.
+    """
+
+    vectors = random_vectors_with_locations
+    create_unit_vectors = False
+    include_spatial_locations = False
+
+    _test_convert_vectors_to_cartesian(
+        create_unit_vectors, include_spatial_locations, vectors
+    )
