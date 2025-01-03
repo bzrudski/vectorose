@@ -19,6 +19,7 @@ import enum
 from typing import Any, Optional, Sequence, Tuple, Union
 
 import numpy as np
+import pandas as pd
 from scipy.spatial.transform import Rotation
 
 
@@ -58,9 +59,43 @@ class MagnitudeType(enum.IntEnum):
     """Magnitude of the ``(x,y)``-projection of the vector."""
 
 
-def compute_vector_magnitudes(vectors: np.ndarray) -> np.ndarray:
+def convert_vectors_to_data_frame(vectors: np.ndarray) -> pd.DataFrame:
+    """Convert vector array into a DataFrame.
+
+    Convert an array of vectors into a pandas :class:`pandas.DataFrame`.
+
+    Parameters
+    ----------
+    vectors
+        Array of shape ``(n, 3)`` or ``(n, 6)`` containing the vectors. If
+        three columns are present, they are considered as the ``x, y, z``
+        vector components, respectively. If six columns are present, the
+        final three columns are considered as the vector components, while
+        the first three columns are considered the ``x, y, z`` spatial
+        locations of the vectors.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Data frame of the same shape as `vectors`. Spatial columns, if
+        present, are labelled ``x, y, z`` while the vector component
+        columns are labelled ``vx, vy, vz``.
     """
-    Compute vector magnitudes.
+
+    number_of_columns = vectors.shape[-1]
+
+    columns = ["vx", "vy", "vz"]
+
+    if number_of_columns > 3:
+        columns = ["x", "y", "z"] + columns
+
+    vector_df = pd.DataFrame(vectors, columns=columns)
+
+    return vector_df
+
+
+def compute_vector_magnitudes(vectors: np.ndarray) -> np.ndarray:
+    """Compute vector magnitudes.
 
     Compute vector magnitudes in 3D, as well as the component of the
     magnitude in the ``(x,y)``-plane.

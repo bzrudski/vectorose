@@ -11,6 +11,8 @@ import pandas as pd
 import pandas.core.generic
 import pyvista as pv
 
+from . import util
+
 
 class SphereBase(abc.ABC):
     """Base class for a spherical histogram."""
@@ -87,16 +89,8 @@ class SphereBase(abc.ABC):
         properly assigned to an orientation bin.
         """
 
-        # Determine if the vectors have locations
-        _, ncols = vectors.shape
-
-        columns = ["vx", "vy", "vz"]
-
-        if ncols > 3:
-            columns = ["x", "y", "z"] + columns
-
-        # Create the histogram
-        histogram = pd.DataFrame(vectors, columns=columns)
+        # Create the vector data frame
+        histogram = util.convert_vectors_to_data_frame(vectors)
 
         # Perform any additional histogram preparation
         histogram = self._initial_vector_data_preparation(histogram)
