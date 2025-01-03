@@ -6,12 +6,76 @@ module.
 
 
 import numpy as np
+import pytest
 import scipy
 
 import vectorose as vr
 
 
 RANDOM_SEED = 20240818
+
+
+@pytest.fixture
+def random_vectors() -> np.ndarray:
+    """Generate random vectors."""
+
+    my_random_non_zero_vectors = np.random.default_rng(RANDOM_SEED).uniform(
+        low=1e-2, high=1, size=(10000, 3)
+    )
+
+    return my_random_non_zero_vectors
+
+
+@pytest.fixture
+def random_vectors_with_locations(random_vectors: np.ndarray) -> np.ndarray:
+    """Generate random vectors with spatial locations."""
+
+    # Generate random locations
+    locations = np.random.default_rng(RANDOM_SEED * 2).uniform(
+        low=1e-2, high=1, size=random_vectors.shape
+    )
+
+    # Slide in the locations
+    my_random_non_zero_vectors = np.concatenate([locations, random_vectors], axis=-1)
+
+    return my_random_non_zero_vectors
+
+
+def test_convert_vectors_to_data_frame_no_locations(random_vectors):
+    """Test conversion to DataFrame.
+
+    Unit test for :func:`util.convert_vectors_to_data_frame` without
+    spatial locations.
+    """
+
+    vectors_df = vr.util.convert_vectors_to_data_frame(random_vectors)
+    vectors_df_array = vectors_df.to_numpy()
+
+    assert "vx" in vectors_df
+    assert "vy" in vectors_df
+    assert "vz" in vectors_df
+
+    assert np.all(vectors_df_array == random_vectors)
+
+
+def test_convert_vectors_to_data_frame_with_locations(random_vectors_with_locations):
+    """Test conversion to DataFrame.
+
+    Unit test for :func:`util.convert_vectors_to_data_frame` with spatial
+    locations.
+    """
+
+    vectors_df = vr.util.convert_vectors_to_data_frame(random_vectors_with_locations)
+    vectors_df_array = vectors_df.to_numpy()
+
+    assert "x" in vectors_df
+    assert "y" in vectors_df
+    assert "z" in vectors_df
+    assert "vx" in vectors_df
+    assert "vy" in vectors_df
+    assert "vz" in vectors_df
+
+    assert np.all(vectors_df_array == random_vectors_with_locations)
 
 
 def test_magnitude_computation():
@@ -87,84 +151,62 @@ def test_flatten_vector_field():
     assert my_flat_vector_field.size == my_random_vector_field.size
 
 
-def test_remove_zero_vectors():
+def test_remove_zero_vectors(random_vectors):
     """Test the zero-vector removal.
 
     Unit test for :func:`util.remove_zero_vectors`.
     """
 
-    # Generate random non-zero vectors
-    my_random_non_zero_vectors = np.random.default_rng(RANDOM_SEED).uniform(
-        low=1e-2, high=1, size=(10000, 3)
-    )
-
     # Generate zero-vectors
-    my_zero_vectors = np.zeros_like(my_random_non_zero_vectors)
+    my_zero_vectors = np.zeros_like(random_vectors)
 
     # Combine the two sets of vectors
-    my_combined_vectors = np.concatenate(
-        [my_random_non_zero_vectors, my_zero_vectors], axis=0
-    )
+    my_combined_vectors = np.concatenate([random_vectors, my_zero_vectors], axis=0)
 
     # Remove the zero vectors
     non_zero_vectors_cleaned = vr.util.remove_zero_vectors(my_combined_vectors)
 
     # Check to make sure the two arrays have the same shape
-    assert my_random_non_zero_vectors.shape == non_zero_vectors_cleaned.shape
+    assert random_vectors.shape == non_zero_vectors_cleaned.shape
 
     # Check that the non-zero vectors all have a magnitude greater than zero
     non_zero_norms = np.linalg.norm(non_zero_vectors_cleaned, axis=-1)
     assert np.all(non_zero_norms > 0)
 
     # Check that the non-zero vectors are all equal to the originals
-    assert np.all(my_random_non_zero_vectors == non_zero_vectors_cleaned)
+    assert np.all(random_vectors == non_zero_vectors_cleaned)
 
 
-def test_remove_zero_vectors_location():
+def test_remove_zero_vectors_location(random_vectors_with_locations):
     """Test the zero-vector removal with locations.
 
     Unit test for :func:`util.remove_zero_vectors`.
     """
 
     # Generate the spatial locations
-    l = 10
-    w = 10
-    h = 100
-
-    indices = np.indices((l, w, h))
-    indices = np.moveaxis(indices, 0, -1).reshape(-1, 3)
-
-    # Generate random non-zero vectors
-    my_random_non_zero_vectors = np.random.default_rng(RANDOM_SEED).uniform(
-        low=1e-2, high=1, size=(10000, 3)
-    )
-
-    # Slide in the indices
-    my_random_non_zero_vectors = np.concatenate(
-        [indices, my_random_non_zero_vectors], axis=-1
-    )
+    random_locations = random_vectors_with_locations[:, :3]
 
     # Generate zero-vectors
     my_zero_vectors = np.zeros((10000, 3))
-    my_zero_vectors = np.concatenate([indices, my_zero_vectors], axis=-1)
+    my_zero_vectors = np.concatenate([random_locations, my_zero_vectors], axis=-1)
 
     # Combine the two sets of vectors
     my_combined_vectors = np.concatenate(
-        [my_random_non_zero_vectors, my_zero_vectors], axis=0
+        [random_vectors_with_locations, my_zero_vectors], axis=0
     )
 
     # Remove the zero vectors
     non_zero_vectors_cleaned = vr.util.remove_zero_vectors(my_combined_vectors)
 
     # Check to make sure the two arrays have the same shape
-    assert my_random_non_zero_vectors.shape == non_zero_vectors_cleaned.shape
+    assert random_vectors_with_locations.shape == non_zero_vectors_cleaned.shape
 
     # Check that the non-zero vectors all have a magnitude greater than zero
     non_zero_norms = np.linalg.norm(non_zero_vectors_cleaned, axis=-1)
     assert np.all(non_zero_norms > 0)
 
     # Check that the non-zero vectors are all equal to the originals
-    assert np.all(my_random_non_zero_vectors == non_zero_vectors_cleaned)
+    assert np.all(random_vectors_with_locations == non_zero_vectors_cleaned)
 
 
 def test_normalise_array_flat():
@@ -286,9 +328,11 @@ def test_normalise_vectors_no_zero_with_location():
     """
 
     # Generate random vectors
-    my_random_vectors = np.random.default_rng(RANDOM_SEED).integers(
-        low=2, high=100, size=(1000, 3)
-    ).astype(float)
+    my_random_vectors = (
+        np.random.default_rng(RANDOM_SEED)
+        .integers(low=2, high=100, size=(1000, 3))
+        .astype(float)
+    )
 
     l = w = h = 10
     indices = np.indices((l, w, h))
@@ -318,7 +362,7 @@ def test_normalise_one_vector_no_location():
 
     # Generate random vectors
     my_vector = np.array([1, 2, 2])
-    expected_result = np.array([1/3, 2/3, 2/3])
+    expected_result = np.array([1 / 3, 2 / 3, 2 / 3])
 
     # Normalise the vectors
     normalised_vector, magnitude = vr.util.normalise_vectors(my_vector)
@@ -345,7 +389,7 @@ def test_normalise_one_vector_with_location():
 
     # Generate random vectors
     my_vector = np.array([1, 2, 3, 1, 2, 2]).astype(float)
-    expected_result = np.array([1, 2, 3, 1/3, 2/3, 2/3])
+    expected_result = np.array([1, 2, 3, 1 / 3, 2 / 3, 2 / 3])
 
     # Normalise the vectors
     normalised_vector, magnitude = vr.util.normalise_vectors(my_vector)
