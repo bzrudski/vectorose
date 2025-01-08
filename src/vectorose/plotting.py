@@ -44,17 +44,9 @@ plt.rcParams["animation.ffmpeg_path"] = imageio_ffmpeg.get_ffmpeg_exe()
 
 # Configure PyVista options
 pv.global_theme.font.fmt = "%.6g"
-pv.global_theme.font.label_size = 40
-pv.global_theme.font.title_size = 40
-pv.global_theme.font.size = 40
 pv.global_theme.colorbar_vertical.position_x = 0.85
 pv.global_theme.colorbar_vertical.position_y = 0.3
 pv.global_theme.colorbar_orientation = "vertical"
-
-BASE_WINDOW_SIZE = np.array([1024, 1024])
-SCALE_FACTOR = 2
-
-pv.global_theme.window_size = BASE_WINDOW_SIZE * SCALE_FACTOR
 
 
 class CardinalDirection(str, enum.Enum):
