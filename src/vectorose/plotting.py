@@ -17,7 +17,6 @@ from typing import Any, Iterable, List, Optional
 import imageio_ffmpeg
 import matplotlib.animation
 import matplotlib.cm
-import matplotlib.colorbar
 import matplotlib.colors
 import matplotlib.figure
 import matplotlib.projections
@@ -26,8 +25,8 @@ import mpl_toolkits.mplot3d.art3d
 import mpl_toolkits.mplot3d.axes3d
 import numpy as np
 import pandas as pd
-import pyvista as pv
 import vtk
+import pyvista as pv
 from scipy.spatial.transform import Rotation
 
 from .triangle_sphere import TriangleSphere
