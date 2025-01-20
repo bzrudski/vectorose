@@ -120,4 +120,5 @@ sphinx_gallery_conf = {
     },
     "download_all_examples": False,
     "remove_config_comments": True,
+    "matplotlib_animations": (True, "mp4"),
 }
