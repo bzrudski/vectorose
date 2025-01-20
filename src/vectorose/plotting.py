@@ -836,9 +836,11 @@ class SpherePlotter:
         Parameters
         ----------
         filename
-            The destination for the created video.
+            The destination for the created video. Must end with either
+            ``.mp4`` or ``.gif``.
         quality
-            Image quality for the export, between 0 and 10.
+            Image quality for the video export, between 0 and 10. Ignored
+            for exports as GIF.
         fps
             Frame rate, number of frames per second in the exported video.
 
@@ -858,9 +860,14 @@ class SpherePlotter:
             Close and finalise the current movie.
         """
 
-        self._plotter.open_movie(
-            filename, fps, quality
-        )
+        if filename.endswith(".gif"):
+            self._plotter.open_gif(
+                filename, 0, fps
+            )
+        else:
+            self._plotter.open_movie(
+                filename, fps, quality
+            )
 
         self._has_movie_open = True
 
