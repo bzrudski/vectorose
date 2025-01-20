@@ -291,7 +291,7 @@ my_orientation_plotter.produce_plot()
 my_orientation_plotter.rotate_to_view(phi=160, theta=300)
 
 my_orientation_plotter.produce_rotating_video(
-    "orientation_100_fps.gif",
+    "orientation_20_fps.gif",
     fps=20,
     number_of_frames=72,
 )
@@ -363,6 +363,9 @@ my_orientation_plotter.produce_plot()
 phi_values = range(0, 181, 10)
 theta_value = 45
 
+# Hide the sliders
+my_orientation_plotter.hide_sliders()
+
 my_orientation_plotter.open_movie_file("custom_anim.gif", fps=10)
 
 for phi in phi_values:
@@ -381,6 +384,9 @@ for phi in reversed(phi_values):
     my_orientation_plotter.write_frame()
 
 my_orientation_plotter.close_movie()
+
+# Re-show the sliders
+my_orientation_plotter.show_sliders()
 
 # sphinx_gallery_start_ignore
 my_orientation_plotter.close()
