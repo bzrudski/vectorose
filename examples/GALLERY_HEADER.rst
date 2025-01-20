@@ -1,5 +1,5 @@
-Gallery
-=======
+Examples
+========
 
 This page shows some examples of what you can do with VectoRose.
 
