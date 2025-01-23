@@ -6,8 +6,8 @@
 """Plotting functions for VectoRose.
 
 After constructing the various histograms using the classes and functions
-present in :mod:`tregenza_sphere`, :mod:`triangle_sphere` and
-:mod:`polar_data`, this module can be used to visualise the results.
+present in :mod:`.tregenza_sphere`, :mod:`.triangle_sphere` and
+:mod:`.polar_data`, this module can be used to visualise the results.
 """
 
 import enum
@@ -852,7 +852,7 @@ class SpherePlotter:
 
         See Also
         --------
-        pyvista.plotter.open_movie :
+        pyvista.Plotter.open_movie :
             The wrapped function that actually creates the movie file.
         .write_frame :
             Add frames to the open movie.
@@ -1279,7 +1279,7 @@ def produce_1d_scalar_histogram(
         Indicate whether to use a logarithmic scale for the y-axis.
     **kwargs
         Keyword arguments for plotting the histogram.
-        See :func:`matplotlib.axes.bar` and
+        See :func:`matplotlib.axes.Axes.bar` and
         :class:`matplotlib.patches.Rectangle` for more details.
 
     Returns
@@ -2060,7 +2060,7 @@ def construct_uv_sphere_vertices(
     -------
     numpy.ndarray
         Array containing the Cartesian coordinates of the sphere vertices
-        in a format to plot using :meth:`Axes3D.plt_surface`. This array
+        in a format to plot using :meth:`Axes3D.plot_surface`. This array
         will have shape ``(theta_steps + 1, phi_steps + 1, 3)`` where the
         last axis corresponds to the ``X, Y, Z`` components.
 
@@ -2073,7 +2073,7 @@ def construct_uv_sphere_vertices(
     Notes
     -----
     The coordinates computed using this function can easily be used to plot
-    a sphere using :meth:`Axes3D.plt_surface`. To do so, the X, Y and Z
+    a sphere using :meth:`Axes3D.plot_surface`. To do so, the X, Y and Z
     coordinate sheets must be separated by indexing along the last axis.
 
     """
@@ -2214,7 +2214,7 @@ def __update_sphere_viewing_angle(
 
     Returns
     -------
-    Iterable[mpl_toolkits.mplot3d.axes3d.Axes3D]
+    Iterable of mpl_toolkits.mplot3d.axes3d.Axes3D
         An iterable containing a reference to the 3D sphere axes.
     """
 
@@ -2350,13 +2350,15 @@ def construct_confidence_cone(
         Indicate whether the provided angular radius is in degrees.
     **kwargs
         Keyword arguments for the patch construction.
-        See :class:`Poly3DCollection` for details.
+        See :class:`~mpl_toolkits.mplot3d.art3d.Poly3DCollection` for
+        details.
 
     Returns
     -------
-    list[mpl_toolkits.mplot3d.art3d.Poly3DCollection]
-        List of :class:`Poly3DCollection` representing each patch of the
-        confidence cone. These patches are triangular.
+    list of mpl_toolkits.mplot3d.art3d.Poly3DCollection
+        List of :class:`~mpl_toolkits.mplot3d.art3d.Poly3DCollection`
+        representing each patch of the confidence cone. These patches are
+        triangular.
     """
 
     # Convert to radians, if necessary
@@ -2460,7 +2462,8 @@ def produce_3d_confidence_cone_plot(
     See Also
     --------
     .construct_confidence_cone : Generate the confidence cone patches.
-    .construct_uv_sphere : Generate vertices for a quad-based sphere.
+    .construct_uv_sphere_vertices :
+        Generate vertices for a quad-based sphere.
     """
 
     # Plot the confidence cone
