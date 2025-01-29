@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 import pyvista as pv
 
-pv.start_xvfb()
+# pv.start_xvfb()
 pv.set_jupyter_backend("html")
 pv.global_theme.font.fmt = "%.6g"
 
@@ -163,6 +163,11 @@ we can also export a video going through each shell using
 
 ```{code-cell} ipython3
 :tags: [remove-cell]
+import os
+export_dir = "./assets/advanced_shells/"
+if not os.path.isdir(export_dir):
+  os.mkdir(export_dir)
+
 my_bivariate_sphere_plotter.export_screenshot(
   "./assets/advanced_shells/advanced_shells.png",
   False

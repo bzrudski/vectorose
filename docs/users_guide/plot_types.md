@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 import pyvista as pv
 
-pv.start_xvfb()
+# pv.start_xvfb()
 pv.set_jupyter_backend("html")
 pv.global_theme.font.fmt = "%.6g"
 # pv.global_theme.window_size = [1024, 1024]
@@ -684,6 +684,19 @@ export a video of your sphere spinning about its vertical axis using
 {meth}`.SpherePlotter.produce_rotating_video`.
 
 ```{code-cell} ipython3
+:tags: [remove-cell]
+import os
+export_dir = "./assets/rotating_video/"
+if not os.path.isdir(export_dir):
+  os.mkdir(export_dir)
+
+my_sphere_plotter.export_screenshot(
+  "./assets/rotating_video/rotating_video.png",
+  False
+)
+```
+
+```{code-cell} ipython3
 my_sphere_plotter.produce_rotating_video(
   "./assets/rotating_video/rotating_video.mp4",
   quality=5,
@@ -693,13 +706,6 @@ my_sphere_plotter.produce_rotating_video(
 )
 ```
 
-```{code-cell} ipython3
-:tags: [remove-cell]
-my_sphere_plotter.export_screenshot(
-  "./assets/rotating_video/rotating_video.png",
-  False
-)
-```
 
 ```{video} ./assets/rotating_video/rotating_video.mp4
 :width: 100%
@@ -817,6 +823,11 @@ method {meth}`.SpherePlotter.produce_shells_video`.
 
 ```{code-cell} ipython3
 :tags: [remove-cell]
+
+export_dir = "./assets/shells_video/"
+if not os.path.isdir(export_dir):
+  os.mkdir(export_dir)
+
 my_sphere_plotter.export_screenshot(
   "./assets/shells_video/shells_video.png",
   False
