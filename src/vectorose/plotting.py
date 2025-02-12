@@ -1370,7 +1370,7 @@ def produce_polar_histogram_plot(
     bin_width = bins[1] - bins[0]
     ax.set_theta_direction(rotation_direction.value)
     ax.set_theta_zero_location(zero_position.value)
-    ax.set_title(plot_title)
+    ax.set_title(plot_title, pad=20)
     ax.axes.yaxis.set_ticklabels([])
 
     if label_axis:
@@ -1443,7 +1443,7 @@ def produce_phi_theta_polar_histogram_plots(
     theta_bins = theta_data["start"].to_numpy()
 
     # Construct the 3D plot
-    fig = fig or plt.figure(figsize=(7, 3.5))
+    fig = fig or plt.figure(figsize=(7, 5))
 
     # Construct the 2D plots
     # Need to convert the bins back to radians if things have been done in degrees
