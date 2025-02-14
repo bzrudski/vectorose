@@ -7,11 +7,11 @@ Warnings
 --------
 For many of the statistical operations defined here, a set of *unit
 vectors* is required in order for interpretation to be possible. To produce
-a set of normalised vectors, use either :func:`util.normalise_vectors` to
-perform a naive normalisation,
-or :func:`util.generate_representative_unit_vectors` to produce unit
-vectors with orientations appearing at frequencies proportional to their
-original magnitudes.
+a set of unit vectors, the function :func:`.util.normalise_vectors` can be
+called.
+
+The vectors passed to these functions should not contain spatial location
+coordinates.
 
 Notes
 -----
@@ -89,13 +89,6 @@ def compute_resultant_vector(
     This implementation is based on the description in chapter 3 of Fisher,
     Lewis and Embleton's book [#fisher-lewis-embleton]_ on statistics on
     the sphere.
-
-
-    References
-    ----------
-    Fisher, N. I., Lewis, T., & Embleton, B. J. J. (1993). Statistical
-        analysis of spherical data ([New ed.], 1. paperback ed). Cambridge
-        Univ. Press.
 
     """
 
