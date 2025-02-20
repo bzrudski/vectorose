@@ -166,8 +166,10 @@ class PolarDiscretiser:
         Parameters
         ----------
         vectors
-            Array of shape ``(n, 3)`` containing the Cartesian components
-            of the vectors from which to construct the histogram.
+            Array of shape ``(n, 3)`` or ``(n, 6)`` containing the
+            Cartesian components of the vectors from which to construct the
+            histogram. If 6 columns are present, the first 3 are assumed
+            to be the spatial locations.
 
         Returns
         -------
@@ -182,8 +184,15 @@ class PolarDiscretiser:
         properly assigned to an orientation bin.
         """
 
+        ncols = vectors.shape[-1]
+
+        columns = ["vx", "vy", "vz"]
+
+        if ncols == 6:
+            columns = ["x", "y", "z"] + columns
+
         # Build up the data frame
-        vector_data_frame = pd.DataFrame(vectors, columns=["x", "y", "z"])
+        vector_data_frame = pd.DataFrame(vectors, columns=columns)
 
         # Convert the spherical coordinates
         spherical_coordinates = util.compute_spherical_coordinates(vectors, True)
