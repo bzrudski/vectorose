@@ -1398,7 +1398,7 @@ def produce_phi_theta_polar_histogram_plots(
     use_counts: bool = False,
     plot_title: Optional[str] = None,
     fig: Optional[plt.Figure] = None,
-):
+) -> plt.Figure:
     """Produce and show the 1D polar phi and theta histograms.
 
     This function takes in 2D binned histogram input and shows a 2-panel
@@ -1427,6 +1427,11 @@ def produce_phi_theta_polar_histogram_plots(
     fig
         Figure on which to produce the plots. If `None`, a new figure is
         created.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        The figure containing the polar histogram plots.
 
     See Also
     --------
