@@ -633,6 +633,9 @@ class SpherePlotter:
             [m.cell_data[series_name] for m in sphere_meshes]
         )
 
+        # Remove any NaN values for the clim
+        all_frequencies = all_frequencies[~np.isnan(all_frequencies)]
+
         min_value = all_frequencies.min()
         max_value = all_frequencies.max()
 
