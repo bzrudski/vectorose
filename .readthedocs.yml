@@ -1,13 +1,20 @@
-# Required
+# Read the Docs configuration file for Sphinx projects
+# Modified from the Read the Docs documentation.
+# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
+
 version: 2
 
-# Image to use
+# Set the OS and Python version
 build:
-  image: testing
+  os: ubuntu-22.04
+  tools:
+    python: "3.10"
+
+sphinx:
+  configuration: docs/conf.py
 
 # Configuration
 python:
-  version: 3.9
   install:
     - requirements: docs/requirements.txt
     - method: pip

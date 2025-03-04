@@ -3,49 +3,53 @@
 # This code is licensed under the MIT License. See the `LICENSE` file for
 # more details about copying.
 
-"""
-Functions for plotting vector roses.
+"""Plotting functions for VectoRose.
 
-This module provides the ability to construct 2D and 3D rose diagrams
-of orientation/vector fields.
-
+After constructing the various histograms using the classes and functions
+present in :mod:`.tregenza_sphere`, :mod:`.triangle_sphere` and
+:mod:`.polar_data`, this module can be used to visualise the results.
 """
 
 import enum
 import functools
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Iterable, List, Optional
 
 import imageio_ffmpeg
 import matplotlib.animation
 import matplotlib.cm
-import matplotlib.colorbar
 import matplotlib.colors
 import matplotlib.figure
 import matplotlib.projections
 import matplotlib.pyplot as plt
-import mpl_toolkits.mplot3d.axes3d
 import mpl_toolkits.mplot3d.art3d
+import mpl_toolkits.mplot3d.axes3d
 import numpy as np
-import trimesh
+import pandas as pd
+import vtk
+import pyvista as pv
 from scipy.spatial.transform import Rotation
 
-from .vectorose import MagnitudeType, produce_phi_theta_1d_histogram_data
-from .util import (AngularIndex, convert_spherical_to_cartesian_coordinates,
-                   compute_vector_orientation_angles)
-
-from .tregenza_sphere import TregenzaSphereBase
+from .triangle_sphere import TriangleSphere
+from . import util
+from .tregenza_sphere import TregenzaSphere
 
 # Configure the SVG export, per https://stackoverflow.com/a/35734729
-plt.rcParams['svg.fonttype'] = 'none'
+plt.rcParams["svg.fonttype"] = "none"
 
 # Configure the ffmpeg for export, per
 # https://stackoverflow.com/questions/13316397#comment115906431_44483126
-plt.rcParams['animation.ffmpeg_path'] = imageio_ffmpeg.get_ffmpeg_exe()
+plt.rcParams["animation.ffmpeg_path"] = imageio_ffmpeg.get_ffmpeg_exe()
+
+
+# Configure PyVista options
+pv.global_theme.font.fmt = "%.6g"
+pv.global_theme.colorbar_vertical.position_x = 0.85
+pv.global_theme.colorbar_vertical.position_y = 0.3
+pv.global_theme.colorbar_orientation = "vertical"
 
 
 class CardinalDirection(str, enum.Enum):
-    """
-    Cardinal Directions
+    """Cardinal directions.
 
     This string-based enumerated type is useful when preparing 2D polar
     figures. Members reflect cardinal directions, which may be used to
@@ -58,25 +62,18 @@ class CardinalDirection(str, enum.Enum):
     -------
     NORTH
         Location directly upwards.
-
     NORTH_WEST
         Location in the upper left corner.
-
     WEST
         Location on the left side.
-
     SOUTH_WEST
         Location in the lower left corner.
-
     SOUTH
         Location directly downwards.
-
     SOUTH_EAST
         Location in the lower right corner.
-
     EAST
         Location on the right side.
-
     NORTH_EAST
         Location in the upper right corner.
 
@@ -99,8 +96,7 @@ class CardinalDirection(str, enum.Enum):
 
 
 class RotationDirection(enum.IntEnum):
-    """
-    Rotation Direction
+    """Rotation directions.
 
     This integer-based enumerated type represents two-dimensional rotation
     direction. The convention used is consistent with the Matplotlib
@@ -110,10 +106,10 @@ class RotationDirection(enum.IntEnum):
 
     Members
     -------
-    CLOCKWISE:
+    CLOCKWISE
         Clockwise, or rightward rotation.
 
-    COUNTER_CLOCKWISE:
+    COUNTER_CLOCKWISE
         Counter-clockwise, anti-clockwise, or leftward rotation.
 
     See Also
@@ -128,8 +124,7 @@ class RotationDirection(enum.IntEnum):
 
 
 class AngularUnits(enum.Enum):
-    """
-    Angular Units
+    """Angular units.
 
     This enumerated type represents angular units (degrees or radians).
     It **does not** provide any implementation for converting from one
@@ -138,11 +133,10 @@ class AngularUnits(enum.Enum):
 
     Members
     -------
-    DEGREES:
+    DEGREES
         Represent angles in degrees (typically in the range 0 to 360 or
         -180 to +180).
-
-    RADIANS:
+    RADIANS
         Indicates that angle is in radians (typically in the range 0
         to :math:`2\\pi` or :math:`-\\pi` to :math:`\\pi`).
 
@@ -166,16 +160,1331 @@ class SphereProjection(enum.Enum):
 
     Members
     -------
-
     ORTHOGRAPHIC
         Orthographic projection.
-
     PERSPECTIVE
         Perspective projection.
     """
 
     ORTHOGRAPHIC = "ortho"
     PERSPECTIVE = "persp"
+
+
+class ViewingPlanes(str, enum.Enum):
+    """Built-in viewing angles.
+
+    Each member represents a viewing plane (or the isometric angle) defined
+    in PyVista.
+
+    See Also
+    --------
+    pyvista.Plotter.camera_position :
+        The function used to set the view to one of these planes.
+    """
+
+    XY = "xy"
+    XZ = "xz"
+    YZ = "yz"
+    YX = "yx"
+    ZX = "zx"
+    ZY = "zy"
+    ISO = "iso"
+
+
+class SpherePlotter:
+    """Produce beautiful, fast 3D sphere plots using PyVista."""
+
+    _sphere_meshes: List[pv.PolyData]
+    """The meshes representing individual shells."""
+
+    _largest_radius: float
+    """The largest radius of a plotted sphere."""
+
+    _active_shell: int
+    """The index of the currently-active shell."""
+
+    _visible_shells: List[int]
+    """The indicies of the shells to plot as visible."""
+
+    _active_shell_opacity: float
+    """The opacity of the currently active shell."""
+
+    _inactive_shell_opacity: float
+    """The opacity of the inactive shells."""
+
+    _plotter: Optional[pv.Plotter]
+    """Plotter to use to visualise the spheres."""
+
+    _sphere_actors: List[pv.Actor]
+    """The actors representing the plotted spheres."""
+
+    _phi_axis_actor: Optional[pv.Actor]
+    """The actor representing the semicircular phi axis."""
+
+    _theta_axis_actor: Optional[pv.Actor]
+    """The actor representing the circular theta axis."""
+
+    _point_label_actor: Optional[vtk.vtkActor2D]
+    """The actor controlling the point labels."""
+
+    cmap: str
+    """The colour map to use when visualising the data."""
+
+    _has_movie_open: bool
+    """Indicate whether a movie is currently a being manually written."""
+
+    @property
+    def sphere_meshes(self) -> List[pv.PolyData]:
+        """Access the wrapped sphere meshes."""
+        return self._sphere_meshes
+
+    @property
+    def phi_axis_visible(self) -> bool:
+        """Indicate whether the phi axis is visible."""
+        if self._phi_axis_actor is None:
+            return False
+        return self._phi_axis_actor.visibility
+
+    @property
+    def theta_axis_visible(self) -> bool:
+        """Indicate whether the theta axis is visible."""
+        if self._theta_axis_actor is None:
+            return False
+        return self._theta_axis_actor.visibility
+
+    @property
+    def axis_labels_visible(self) -> bool:
+        """Indicate whether the axis labels are visible."""
+        if self._point_label_actor is None:
+            return False
+        return bool(self._point_label_actor.GetVisibility())
+
+    @property
+    def sliders_visible(self) -> bool:
+        """Indicate whether the sliders are visible.
+
+        If the plot was created without sliders, this always evaluates to
+        `False`.
+        """
+
+        sliders = self._plotter.slider_widgets
+
+        if len(sliders) == 0:
+            return False
+
+        return all(slider.GetEnabled() for slider in sliders)
+
+    @property
+    def scalar_bars_visible(self) -> bool:
+        """Indicate whether the scalar bars are visible.
+
+        If there are no scalar bars, this will always return `False`.
+        """
+
+        scalar_bars = self._plotter.scalar_bars
+
+        if len(scalar_bars) == 0:
+            return False
+
+        return all(scalar_bars[k].GetVisibility() for k in scalar_bars.keys())
+
+    @property
+    def active_shell(self) -> int:
+        """Get or set the active shell index.
+
+        Warnings
+        --------
+        This property describes the **index**, not the shell number. The
+        values provided here are offset by one compared with the slider
+        values.
+        """
+        return self._active_shell
+
+    @active_shell.setter
+    def active_shell(self, index: int):
+        self._update_active_sphere(index + 1)
+
+    @property
+    def active_shell_opacity(self) -> float:
+        """Get the active shell opacity.
+
+        Active sphere opacity between 0 (transparent) and 1 (opaque).
+        """
+        return self._active_shell_opacity
+
+    @active_shell_opacity.setter
+    def active_shell_opacity(self, opacity: float):
+        self._update_active_sphere_opacity(opacity)
+
+    @property
+    def inactive_shell_opacity(self) -> float:
+        """Get the opacity of the inactive shells.
+
+        Inactive sphere opacity between 0 (transparent) and 1 (opaque).
+        """
+        return self._inactive_shell_opacity
+
+    @inactive_shell_opacity.setter
+    def inactive_shell_opacity(self, opacity: float):
+        self._update_inactive_sphere_opacity(opacity)
+
+    @property
+    def radius(self) -> float:
+        """Access the sphere radius."""
+        return self._largest_radius
+
+    @property
+    def has_produced_plot(self) -> bool:
+        """Indicate whether the plot has been produced."""
+        return len(self._sphere_actors) > 0
+
+    @property
+    def current_phi(self) -> float:
+        """Get the phi value under the current view in degrees.
+
+        Notes
+        -----
+        This value makes the most sense if the camera has the origin as the
+        focal point.
+        """
+        spherical_coordinates = self._get_spherical_coordinates_from_camera()
+
+        phi = spherical_coordinates[util.AngularIndex.PHI]
+
+        return phi
+
+    @property
+    def current_theta(self) -> float:
+        """Get the theta value under the current view in degrees.
+
+        Notes
+        -----
+        This value makes the most sense if the camera has the origin as the
+        focal point.
+        """
+        spherical_coordinates = self._get_spherical_coordinates_from_camera()
+
+        theta = spherical_coordinates[util.AngularIndex.THETA]
+
+        return theta
+
+    @property
+    def has_movie_open(self) -> bool:
+        """Indicate whether a movie is currently being manually written."""
+        return self._has_movie_open
+
+    def __init__(
+        self,
+        sphere_meshes: List[pv.PolyData] | pv.PolyData,
+        visible_shells: Optional[List[int]] = None,
+        off_screen: bool = None,
+        cmap: str = "viridis",
+    ):
+        # If only a single mesh has been passed it, wrap in a list.
+        if isinstance(sphere_meshes, pv.PolyData):
+            sphere_meshes = [sphere_meshes]
+
+        self._sphere_meshes = sphere_meshes
+        self._sphere_actors = []
+
+        self._phi_axis_actor = None
+        self._theta_axis_actor = None
+        self._point_label_actor = None
+        self.cmap = cmap
+
+        # Determine the visible shells
+        self._visible_shells = visible_shells or np.arange(len(sphere_meshes)).tolist()
+
+        # Set the active shell
+        self._active_shell = self._visible_shells[-1]
+        self._active_shell_opacity = 1
+        self._inactive_shell_opacity = 0
+
+        # Compute the radius
+        bounds = np.abs([m.bounds for m in sphere_meshes])
+        self._largest_radius = bounds.max()
+
+        # Create the plotter
+        self._plotter = pv.Plotter(off_screen=off_screen)
+
+        # We don't have a movie open when creating the plotter
+        self._has_movie_open = False
+
+    def _get_spherical_coordinates_from_camera(self) -> np.ndarray:
+        """Get the spherical coordinates for the camera location.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of shape ``(3,)`` containing the phi, theta and radius
+            for the camera's position in 3D space.
+
+        Notes
+        -----
+        The values in this function are not recentred if the camera is
+        translated in space.
+        """
+        camera_position = self._plotter.camera_position
+        camera_location = camera_position[0]
+
+        spherical_coordinates = util.compute_spherical_coordinates(
+            np.array(camera_location), use_degrees=True
+        )
+
+        return spherical_coordinates
+
+    def _update_active_sphere_opacity(self, new_opacity: float):
+        """Update the opacity level of the active sphere."""
+
+        self._active_shell_opacity = new_opacity
+        actor = self._sphere_actors[self._active_shell]
+        actor.prop.opacity = new_opacity
+
+    def _update_inactive_sphere_opacity(self, new_opacity: float):
+        """Update the opacity level of the inactive spheres."""
+
+        self._inactive_shell_opacity = new_opacity
+
+        for i, actor in enumerate(self._sphere_actors):
+            if i == self._active_shell:
+                continue
+
+            actor.prop.opacity = new_opacity
+
+    def _update_active_sphere(self, new_selected_shell_number: float):
+        """Update the active sphere number."""
+        current_shell = self._active_shell
+        new_shell = np.round(new_selected_shell_number).astype(int) - 1
+
+        if new_shell != current_shell:
+            self._active_shell = new_shell
+            self._update_active_sphere_opacity(self._active_shell_opacity)
+            self._update_inactive_sphere_opacity(self._inactive_shell_opacity)
+
+    def _update_show_axes(self, show_axes: bool):
+        """Update whether the axes are drawn."""
+
+        if self._phi_axis_actor is not None:
+            self._phi_axis_actor.visibility = show_axes
+
+        if self._theta_axis_actor is not None:
+            self._theta_axis_actor.visibility = show_axes
+
+        if self._point_label_actor is not None:
+            self._point_label_actor.SetVisibility(show_axes)
+
+    # TODO: Create a new class to encapsulate the spherical axes.
+    def add_spherical_axes(
+        self,
+        plot_phi: bool = True,
+        plot_theta: bool = True,
+        phi_increment: int = 30,
+        theta_increment: int = 30,
+        axis_distance_fixed: float = 0.2,
+        axis_distance_relative: float = 1,
+        axis_thickness: float = 0.05,
+    ):
+        """Add spherical axes to the current plotter.
+
+        Parameters
+        ----------
+        plot_phi
+            Indicate that the phi axis is to be plotted.
+        plot_theta
+            Indicate that the theta axis is to be plotted.
+        phi_increment
+            Label increment for the phi values.
+        theta_increment
+            Label increment for the theta values.
+        axis_distance_fixed
+            Fixed distance from the outer shell to the axis.
+        axis_distance_relative
+            Relative distance from the outer shell to the axis.
+        axis_thickness
+            Absolute thickness of the axes.
+        """
+
+        # Clear the axes if they are already present
+        self.clear_axes()
+
+        # Create a disc for the theta axis and a circular arc for phi.
+        max_radius = self._largest_radius
+        inner_radius = axis_distance_relative * max_radius + axis_distance_fixed
+        outer_radius = inner_radius + axis_thickness
+
+        if plot_theta:
+            theta_axis = pv.Disc(inner=inner_radius, outer=outer_radius, c_res=36)
+            self._theta_axis_actor = self._plotter.add_mesh(theta_axis, show_edges=True)
+        else:
+            self._theta_axis_actor = None
+
+        if plot_phi:
+            phi_axis = pv.Disc(
+                inner=inner_radius,
+                outer=outer_radius,
+                c_res=36,
+                normal=(0, 1, 0),
+            ).clip(normal="-x")
+
+            self._phi_axis_actor = self._plotter.add_mesh(phi_axis, show_edges=True)
+        else:
+            self._phi_axis_actor = None
+
+        # Create the labels
+        angular_label_positions = []
+        angular_label_strings = []
+        # if plot_phi and plot_theta:
+        #     angular_labels.append(np.array([90, 90]))
+
+        if plot_phi:
+            phi_label_phi_angles = np.arange(0, 181, phi_increment)
+            phi_label_theta_angles = 90 * np.ones_like(phi_label_phi_angles)
+            phi_label_angles = np.stack(
+                [phi_label_phi_angles, phi_label_theta_angles], axis=-1
+            )
+            angular_label_positions.append(phi_label_angles)
+            phi_labels = [f"{phi}\u00b0" for phi in phi_label_phi_angles]
+            angular_label_strings.extend(phi_labels)
+
+        if plot_theta:
+            theta_label_theta_angles = np.arange(0, 360, theta_increment)
+            theta_label_phi_angles = 90 * np.ones_like(theta_label_theta_angles)
+            theta_label_angles = np.stack(
+                [theta_label_phi_angles, theta_label_theta_angles], axis=-1
+            )
+            angular_label_positions.append(theta_label_angles)
+            theta_labels = [f"{theta}\u00b0" for theta in theta_label_theta_angles]
+            angular_label_strings.extend(theta_labels)
+
+        # Put everything together and remove potential duplicates
+        angular_label_positions = np.concatenate(angular_label_positions)
+        angular_label_positions, unique_indices = np.unique(
+            angular_label_positions, axis=0, return_index=True
+        )
+
+        angular_label_strings = np.array(angular_label_strings)
+        angular_label_strings = angular_label_strings[unique_indices]
+
+        # Get the Cartesian coordinates
+        label_cartesian_coordinates = util.convert_spherical_to_cartesian_coordinates(
+            np.radians(angular_label_positions), radius=outer_radius + axis_thickness
+        )
+
+        # And now construct the labels
+        self._point_label_actor = self._plotter.add_point_labels(
+            label_cartesian_coordinates, angular_label_strings, show_points=False
+        )
+
+        # And finally, add a button to toggle axis visibility
+        self._plotter.add_checkbox_button_widget(
+            self._update_show_axes, value=True, position=(10, 5), size=50
+        )
+
+    def clear_axes(self):
+        """Clear the plotted axes."""
+
+        assert self._plotter is not None
+
+        self._plotter.remove_actor(self._phi_axis_actor)
+        self._phi_axis_actor = None
+
+        self._plotter.remove_actor(self._theta_axis_actor)
+        self._theta_axis_actor = None
+
+        self._plotter.remove_actor(self._point_label_actor)
+        self._point_label_actor = None
+
+    def clear_plotter(self):
+        """Clear and remove the current plotter."""
+        for sphere_actor in self._sphere_actors:
+            self._plotter.remove_actor(sphere_actor)
+        self._sphere_actors.clear()
+        self.clear_axes()
+
+        self._plotter.clear()
+
+    def produce_plot(self, add_sliders: bool = True, series_name: str = "frequency"):
+        """Produce the 3D visual plot for the current spheres.
+
+        Parameters
+        ----------
+        add_sliders
+            Indicate whether the opacity sliders should be added to the
+            plotting window.
+        series_name
+            Name of the scalars to consider.
+
+        Warnings
+        --------
+        This function produces the :class:`pyvista.Plotter`. The method
+        :meth:`SpherePlotter.show` must be called to view the plot.
+        """
+
+        plotter = self._plotter
+
+        # Clean up from previous plots
+        plotter.clear()
+        self._sphere_actors.clear()
+
+        sphere_meshes = [self._sphere_meshes[i] for i in self._visible_shells]
+
+        # Get the bounds for the plotting
+        all_frequencies = np.concatenate(
+            [m.cell_data[series_name] for m in sphere_meshes]
+        )
+
+        # Remove any NaN values for the clim
+        all_frequencies = all_frequencies[~np.isnan(all_frequencies)]
+
+        min_value = all_frequencies.min()
+        max_value = all_frequencies.max()
+
+        # Add the sphere actors
+        for i, mesh in enumerate(self._sphere_meshes):
+            actor: pv.Actor
+            actor = plotter.add_mesh(
+                mesh,
+                clim=[min_value, max_value],
+                cmap=self.cmap,
+                scalars=series_name,
+            )
+            actor.visibility = i in self._visible_shells
+            self._sphere_actors.append(actor)
+
+        # Add the slider widgets
+        if add_sliders:
+            number_of_shells = len(self._sphere_meshes)
+
+            plotter.add_slider_widget(
+                self._update_active_sphere_opacity,
+                [0, 1],
+                value=self._active_shell_opacity,
+                title="Active shell opacity",
+                pointa=(0.4, 0.9),
+                pointb=(0.6, 0.9),
+                title_height=0.01,
+                interaction_event="always",
+                style="modern",
+            )
+
+            if number_of_shells > 1:
+                plotter.add_slider_widget(
+                    self._update_active_sphere,
+                    [1, number_of_shells],
+                    value=self._active_shell + 1,
+                    title="Active shell",
+                    pointa=(0.1, 0.9),
+                    pointb=(0.3, 0.9),
+                    title_height=0.01,
+                    fmt="%.0f",
+                    interaction_event="always",
+                    style="modern",
+                )
+
+                plotter.add_slider_widget(
+                    self._update_inactive_sphere_opacity,
+                    [0, 1],
+                    value=self._inactive_shell_opacity,
+                    title="Inactive shell opacity",
+                    pointa=(0.7, 0.9),
+                    pointb=(0.9, 0.9),
+                    title_height=0.01,
+                    interaction_event="always",
+                    style="modern",
+                )
+
+        plotter.add_axes()
+        plotter.add_camera_orientation_widget()
+        plotter.enable_parallel_projection()
+
+        self._update_active_sphere(self._active_shell + 1)
+
+    def show(self, *args, **kwargs):
+        """Show the plotter window.
+
+        Parameters
+        ----------
+        *args
+            Arguments to pass to the method :meth:`pyvista.Plotter.show`.
+        **kwargs
+            Keyword arguments to pass to the method
+            :meth:`pyvista.Plotter.show`.
+
+        Raises
+        ------
+        AssertionError
+            If the plot has not yet been produced using the method
+            :meth:`.produce_plot`.
+
+        See Also
+        --------
+        pyvista.Plotter.show : Method used to show a PyVista plotter.
+        """
+
+        assert self.has_produced_plot
+
+        self._plotter.show(*args, **kwargs)
+
+    def close(self, deep_clean: bool = True):
+        """Close the plotting window and clear the associated memory.
+
+        Parameters
+        ----------
+        deep_clean
+            Indicate whether a deep clean of the memory should be
+            performed after closing.
+        """
+
+        self._plotter.close()
+
+        if deep_clean:
+            self._plotter.deep_clean()
+
+    def rotate_to_view(
+        self,
+        phi: Optional[float] = None,
+        theta: Optional[float] = None,
+        use_degrees: bool = True,
+        zoom: Optional[float] = None,
+        focal_depth: Optional[float] = None
+    ):
+        """Move the camera to focus on a specific orientation.
+
+        Parameters
+        ----------
+        phi
+            The co-latitude to centre on. If `None`, then the value of phi
+            is unchanged.
+        theta
+            The azimuthal angle to centre on. If `None`, then the value of
+            theta is unchanged.
+        use_degrees
+            Indicate whether the angles should be interpreted in degrees.
+        zoom
+            Factor to zoom the view as a floating point value. See
+            :meth:`pyvista.Camera.zoom` for a full explanation.
+        focal_depth
+            Distance between the camera and the focal point.
+
+        See Also
+        --------
+        pyvista.Plotter.camera_position :
+            Information about the camera from the plotter, used to compute
+            the orientation angles.
+        pyvista.Camera.zoom :
+            Control the camera zoom.
+
+        Notes
+        -----
+        The point of focus of the camera remains at the origin. This method
+        simply changes the position of the camera in space and changes the
+        up direction.
+        """
+
+        # Fill in any missing parameters and convert angles, if necessary
+        if phi is None:
+            phi = self.current_phi
+        elif not use_degrees:
+            phi = np.degrees(phi)
+
+        if theta is None:
+            theta = self.current_theta
+        elif not use_degrees:
+            theta = np.degrees(theta)
+
+        if focal_depth is None:
+            focal_depth = self._plotter.camera.distance
+
+        if zoom is None:
+            zoom = 1
+
+        # Now, find the location in space
+        camera_location = util.convert_spherical_to_cartesian_coordinates(
+            np.array([phi, theta]), focal_depth, use_degrees=True
+        )
+
+        # And now for the up vector
+        up_vector = np.array([0, -1, 0])
+
+        # Tilt it by phi degrees clockwise over x
+        phi_rotation = Rotation.from_euler("x", -phi, degrees=True)
+        theta_rotation = Rotation.from_euler("z", -theta, degrees=True)
+
+        compound_rotation = theta_rotation * phi_rotation
+
+        # And now apply it to the up vector
+        up_vector = compound_rotation.apply(up_vector)
+
+        # And now for setting the camera position
+        camera_position_parameters = [
+            tuple(camera_location.tolist()),
+            (0, 0, 0),
+            tuple(up_vector.tolist())
+        ]
+
+        self._plotter.camera_position = camera_position_parameters
+        self._plotter.camera.zoom(zoom)
+
+        if self._plotter.iren.initialized:
+            self._plotter.update()
+
+    def open_movie_file(
+        self,
+        filename: str,
+        quality: int = 5,
+        fps: int = 24,
+    ):
+        """Open a movie file to record an animation.
+
+        Parameters
+        ----------
+        filename
+            The destination for the created video. Must end with either
+            ``.mp4`` or ``.gif``.
+        quality
+            Image quality for the video export, between 0 and 10. Ignored
+            for exports as GIF.
+        fps
+            Frame rate, number of frames per second in the exported video.
+
+        Warnings
+        --------
+        This method only opens the video file. It does not save any of the
+        frames. These must be written using the :meth:`.write_frame` method
+        and then the file must be closed using :meth:`.close_movie`.
+
+        See Also
+        --------
+        pyvista.Plotter.open_movie :
+            The wrapped function that actually creates the movie file.
+        .write_frame :
+            Add frames to the open movie.
+        .close_movie :
+            Close and finalise the current movie.
+        """
+
+        if filename.endswith(".gif"):
+            self._plotter.open_gif(
+                filename, 0, fps
+            )
+        else:
+            self._plotter.open_movie(
+                filename, fps, quality
+            )
+
+        self._has_movie_open = True
+
+    def write_frame(self):
+        """Add a new frame to the current movie.
+
+        Warnings
+        --------
+        The current plotter must have a movie file that is open.
+        """
+
+        assert self.has_movie_open, "No movie is open."
+
+        self._plotter.write_frame()
+
+    def close_movie(self):
+        """Close the movie currently being written.
+
+        Warnings
+        --------
+        The current plotter must have a movie file that is open.
+        """
+
+        assert self.has_movie_open, "No movie is open."
+
+        self._plotter.mwriter.close()
+        self._has_movie_open = False
+
+    def produce_rotating_video(
+        self,
+        filename: str,
+        quality: int = 5,
+        fps: int = 24,
+        zoom_factor: float = 1.0,
+        number_of_frames: int = 36,
+        vertical_shift: Optional[float] = None,
+        hide_sliders: bool = True,
+    ):
+        """Produce a video orbiting around the sphere.
+
+        Using the current plotter, produce a video orbiting around the
+        visible shell. If there is no current plotter, a new one is
+        produced.
+
+        Parameters
+        ----------
+        filename
+            Movie export filename, with extension provided.
+        quality
+            Video export quality, between 0 and 10.
+        fps
+            Frame rate for the exported video.
+        zoom_factor
+            Factor to zoom when creating the frames.
+        number_of_frames
+            Total number of frames to produce in the video. A higher number
+            results in a smoother animation, but a larger file and longer
+            processing time.
+        vertical_shift
+            Upward shift of the orbital plane with respect to the ground.
+        hide_sliders
+            Indicate whether to hide the sliders when producing the video.
+
+        See Also
+        --------
+        pyvista.Plotter.generate_orbital_path:
+            generate the path necessary for the animation.
+
+        References
+        ----------
+        This code is based on an example from the PyVista documentation,
+        found at https://docs.pyvista.org/examples/02-plot/orbit.
+        """
+
+        # Hide the sliders if requested
+        if hide_sliders:
+            self.hide_sliders()
+
+        plotter = self._plotter
+
+        # Open a movie
+        self.open_movie_file(filename, quality, fps)
+
+        # Get the vertical shift
+        if vertical_shift is None:
+            vertical_shift = self._sphere_meshes[self._active_shell].length
+
+        plotter.camera.zoom(zoom_factor)
+
+        # Start by generating the orbital path
+        path = plotter.generate_orbital_path(
+            n_points=number_of_frames, shift=vertical_shift
+        )
+
+        # Perform the orbit!
+        plotter.orbit_on_path(path, write_frames=True)
+
+        # Close the plotter's writer
+        self.close_movie()
+
+        # Re-show the sliders
+        if hide_sliders:
+            self.show_sliders()
+
+    def produce_shells_video(
+        self,
+        filename: str,
+        quality: int = 5,
+        fps: int = 24,
+        zoom_factor: float = 1.0,
+        inward_direction: bool = True,
+        boomerang: bool = False,
+        azimuth: Optional[float] = None,
+        elevation: Optional[float] = None,
+        hide_sliders: bool = True,
+        add_shell_text: bool = False,
+    ):
+        """Produce a video revealing all shells in a plot.
+
+        Parameters
+        ----------
+        filename
+            Movie export filename, including file extension.
+        quality
+            Video export quality, between 0 and 10.
+        fps
+            Frame rate for the exported video.
+        zoom_factor
+            Factor to zoom when creating the frames.
+        inward_direction
+            Indicate whether the animation should progress from the
+            outermost shell inwards (``True``) or from the innermost shell
+            outwards (``False``).
+        boomerang
+            Indicate whether the animation should have a boomerang effect,
+            where it is symmetric in time.
+        azimuth
+            Camera azimuthal angle in degrees (theta). If not specified,
+            the current plotter's angles are used.
+        elevation
+            Camera elevation angle in degrees (phi). If not specified, the
+            current plotter's angles are used.
+        hide_sliders
+            Indicate whether the sliders should be hidden before producing
+            the video.
+        add_shell_text
+            Indicate whether to show text at the bottom of the screen
+            indicating the shell number.
+        """
+
+        if hide_sliders:
+            self.hide_sliders()
+
+        total_number_of_shells = len(self._sphere_meshes)
+        shell_order = np.arange(total_number_of_shells)
+
+        if inward_direction:
+            shell_order = np.flip(shell_order)
+
+        if boomerang:
+            reverse_shell_order = np.flip(shell_order)
+            shell_order = np.concatenate([shell_order, reverse_shell_order])
+
+        # Convert indices to numbers to be consistent with other methods
+        shell_order += 1
+
+        plotter = self._plotter
+
+        # Activate the first shell manually
+        first_shell = shell_order[0]
+
+        self._update_active_sphere(first_shell)
+        self._update_active_sphere_opacity(1.0)
+        self._update_inactive_sphere_opacity(0.0)
+
+        # Set the camera properties
+        if azimuth is not None:
+            plotter.camera.azimuth = azimuth
+
+        if elevation is not None:
+            plotter.camera.elevation = elevation
+
+        plotter.camera.zoom(zoom_factor)
+
+        # Open the output file
+        self.open_movie_file(filename, quality, fps)
+
+        # Make the movie!
+        i: int
+        for i in shell_order:
+            self._update_active_sphere(i)
+
+            shell_text_actor: Optional[vtk.vtkTextActor]
+
+            if add_shell_text:
+                shell_text_actor = self._plotter.add_text(
+                    f"Shell {i}", position="lower_edge"
+                )
+            else:
+                shell_text_actor = None
+
+            self.write_frame()
+
+            if add_shell_text:
+                self._plotter.remove_actor(shell_text_actor)
+
+        # Close the plotter's writer
+        self.close_movie()
+
+        if hide_sliders:
+            self.show_sliders()
+
+    def hide_sliders(self):
+        """Hide the plotter's slider widgets."""
+
+        for slider in self._plotter.slider_widgets:
+            slider.SetEnabled(False)
+
+    def show_sliders(self):
+        """Show the plotter's slider widgets."""
+
+        for slider in self._plotter.slider_widgets:
+            slider.SetEnabled(True)
+
+    def hide_scalar_bars(self):
+        """Hide the scalar bars."""
+
+        for scalar_bar_key in self._plotter.scalar_bars.keys():
+            scalar_bar = self._plotter.scalar_bars[scalar_bar_key]
+            scalar_bar.VisibilityOff()
+
+    def show_scalar_bars(self):
+        """Show the scalar bars."""
+
+        for scalar_bar_key in self._plotter.scalar_bars.keys():
+            scalar_bar = self._plotter.scalar_bars[scalar_bar_key]
+            scalar_bar.VisibilityOn()
+
+    def show_axes(self):
+        """Show the spherical axes."""
+
+        self._update_show_axes(True)
+
+    def hide_axes(self):
+        """Hide the spherical axes."""
+
+        self._update_show_axes(False)
+
+    def export_screenshot(
+        self,
+        filename: str,
+        transparent_background: bool = True,
+        window_size: Optional[tuple[int, int]] = None,
+        scale: Optional[int] = None,
+        hide_sliders: bool = True,
+        hide_scalar_bar: bool = False,
+    ):
+        """Export a screenshot from the plotter.
+
+        Parameters
+        ----------
+        filename
+            Output destination for the screenshot, including file
+            extension. Must be of type PNG, bitmap, JPEG or TIFF.
+        transparent_background
+            Indicate whether the background should be transparent.
+        window_size
+            Desired window size before exporting.
+        scale
+            Factor by which to scale the window before exporting to
+            increase resolution.
+        hide_sliders
+            Indicate whether to hide sliders before exporting. If no
+            sliders have been added to the plot, this option has no effect.
+        hide_scalar_bar
+            Indicate whether to hide the scalar bar when exporting. The
+            scalar bar will be made visible again after exporting.
+
+        See Also
+        --------
+        pyvista.Plotter.screenshot :
+            Function wrapped by this function, which actually produces the
+            screenshot. The current function borrows some parameters from
+            this function.
+        """
+
+        if hide_sliders:
+            self.hide_sliders()
+
+        if hide_scalar_bar:
+            self.hide_scalar_bars()
+
+        self._plotter.screenshot(
+            filename, transparent_background, False, window_size, scale
+        )
+
+        if hide_sliders:
+            self.show_sliders()
+
+        if hide_scalar_bar:
+            self.show_scalar_bars()
+
+    def export_graphic(
+        self,
+        filename: str,
+        title: str,
+        raster: bool = True,
+        painter: bool = True,
+        window_size: Optional[tuple[int, int]] = None,
+        scale: Optional[int] = None,
+        hide_sliders: bool = True,
+        hide_scalar_bar: bool = False,
+    ):
+        """Export a graphic from the plotter.
+
+        Parameters
+        ----------
+        filename
+            Output destination for the graphic, including file
+            extension. Must be of type SVG, PDF, TEX, PS or EPS.
+        title
+            Name of the graphics (see PyVista documentation).
+        raster
+            Indicate whether to write the properties as a raster image (see
+            PyVista documentation).
+        painter
+            Indicate whether to perform a certain painting step (see
+            PyVista documentation).
+        window_size
+            Desired window size before exporting.
+        scale
+            Factor by which to scale the window before exporting to
+            increase resolution.
+        hide_sliders
+            Indicate whether to hide sliders before exporting. If no
+            sliders have been added to the plot, this option has no effect.
+        hide_scalar_bar
+            Indicate whether to hide the scalar bar when exporting. The
+            scalar bar will be made visible again after exporting.
+
+        See Also
+        --------
+        pyvista.Plotter.save_graphic :
+            Function wrapped by this function, which actually produces the
+            graphic. The current function borrows some parameters from
+            this function.
+        """
+
+        if hide_sliders:
+            self.hide_sliders()
+
+        if hide_scalar_bar:
+            self.hide_scalar_bars()
+
+        # Save the old parameters
+        old_window_size = self._plotter.window_size
+        old_scale = self._plotter.scale
+
+        if window_size is not None:
+            self._plotter.window_size = window_size
+
+        if scale is not None:
+            self._plotter.scale = scale
+
+        self._plotter.save_graphic(filename, title, raster, painter)
+
+        # Reset the parameters
+        self._plotter.window_size = old_window_size
+        self._plotter.scale = old_scale
+
+        if hide_sliders:
+            self.show_sliders()
+
+        if hide_scalar_bar:
+            self.show_scalar_bars()
+
+    def set_view_plane(self, viewing_plane: ViewingPlanes):
+        """Set the plotter camera to a predefined viewing angle."""
+
+        self._plotter.camera_position = viewing_plane
+
+
+def produce_1d_scalar_histogram(
+    counts: pd.Series | np.ndarray,
+    bin_edges: np.ndarray,
+    fill: bool = True,
+    ax: Optional[plt.Axes] = None,
+    log: bool = False,
+    **kwargs,
+) -> plt.Axes:
+    """Produce a 1D scalar histogram.
+
+    This function is mostly used to visualise the marginal magnitude
+    histogram.
+
+    Parameters
+    ----------
+    counts
+        The counts in each bin.
+    bin_edges
+        The edges of the bins used to compute the histogram.
+    fill
+        Indicate whether to fill the histogram. If ``False`` then only an
+        outline of the bars is drawn.
+    ax
+        Optional axes on which to plot. If ``None``, then new axes are
+        created.
+    log
+        Indicate whether to use a logarithmic scale for the y-axis.
+    **kwargs
+        Keyword arguments for plotting the histogram.
+        See :func:`matplotlib.axes.Axes.bar` and
+        :class:`matplotlib.patches.Rectangle` for more details.
+
+    Returns
+    -------
+    matplotlib.axes.Axes
+        The axes containing the histogram plot.
+
+    See Also
+    --------
+    matplotlib.pyplot.bar: create a bar plot using provided heights.
+
+    """
+
+    ax = ax or plt.axes()
+    bin_widths = bin_edges - np.roll(bin_edges, 1)
+    ax.bar(bin_edges[:-1], counts, bin_widths[1:], align="edge", fill=fill, **kwargs)
+
+    if log:
+        ax.set_yscale("log")
+
+    return ax
+
+
+def produce_polar_histogram_plot(
+    ax: matplotlib.projections.polar.PolarAxes,
+    data: np.ndarray,
+    bins: np.ndarray,
+    zero_position: CardinalDirection = CardinalDirection.NORTH,
+    rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
+    plot_title: Optional[str] = None,
+    label_axis: bool = True,
+    axis_ticks: np.ndarray = np.arange(0, 360, 30),
+    axis_ticks_unit: AngularUnits = AngularUnits.DEGREES,
+    colour: str = "blue",
+) -> matplotlib.projections.polar.PolarAxes:
+    """Produce a 1D polar histogram plot.
+
+    Produce a 1D polar histogram using the specified data on provided axes.
+
+    Parameters
+    ----------
+    ax
+        Matplotlib :class:`matplotlib.projections.polar.PolarAxes` on which
+        to plot the data.
+    data
+        Histogram data to plot. This should have the same size as ``bins``.
+    bins
+        Lower edge of each histogram bin.
+    zero_position
+        Zero-position on the polar axes, expressed as a member of the
+        enumerated class :class:`CardinalDirection`.
+    rotation_direction
+        Rotation direction indicating how the bin values should
+        increase from the zero-point specified in ``zero_position``,
+        represented as a member of :class:`RotationDirection`.
+    plot_title
+        Optional title of the plot.
+    label_axis
+        Indicate whether the circumferential axis should be labelled.
+    axis_ticks
+        Axis ticks for the histogram. Units specified in
+        ``axis_ticks_unit``.
+    axis_ticks_unit
+        :class:`AngularUnits` indicating what unit should be used for
+        specifying the axis ticks. Default is :attr:`AngularUnits.DEGREES`.
+    colour
+        Histogram bar colour. Must be a valid matplotlib colour [#f1]_.
+
+    Returns
+    -------
+    matplotlib.projections.polar.PolarAxes
+        The ``PolarAxes`` used for plotting.
+
+    Warnings
+    --------
+    The axes provided **must** be created using ``projection="Polar"``.
+
+    See Also
+    --------
+    matplotlib.projections.polar.PolarAxes:
+        Polar axes used for plotting the polar histogram.
+
+    References
+    ----------
+    .. [#f1] https://matplotlib.org/stable/users/explain/colors/colors.html
+    """
+
+    bin_width = bins[1] - bins[0]
+    ax.set_theta_direction(rotation_direction.value)
+    ax.set_theta_zero_location(zero_position.value)
+    ax.set_title(plot_title, pad=20)
+    ax.axes.yaxis.set_ticklabels([])
+
+    if label_axis:
+        if axis_ticks_unit is AngularUnits.DEGREES:
+            axis_ticks = np.radians(axis_ticks)
+
+        ax.xaxis.set_ticks(axis_ticks)
+    else:
+        ax.xaxis.set_ticks([])
+
+    ax.bar(bins, data, align="edge", width=bin_width, color=colour)
+
+    return ax
+
+
+def produce_phi_theta_polar_histogram_plots(
+    phi_data: pd.DataFrame,
+    theta_data: pd.DataFrame,
+    zero_position_2d: CardinalDirection = CardinalDirection.NORTH,
+    rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
+    use_degrees: bool = True,
+    use_counts: bool = False,
+    plot_title: Optional[str] = None,
+    fig: Optional[plt.Figure] = None,
+) -> plt.Figure:
+    """Produce and show the 1D polar phi and theta histograms.
+
+    This function takes in 2D binned histogram input and shows a 2-panel
+    figure containing the theta and phi polar histograms.
+
+    Parameters
+    ----------
+    phi_data
+        Histogram data for the phi angle.
+    theta_data
+        Histogram data for the theta angle.
+    zero_position_2d
+        The :class:`CardinalDirection` where zero should be placed in the
+        1D polar histograms (default: North).
+    rotation_direction
+        The :class:`RotationDirection` of increasing angles in the 1D polar
+        histograms (default: clockwise).
+    use_degrees
+        Indicate whether the values are in degrees. If ``True``, values are
+        assumed to be in degrees. Otherwise, radians are assumed.
+    use_counts
+        Indicate whether the bar heights should reflect the counts, as
+        opposed to the frequencies.
+    plot_title
+        Title of the overall plot (optional).
+    fig
+        Figure on which to produce the plots. If `None`, a new figure is
+        created.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        The figure containing the polar histogram plots.
+
+    See Also
+    --------
+    produce_polar_histogram_plot :
+        Create 1D polar histograms in isolation from 1D histogram data.
+    """
+
+    if use_counts:
+        histogram_key = "count"
+    else:
+        histogram_key = "frequency"
+
+    phi_histogram = phi_data[histogram_key].to_numpy()
+    theta_histogram = theta_data[histogram_key].to_numpy()
+
+    phi_bins = phi_data["start"].to_numpy()
+    theta_bins = theta_data["start"].to_numpy()
+
+    # Construct the 3D plot
+    fig = fig or plt.figure(figsize=(7, 5))
+
+    # Construct the 2D plots
+    # Need to convert the bins back to radians if things have been done in degrees
+    if use_degrees:
+        phi_bins = np.radians(phi_bins)
+        theta_bins = np.radians(theta_bins)
+
+    # Construct the theta polar plot
+    ax1 = fig.add_subplot(121, projection="polar")
+    ax1 = produce_polar_histogram_plot(
+        ax=ax1,
+        data=theta_histogram,
+        bins=theta_bins,
+        zero_position=zero_position_2d,
+        rotation_direction=rotation_direction,
+        plot_title=r"$\theta$ (Angle in $XY$)",
+    )
+
+    # Construct the phi polar plot
+    ax2 = fig.add_subplot(122, projection="polar")
+    ax2 = produce_polar_histogram_plot(
+        ax=ax2,
+        data=phi_histogram,
+        bins=phi_bins,
+        zero_position=zero_position_2d,
+        rotation_direction=rotation_direction,
+        plot_title=r"$\phi$ (Angle from $+Z$)",
+    )
+
+    # Show the plots
+    fig.suptitle(plot_title, fontweight="bold", fontsize=14)
+    fig.subplots_adjust(left=0.05, right=0.95, wspace=0.25)
+    return fig
 
 
 def produce_labelled_3d_plot(
@@ -204,7 +1513,7 @@ def produce_labelled_3d_plot(
     axis_tick_factor: float = 1.6,
     norm: Optional[matplotlib.colors.Normalize] = None,
 ) -> mpl_toolkits.mplot3d.axes3d.Axes3D:
-    """Modify a 3D plot to label it with spherical axes.
+    """Modify a 3D Matplotlib plot to label it with spherical axes.
 
     Modify existing axes to add spherical phi and theta axes, as well as
     labels and a colour bar.
@@ -214,7 +1523,7 @@ def produce_labelled_3d_plot(
     ax
         Axes to modify. These must be 3D axes.
     radius
-        Radius of the 3D plot. This value is multiplied by
+        Sphere radius in the 3D plot. This value is multiplied by
         the `limits_factor` to obtain the radius of the spherical axes.
     limits_factor
         Factor used to add padding to the sphere, by default 1.1. The same
@@ -308,7 +1617,7 @@ def produce_labelled_3d_plot(
             [phi_axis_positions, phi_position_theta], axis=-1
         )
 
-        phi_axis_cartesian = convert_spherical_to_cartesian_coordinates(
+        phi_axis_cartesian = util.convert_spherical_to_cartesian_coordinates(
             phi_axis_polar_positions, radius=axis_label_factor * radius
         )
 
@@ -328,7 +1637,7 @@ def produce_labelled_3d_plot(
             [theta_position_phi, theta_axis_positions], axis=-1
         )
 
-        theta_axis_cartesian = convert_spherical_to_cartesian_coordinates(
+        theta_axis_cartesian = util.convert_spherical_to_cartesian_coordinates(
             theta_axis_polar_positions, radius=axis_label_factor * radius
         )
 
@@ -353,12 +1662,14 @@ def produce_labelled_3d_plot(
         theta_position_for_phi_labels = np.ones(number_of_phi_labels) * np.pi / 2
 
         spherical_coordinates_of_phi_labels = np.zeros((number_of_phi_labels, 2))
-        spherical_coordinates_of_phi_labels[:, AngularIndex.PHI] = phi_label_positions
         spherical_coordinates_of_phi_labels[
-            :, AngularIndex.THETA
+            :, util.AngularIndex.PHI
+        ] = phi_label_positions
+        spherical_coordinates_of_phi_labels[
+            :, util.AngularIndex.THETA
         ] = theta_position_for_phi_labels
 
-        phi_label_positions_cartesian = convert_spherical_to_cartesian_coordinates(
+        phi_label_positions_cartesian = util.convert_spherical_to_cartesian_coordinates(
             angular_coordinates=spherical_coordinates_of_phi_labels,
             radius=axis_tick_factor * radius,
         )
@@ -402,16 +1713,18 @@ def produce_labelled_3d_plot(
         spherical_coordinates_of_theta_labels = np.zeros((number_of_theta_labels, 2))
 
         spherical_coordinates_of_theta_labels[
-            :, AngularIndex.THETA
+            :, util.AngularIndex.THETA
         ] = theta_label_positions
 
         spherical_coordinates_of_theta_labels[
-            :, AngularIndex.PHI
+            :, util.AngularIndex.PHI
         ] = phi_position_for_theta_labels
 
-        theta_label_positions_cartesian = convert_spherical_to_cartesian_coordinates(
-            angular_coordinates=spherical_coordinates_of_theta_labels,
-            radius=axis_tick_factor * radius,
+        theta_label_positions_cartesian = (
+            util.convert_spherical_to_cartesian_coordinates(
+                angular_coordinates=spherical_coordinates_of_theta_labels,
+                radius=axis_tick_factor * radius,
+            )
         )
 
         theta_label_angles_degrees = np.degrees(theta_label_positions)
@@ -445,8 +1758,6 @@ def produce_labelled_3d_plot(
                 clip_on=True,
             )
 
-    colour_bar: Optional[matplotlib.colorbar.Colorbar] = None
-
     if plot_colour_bar:
         if norm is None:
             norm = plt.Normalize(vmin=minimum_value, vmax=maximum_value)
@@ -460,67 +1771,44 @@ def produce_labelled_3d_plot(
     return ax
 
 
-def produce_spherical_histogram_plot(
+def produce_3d_triangle_sphere_plot(
     ax: mpl_toolkits.mplot3d.axes3d.Axes3D,
-    sphere_radius: float,
-    histogram_data: np.ndarray,
-    weight_by_magnitude: bool,
-    minimum_value: Optional[float] = None,
-    maximum_value: Optional[float] = None,
+    sphere: TriangleSphere,
+    face_counts: pd.Series,
     colour_map: str = "viridis",
-    sphere_projection: SphereProjection = SphereProjection.ORTHOGRAPHIC,
-    norm: Optional[plt.Normalize] = None,
     sphere_alpha: float = 1.0,
+    norm: Optional[plt.Normalize] = None,
     **kwargs: Optional[dict[str, Any]],
 ) -> mpl_toolkits.mplot3d.axes3d.Axes3D:
-    """Produce a spherical histogram plot on the provided axes.
+    """Produce a 3D sphere plot based on a triangle mesh.
 
-    Using the provided axes, produce a spherical plot of provided 2D
-    histogram data. This plot has a constant radius and is coloured using
-    the provided data using the specified colour map. The data can
-    optionally be normalised to fit a new range.
+    Using the provided axes, plot a sphere with face colours corresponding
+    to the provided values. This plot is generated using Matplotlib.
 
     Parameters
     ----------
     ax
-        Matplotlib :class:`Axes3D` on which to plot the 3D spherical
-        histogram. The projection of these axes **must** be 3D.
-    sphere_radius
-        Radius of the sphere to plot.
-    histogram_data
-        Binned data to plot. This data should have
-        the shape ``(n, n)`` where ``n`` represents the half-number of
-        histogram bins. We currently assume that the half-number of bins
-        is the **same** in both :math:`\\phi` and :math:`\\theta`. This
-        function separates the data to plot half of it on the sphere.
-    weight_by_magnitude
-        Indicate whether plots should be weighted by magnitude or by count.
-    minimum_value
-        Minimum value for data normalisation. If not specified, the minimum
-        of the data is automatically used instead.
-    maximum_value
-        Maximum value for data normalisation. If not specified, the maximum
-        of the data is automatically used instead.
+        Axes on which to plot the sphere.
+    sphere
+        Triangle sphere to plot.
+    face_counts
+        Values assigned to each face in the `sphere`.
     colour_map
-        Name of the Matplotlib colour map to be used for colouring the
-        histogram data.
+        Colour map used to colour the sphere, by default "viridis".
     norm
         Optional :class:`matplotlib.colors.Normalize` object to use to
         normalise the colours.
-    sphere_projection
-        3D projection method to be used for the spherical figure. Options
-        are orthographic and perspective projection.
-        See :class:`SphereProjection`.
     sphere_alpha
         Opacity of the sphere.
     **kwargs
         Keyword arguments for the plot labelling.
         See :func:`.produce_labelled_3d_plot` for options.
 
+
     Returns
     -------
     mpl_toolkits.mplot3d.axes3d.Axes3D
-        A reference to the :class:`Axes3D` object passed in as ``ax``.
+        The axes on which the provided sphere is plotted.
 
     Warnings
     --------
@@ -533,589 +1821,387 @@ def produce_spherical_histogram_plot(
 
     See Also
     --------
-    .prepare_two_dimensional_histogram:
-        Prepare the 2D histogram data to be plotted on a sphere.
+    vectorose.triangle_sphere.TriangleSphere:
+        Produce a sphere and histogram labellings to pass to this function.
     .produce_labelled_3d_plot:
         Label the axes of the 3D plot.
-    .produce_3d_triangle_sphere_plot:
-        Similar function for an icosphere.
-
-    Notes
-    -----
-    The data provided to this function is stored as a square array of shape
-    ``(n, n)``. To generate the sphere colouring data, we duplicate the
-    data and invert it with respect to the ``phi`` axis. The copying
-    provides the values for :math:`\\theta \\in [-180^\\circ, 0^\\circ]`.
-    We then invert the array to correct the ``phi`` values.
+    .produce_3d_tregenza_sphere_plot:
+        Similar function for a Tregenza sphere.
     """
 
-    # Get the data to plot on the sphere. We must determine if we want
-    # it to be magnitude-weighted or count weighted.
-    if weight_by_magnitude:
-        original_intensity_data = histogram_data[..., MagnitudeType.THREE_DIMENSIONAL]
-    else:
-        original_intensity_data = histogram_data[..., MagnitudeType.COUNT]
-
-    # cleaned_histogram_data = prepare_two_dimensional_histogram(
-    #     binned_data=original_intensity_data
-    # )
-
-    cleaned_histogram_data = original_intensity_data
-
-    # half_number_of_bins, number_of_bins = cleaned_histogram_data.shape
-    half_number_of_bins, number_of_bins = cleaned_histogram_data.shape
-
-    # Well, we want to have the phi go from zero to 180 only! But, we
-    # want theta to go from -180 to +180. So, we're going to do just
-    # that (but remember, we're in radians, so it'll be 0 to pi for phi
-    # and -pi to pi for theta).
-
-    # In terms of the number of bins, we want there to be half as many
-    # bins in phi as in theta (I think...), since the phi bins only
-    # actually cover half the sphere while the theta bins go all the way
-    # around.
-
-    # In the mgrid, we are defining where the bin **dividers** go, not
-    # where the bins are! So, recall that we need to have one more
-    # divider than the number of bins.
-    number_of_phi_dividers = half_number_of_bins + 1
-    number_of_theta_dividers = number_of_bins + 1
-
-    sphere_phi, sphere_theta = np.mgrid[
-        0 : np.pi : number_of_phi_dividers * 1j,
-        -np.pi : np.pi : number_of_theta_dividers * 1j,
-    ]
-
-    sphere_angles = np.stack([sphere_phi, sphere_theta], axis=-1)
-
-    # Get the cartesian coordinates of the sphere
-    sphere_cartesian_coordinates = convert_spherical_to_cartesian_coordinates(
-        angular_coordinates=sphere_angles, radius=sphere_radius
-    )
-
-    sphere_x = sphere_cartesian_coordinates[..., 0]
-    sphere_y = sphere_cartesian_coordinates[..., 1]
-    sphere_z = sphere_cartesian_coordinates[..., 2]
-
-    try:
-        mpl_colour_map = plt.get_cmap(colour_map)
-    except ValueError:
-        mpl_colour_map = plt.get_cmap("gray")
-
+    # Get the face colours
     if norm is None:
-        norm = plt.Normalize(vmin=minimum_value, vmax=maximum_value)
+        norm = matplotlib.colors.Normalize(
+            vmin=face_counts.min(), vmax=face_counts.max()
+        )
     else:
-        norm.vmax = maximum_value or norm.vmax
-        norm.vmin = minimum_value or norm.vmin
+        norm.autoscale_None(face_counts)
 
-    normalised_sphere_intensities = norm(cleaned_histogram_data)
-    sphere_face_colours = mpl_colour_map(normalised_sphere_intensities)
+    scalar_mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap=colour_map)
 
-    # Construct the 3D plot
-    ax.set_proj_type(sphere_projection.value)
+    face_colours = scalar_mapper.to_rgba(face_counts.to_numpy())
 
-    surface = ax.plot_surface(
-        sphere_x,
-        sphere_y,
-        sphere_z,
-        rstride=1,
-        cstride=1,
-        facecolors=sphere_face_colours,
+    # Now, prepare the sphere for plotting
+    sphere_mesh = sphere.create_mesh()
+    vertices: np.ndarray = sphere_mesh.points
+    x_coordinates = vertices[:, 0]
+    y_coordinates = vertices[:, 1]
+    z_coordinates = vertices[:, 2]
+
+    triangles = sphere_mesh.faces.reshape(-1, 4)[:, 1:]
+
+    # Plot the sphere
+    ax.plot_trisurf(
+        x_coordinates,
+        y_coordinates,
+        z_coordinates,
+        triangles=triangles,
+        facecolor=face_colours,
         alpha=sphere_alpha,
         shade=False,
     )
-    # surface.set_edgecolor("white")
-    # surface.set_linewidth(0.25)
 
-    ax = produce_labelled_3d_plot(ax=ax, radius=sphere_radius, norm=norm, **kwargs)
+    # Now, configure the axes
+    sphere_bounds = np.array(sphere_mesh.bounds)
+    min_location = sphere_bounds.min()
+    max_location = sphere_bounds.max()
+
+    sphere_radius = (max_location - min_location) / 2
+
+    # print(f"Sphere has radius {sphere_radius}...")
+
+    kwargs["radius"] = sphere_radius
+
+    ax = produce_labelled_3d_plot(ax=ax, norm=norm, colour_map=colour_map, **kwargs)
 
     ax.set_aspect("equal")
 
     return ax
 
 
-def produce_polar_histogram_plot(
-    ax: matplotlib.projections.polar.PolarAxes,
-    data: np.ndarray,
-    bins: np.ndarray,
-    zero_position: CardinalDirection = CardinalDirection.NORTH,
-    rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
-    plot_title: Optional[str] = None,
-    label_axis: bool = True,
-    axis_ticks: np.ndarray = np.arange(0, 360, 30),
-    axis_ticks_unit: AngularUnits = AngularUnits.DEGREES,
-    colour: str = "blue",
-    mirror_histogram: bool = True,
-) -> matplotlib.projections.polar.PolarAxes:
-    """Produce 1D polar histogram.
-
-    Produce a 1D polar histogram using the specified data on the
-    provided axes.
-
-
-    Parameters
-    ----------
-    ax
-        Matplotlib :class:`matplotlib.projections.polar.PolarAxes` on which
-        to plot the data.
-
-    data
-        Data to plot. This should have the same size as ``bins``.
-
-    bins
-        *Lower value* of each bin in the histogram.
-
-    zero_position
-        Zero-position on the polar axes, expressed as a member of the
-        enumerated class :class:`CardinalDirection`.
-
-    rotation_direction
-        Rotation direction indicating how the bin values should
-        increase from the zero-point specified in ``zero_position``,
-        represented as a member of :class:`RotationDirection`.
-
-    plot_title
-        Optional title of the plot.
-
-    label_axis
-        Indicate whether the circumferential axis should be labelled.
-
-    axis_ticks
-        Axis ticks for the histogram. Units specified in
-        ``axis_ticks_unit``.
-
-    axis_ticks_unit
-        :class:`AngularUnits` indicating what unit should be used for
-        specifying the axis ticks. Default is :attr:`AngularUnits.DEGREES`.
-
-    colour
-        Colour used for the histogram bars. Must be a valid matplotlib
-        colour [#f1]_.
-
-    mirror_histogram
-        Indicate whether the histogram should be mirrored to plot data on
-        the complete circle.
-
-    Returns
-    -------
-
-    matplotlib.projections.polar.PolarAxes
-        The ``PolarAxes`` used for plotting.
-
-    Warnings
-    --------
-    The axes provided **must** be created using ``projection="Polar"``.
-
-    See Also
-    --------
-    matplotlib.projections.polar.PolarAxes:
-        Polar axes used for plotting the polar histogram.
-
-    References
-    ----------
-    .. [#f1] https://matplotlib.org/stable/users/explain/colors/colors.html
-    """
-
-    bin_width = bins[1] - bins[0]
-    ax.set_theta_direction(rotation_direction.value)
-    ax.set_theta_zero_location(zero_position.value)
-    ax.set_title(plot_title)
-    ax.axes.yaxis.set_ticklabels([])
-
-    # Prepare the data for plotting, mirroring if necessary
-    if mirror_histogram:
-        # Duplicate the bins and the data.
-        mirrored_bins = bins.copy()
-        mirrored_data = data.copy()
-
-        # Offset the mirrored bins and flip the signs
-        mirrored_bins = -(mirrored_bins + bin_width)
-
-        # Flip the mirrored bins, but NOT the data
-        mirrored_bins = np.flip(mirrored_bins)
-
-        # Tack the bins and values onto the respective arrays
-        bins = np.concatenate([mirrored_bins, bins])
-        data = np.concatenate([mirrored_data, data])
-
-    if label_axis:
-        # start, end = ax.get_xlim()
-
-        if axis_ticks_unit is AngularUnits.DEGREES:
-            axis_ticks = np.radians(axis_ticks)
-            # axis_ticks_increment = np.radians(axis_ticks_increment)
-
-        ax.xaxis.set_ticks(axis_ticks)
-    else:
-        ax.xaxis.set_ticks([])
-
-    ax.bar(bins, data, align="edge", width=bin_width, color=colour)
-
-    return ax
-
-
-def produce_polar_histogram_plot_from_2d_bins(
-    ax: matplotlib.projections.polar.PolarAxes,
-    angle: AngularIndex,
-    data: np.ndarray,
-    bins: np.ndarray,
-    bin_angle_unit: AngularUnits = AngularUnits.DEGREES,
-    weight_by_magnitude: bool = True,
-    **kwargs: Dict[str, Any],
-) -> matplotlib.projections.polar.PolarAxes:
-    """Produce polar histogram from 2D binned data
-
-    Produce a polar histogram for the specified angle, starting from the 2D
-    histogram data. This function takes in existing Matplotlib axes and
-    plots the histogram on them.
-
-    Parameters
-    ----------
-    ax
-        Matplotlib polar axes on which the histogram will be plotted.
-
-    angle
-        Indicate which angle to extract from the data. See
-        :class:``AngularIndex`` for details.
-
-    data
-        2D histogram binned data of shape ``(n, n, 3)`` where
-        ``n`` is the half-number of bins used in the binning process.
-
-    bins
-        Bounds of the bins used to construct the histograms. If
-        the array is 2D, then the angular indexing will be used to
-        extract the phi bin boundaries. If ``n + 1`` entries are
-        present, the last value is removed to ensure that only the lower
-        bound of each bin is kept.
-
-    bin_angle_unit
-        Unit for the bin angles. See :class:`AngularUnits`.
-
-    weight_by_magnitude
-        Indicate whether the histograms should be weighted by count or by
-        magnitude. If magnitude is used, the phi histogram is weighted by
-        3D magnitude while the theta histogram is weighted by the projected
-        magnitude in the XY plane.
-
-    **kwargs
-        Keyword arguments for the plotting. See
-        :func:`produce_polar_histogram_plot` for more details.
-
-    Returns
-    -------
-    matplotlib.projections.polar.PolarAxes
-        A reference to the axes ``ax`` used for plotting.
-
-    Warnings
-    --------
-    The axes passed in ``ax`` must be of type
-    :class:`matplotlib.projections.polar.PolarAxes`. To create these axes,
-    ensure to set ``projection="Polar"``.
-
-    See Also
-    --------
-    produce_polar_histogram_plot:
-        Produce a polar plot from 1D data. See documentation for the
-        keyword arguments that can be passed to this function.
-    """
-
-    # Compute the 1D histograms from the binned data
-    one_dimensional_histograms = produce_phi_theta_1d_histogram_data(
-        data, weight_by_magnitude=weight_by_magnitude
-    )
-
-    # Select the relevant 1D histogram
-    selected_histogram_data = one_dimensional_histograms[angle]
-
-    if bin_angle_unit == AngularUnits.DEGREES:
-        bins = np.radians(bins)
-
-    data_shape = selected_histogram_data.shape
-    bin_shape = bins.shape
-
-    if len(bin_shape) == 2:
-        bins = bins[angle]
-
-    if len(bins) > data_shape[0]:
-        bins = bins[:-1]
-
-    ax = produce_polar_histogram_plot(
-        ax=ax, data=selected_histogram_data, bins=bins, **kwargs
-    )
-
-    return ax
-
-
-def produce_planar_2d_histogram_plot(
-    ax: plt.Axes,
-    data: np.ndarray,
-    bins: Tuple[np.ndarray, np.ndarray],
-    # bin_angle_unit: AngularUnits = AngularUnits.DEGREES,
-    weight_by_magnitude: bool = True,
+def produce_3d_tregenza_sphere_plot(
+    ax: mpl_toolkits.mplot3d.axes3d.Axes3D,
+    tregenza_sphere: TregenzaSphere,
+    histogram_data: Optional[pd.Series] = None,
+    sphere_alpha: float = 1.0,
     colour_map: str = "viridis",
-    show_axes: bool = True,
-    phi_axis_ticks: np.ndarray = np.arange(0, 181, 30),
-    theta_axis_ticks: np.ndarray = np.arange(0, 361, 30),
-    norm: Optional[matplotlib.colors.Normalize] = None,
-    show_colour_bar: bool = False,
-    colour_bar_position: str = "right",
-    # axis_ticks_units: AngularUnits = AngularUnits.DEGREES,
-    plot_title: Optional[str] = None,
-) -> plt.Axes:
-    """
-    Produce a 2D planar plot of a flattened phi, theta histogram.
+    norm: Optional[plt.Normalize] = None,
+    **kwargs,
+) -> mpl_toolkits.mplot3d.axes3d.Axes3D:
+    """Produce a 3D sphere plot based on a Tregenza sphere.
 
-    Produce a 2D histogram of the phi, theta
+    Using the provided axes, plot a Tregenza sphere with face colours
+    corresponding to the provided histogram values. This plot is generated
+    using Matplotlib.
 
     Parameters
     ----------
     ax
-        Axes on which to plot the 2D histogram.
-    data
-        Histogram data to plot. This array should consist of 2D sheets,
-        with the last axis determining magnitude vs. count.
-    bins
-        Histogram bins for phi and theta, respectively.
-    bin_angle_unit
-        Angular unit for the provided bin boundaries.
-    weight_by_magnitude
-        Indicate whether the histogram should be weighted by magnitude.
+        Axes on which to plot the sphere.
+    tregenza_sphere
+        Tregenza sphere on which to plot the values.
+    histogram_data
+        Histogram data to plot. The length of this list must correspond to
+        the number of rings in the `tregenza_sphere` and the length of each
+        entry must correspond to the respective patch count.
+    sphere_alpha
+        Opacity of the sphere.
     colour_map
-        Name of the colour map to use to visualise the histogram.
-    show_axes
-        Indicate whether to show the axes.
-    phi_axis_ticks
-        Axis ticks along the vertical phi axis.
-    theta_axis_ticks
-        Axis ticks along the horizontal theta axis.
+        Colour map to use when plotting the sphere, by default "viridis".
     norm
-        Normaliser to change how the data are plotted.
-    show_colour_bar
-        Indicate whether to show a colour bar.
-    colour_bar_position
-        Position of the colour bar with respect to the plot.
-    axis_ticks_units
-        Angular units for the axis ticks.
-    plot_title
-        Optional title for the produced plot.
+        Optional :class:`matplotlib.colors.Normalize` object to use to
+        normalise the colours.
+    **kwargs
+        Keyword arguments for the plot labelling.
+        See :func:`.produce_labelled_3d_plot` for options.
 
     Returns
     -------
-    matplotlib.axes.Axes
-        The axes on which the histogram is plotted. This is the same object
-        as `ax` in the parameters.
+    mpl_toolkits.mplot3d.axes3d.Axes3D
+        The axes on which the provided sphere is plotted.
+
+    Warnings
+    --------
+    The histogram data must have a size matching the provided Tregenza
+    sphere.
+
     """
 
-    # First isolate the correct sheet of data
-    histogram_data: np.ndarray
+    # If we have a histogram, work on processing the data
+    face_colours: Optional[np.ndarray]
 
-    if weight_by_magnitude:
-        histogram_data = data[..., MagnitudeType.THREE_DIMENSIONAL]
+    if histogram_data is not None:
+        if norm is None:
+            # Find the maximum and minimum counts
+            min_face_count = histogram_data.min()
+            max_face_count = histogram_data.max()
+            norm = matplotlib.colors.Normalize(vmin=min_face_count, vmax=max_face_count)
+        else:
+            norm.autoscale_None(histogram_data)
+
+        # Compute the colours
+        scalar_mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap=colour_map)
+
+        face_colours: np.ndarray = scalar_mapper.to_rgba(histogram_data)
     else:
-        histogram_data = data[..., MagnitudeType.COUNT]
+        face_colours = None
 
-    # Now, we need to be careful with the extent for the image.
-    phi_bins, theta_bins = bins
+    ax.set_xlim3d(-1, 1)
+    ax.set_ylim3d(-1, 1)
+    ax.set_zlim3d(-1, 1)
 
-    phi_max = phi_bins.max()
-    phi_bin_spacing = phi_bins[1] - phi_bins[0]
-    phi_half_bin = phi_bin_spacing / 2
+    # Define the patches we'll plot
+    all_patch_vertices: List[np.ndarray] = []
 
-    theta_max = theta_bins.max()
-    theta_bin_spacing = theta_bins[1] - theta_bins[0]
-    theta_half_bin = theta_bin_spacing / 2
+    rings = tregenza_sphere.to_dataframe()
 
-    image_extent = (0, theta_max, phi_max, 0)
+    phi_values_upper = rings["start"]
+    phi_values_lower = rings["end"]
+    theta_bin_counts = rings["bins"]
 
-    # Plot on the axes
-    ax.imshow(
-        histogram_data,
-        cmap=colour_map,
-        norm=norm,
-        extent=image_extent,
-        interpolation="None",
+    # So, let's start with the top row by starting with the second row.
+    phi_upper = phi_values_upper.iloc[1]
+    number_of_bins = theta_bin_counts.iloc[1]
+    thetas_second_row = np.linspace(0, 360, number_of_bins, endpoint=False)
+
+    phi_upper_second_row = np.ones(thetas_second_row.shape) * phi_upper
+    top_cap_vertices = np.stack([phi_upper_second_row, thetas_second_row], axis=-1)
+
+    top_cap_vertices_cartesian = util.convert_spherical_to_cartesian_coordinates(
+        top_cap_vertices, use_degrees=True
     )
 
-    # Deal with the axis ticks
-    if show_axes:
-        ax.set_ylabel(r"$\phi$")
-        ax.set_xlabel(r"$\theta$")
+    all_patch_vertices.append(top_cap_vertices_cartesian)
 
-        ax.set_yticks(phi_axis_ticks)
-        ax.set_xticks(theta_axis_ticks)
-    else:
-        ax.axis("off")
+    # Now, let's go with the remaining rings
+    number_of_rings = tregenza_sphere.number_of_rings
 
-    if show_colour_bar:
-        if norm is None:
-            norm = matplotlib.colors.Normalize(
-                vmin=histogram_data.min(), vmax=histogram_data.max()
+    # phi_rings = np.append(phi_values, 90)
+    for i in range(1, number_of_rings - 1):
+        # Get the current phi ring and the next phi ring
+        upper_phi = phi_values_upper.iloc[i]
+        lower_phi = phi_values_lower.iloc[i]
+
+        # Get the current theta bounds
+        number_of_bins = theta_bin_counts.iloc[i]
+        current_thetas = np.linspace(0, 360, number_of_bins, endpoint=False)
+        # print(f"Considering ring {i} which contains {number_of_faces + 1} faces")
+
+        # Now, for each face, we need to construct a rectangle with
+        # four vertices, which are related to the bounds.
+        # current_row_faces: list[np.ndarray] = []
+
+        for j in range(number_of_bins):
+            lower_theta = current_thetas[j]
+            upper_theta = current_thetas[(j + 1) % number_of_bins]
+
+            # Define the vertices
+            v1 = (upper_phi, lower_theta)
+            v2 = (upper_phi, upper_theta)
+            v3 = (lower_phi, upper_theta)
+            v4 = (lower_phi, lower_theta)
+
+            face_vertices = np.array([v1, v2, v3, v4])
+
+            face_vertices_cartesian = util.convert_spherical_to_cartesian_coordinates(
+                face_vertices, use_degrees=True
             )
-        scalar_mappable = plt.cm.ScalarMappable(norm=norm, cmap=colour_map)
-        plt.colorbar(scalar_mappable, ax=ax, location=colour_bar_position)
 
-    ax.set_title(plot_title)
+            all_patch_vertices.append(face_vertices_cartesian)
+
+    # And finally, the bottom patch
+    phi_value = phi_values_upper.iloc[-1]
+    number_of_bins = theta_bin_counts.iloc[-2]
+    thetas_second_last_row = np.linspace(0, 360, number_of_bins, endpoint=False)
+
+    phi_value_bottom_row = np.ones(thetas_second_last_row.shape) * phi_value
+    bottom_cap_vertices = np.stack(
+        [phi_value_bottom_row, thetas_second_last_row], axis=-1
+    )
+
+    bottom_cap_vertices_cartesian = util.convert_spherical_to_cartesian_coordinates(
+        np.radians(bottom_cap_vertices)
+    )
+
+    all_patch_vertices.append(bottom_cap_vertices_cartesian)
+
+    patch_collection = mpl_toolkits.mplot3d.art3d.Poly3DCollection(
+        all_patch_vertices,
+        facecolors=face_colours,
+        shade=False,
+        linewidths=0,
+        alpha=sphere_alpha,
+    )
+
+    ax.add_collection3d(patch_collection)
+
+    # Define the sphere radius
+    sphere_radius = 1
+
+    kwargs["radius"] = sphere_radius
+
+    # Add the labels to the plot
+    ax = produce_labelled_3d_plot(ax=ax, norm=norm, colour_map=colour_map, **kwargs)
+
+    ax.set_aspect("equal")
 
     return ax
 
 
-def produce_histogram_plots(
-    binned_data: np.ndarray,
-    bins: np.ndarray,
-    sphere_radius: float = 2.0,
-    zero_position_2d: CardinalDirection = CardinalDirection.NORTH,
-    rotation_direction: RotationDirection = RotationDirection.CLOCKWISE,
-    use_degrees: bool = True,
-    colour_map: str = "gray",
-    plot_title: Optional[str] = None,
-    weight_by_magnitude: bool = True,
-    mirror_polar_plots: bool = True,
-    **kwargs: Dict[str, Any],
-):
-    """Produce and show the vector rose histograms.
+def construct_uv_sphere_vertices(
+    phi_steps: int = 80, theta_steps: int = 160, radius: float = 1
+) -> np.ndarray:
+    """Compute the vertices for a UV sphere with rectangular faces.
 
-    This function takes in 2D binned histogram input and shows a 3-panel
-    figure containing (from left to right):
-
-    * The 2D sphere plot of :math:`\\phi,\\theta`.
-    * The 1D polar histogram of :math:`\\theta`.
-    * The 1D polar histogram of :math:`\\phi`.
-
-    A number of plotting parameters may be modified here. See the
-    parameter descriptions for more details, as well as the above plotting
-    functions.
+    Construct a UV sphere where each ring has the same number of faces.
 
     Parameters
     ----------
-    binned_data
-        The binned histogram data for the :math:`\\phi,\\theta` plane. This
-        NumPy array should have size ``(n, n, 3)`` where ``n`` is the
-        half-number of histogram bins used to construct the histogram.
-        See :func:`.create_binned_orientation` for more details. See
-        :class:`MagnitudeType` for the indexing rules along the last axis.
+    phi_steps
+        Number of faces along the phi axis.
+    theta_steps
+        Number of faces along the theta axis, within a ring.
+    radius
+        Sphere radius.
 
-    bins
-        The boundaries of the bins. This array should be of size
-        ``(2, n + 1)`` where ``n`` represents the half-number of bins.
-        See :class:`AngularIndex` for the indexing rules along the first
-        axis.
+    Returns
+    -------
+    numpy.ndarray
+        Array containing the Cartesian coordinates of the sphere vertices
+        in a format to plot using :meth:`Axes3D.plot_surface`. This array
+        will have shape ``(theta_steps + 1, phi_steps + 1, 3)`` where the
+        last axis corresponds to the ``X, Y, Z`` components.
 
-    sphere_radius
-        The radius of the sphere used for 3D plotting.
-
-    zero_position_2d
-        The :class:`CardinalDirection` where zero should be placed in the
-        1D polar histograms (default: North).
-
-    rotation_direction
-        The :class:`RotationDirection` of increasing angles in the 1D polar
-        histograms (default: clockwise).
-
-    use_degrees
-        Indicate whether the values are in degrees. If ``True``, values are
-        assumed to be in degrees. Otherwise, radians are assumed.
-
-    colour_map
-        Name of the matplotlib colour map [#f2]_ to use to colour
-        the hemisphere. If an invalid name is provided, a default
-        greyscale colour map ("gray") will be used.
-
-    plot_title
-        Title of the overall plot (optional).
-
-    weight_by_magnitude
-        Indicate whether plots should be weighted by magnitude or by count.
-
-    mirror_polar_plots
-        Indicate whether the polar histogram data should be mirrored to
-        fill the complete plot.
-
-    **kwargs
-        Extra keyword arguments for the sphere plotting. See
-        :func:`produce_spherical_histogram_plot` for available arguments.
-
-
-    See Also
+    Warnings
     --------
-    produce_spherical_histogram_plot:
-        Create the spherical plot in isolation.
+    This sphere should not be used to plot histograms. It is provided for
+    visualisations that do not involve plotting data on the surface of the
+    sphere.
 
-    produce_polar_histogram_plot:
-        Create 1D polar histograms in isolation from 1D histogram data.
+    Notes
+    -----
+    The coordinates computed using this function can easily be used to plot
+    a sphere using :meth:`Axes3D.plot_surface`. To do so, the X, Y and Z
+    coordinate sheets must be separated by indexing along the last axis.
 
-    .create_binned_orientation:
-        Bin vectors into a 2D :math:`\\phi,\\theta` histogram. The return
-        values from that function may be passed as arguments to this
-        function.
-
-
-    References
-    ----------
-    .. [#f2] https://matplotlib.org/stable/users/explain/colors/colormaps.html
     """
 
-    # Compute the 1D histograms from the binned data
-    one_dimensional_histograms = produce_phi_theta_1d_histogram_data(
-        binned_data, weight_by_magnitude=weight_by_magnitude
-    )
-    phi_histogram: np.ndarray = one_dimensional_histograms[AngularIndex.PHI]
-    theta_histogram: np.ndarray = one_dimensional_histograms[AngularIndex.THETA]
+    # Compute the phi and theta values
+    phi = np.linspace(start=0, stop=np.pi, num=phi_steps + 1, endpoint=True)
+    theta = np.linspace(start=0, stop=2 * np.pi, num=theta_steps + 1, endpoint=True)
 
-    # Construct the 3D plot
-    plt.figure(figsize=(10, 3.5))
-    ax: mpl_toolkits.mplot3d.axes3d.Axes3D = plt.subplot(131, projection="3d")
+    # Now, build the 2D spherical coordinates
+    phi_grid, theta_grid = np.meshgrid(phi, theta)
 
-    ax, _ = produce_spherical_histogram_plot(
-        ax=ax,
-        sphere_radius=sphere_radius,
-        histogram_data=binned_data,
-        weight_by_magnitude=weight_by_magnitude,
-        plot_title="Vector Intensity Distribution",
-        colour_map=colour_map,
-        **kwargs,
+    # Convert to Cartesian coordinates
+    sphere_angles = np.stack([phi_grid, theta_grid], axis=-1)
+
+    sphere_cartesian_coordinates = util.convert_spherical_to_cartesian_coordinates(
+        angular_coordinates=sphere_angles, radius=radius
     )
 
-    # Construct the 2D plots
-    # Need to convert the bins back to radians if things have been done in degrees
-    if use_degrees:
-        bins = np.radians(bins)
+    return sphere_cartesian_coordinates
 
-    # Remove the last element
-    bins = bins[:, :-1]
 
-    # These two bin widths should be IDENTICAL.
-    phi_bins = bins[AngularIndex.PHI]
-    theta_bins = bins[AngularIndex.THETA]
+def construct_uv_sphere_mesh(
+    phi_steps: int = 80, theta_steps: int = 160, radius: float = 1
+) -> pv.PolyData:
+    """Construct a UV sphere mesh.
 
-    # Construct the theta polar plot
-    ax2 = plt.subplot(132, projection="polar")
-    ax2 = produce_polar_histogram_plot(
-        ax=ax2,
-        data=theta_histogram,
-        bins=theta_bins,
-        zero_position=zero_position_2d,
-        rotation_direction=rotation_direction,
-        plot_title=r"$\theta$ (Angle in $XY$)",
-        mirror_histogram=mirror_polar_plots,
+    Parameters
+    ----------
+    phi_steps
+        Number of phi rings to construct.
+    theta_steps
+        Number of theta bins in each ring.
+    radius
+        Sphere radius.
+
+    Returns
+    -------
+    pyvista.PolyData
+        Mesh containing the UV sphere.
+    """
+
+    top_vertex = np.array([0, 0, radius])
+
+    phi_step_size = 180 / phi_steps
+    phi = np.linspace(phi_step_size, stop=180, num=phi_steps - 1, endpoint=False)
+    theta = np.linspace(0, 360, theta_steps, endpoint=False)
+
+    # Now, build the 2D spherical coordinates
+    theta_grid, phi_grid = np.meshgrid(theta, phi)
+
+    # Convert to Cartesian coordinates
+    sphere_angles = np.stack([phi_grid, theta_grid], axis=-1)
+
+    sphere_cartesian_coordinates = util.convert_spherical_to_cartesian_coordinates(
+        angular_coordinates=sphere_angles, radius=radius, use_degrees=True
     )
 
-    # Construct the phi polar plot
-    ax3 = plt.subplot(133, projection="polar")
-    ax3 = produce_polar_histogram_plot(
-        ax=ax3,
-        data=phi_histogram,
-        bins=phi_bins,
-        zero_position=zero_position_2d,
-        rotation_direction=rotation_direction,
-        plot_title=r"$\phi$ (Angle from $+Z$)",
-        mirror_histogram=mirror_polar_plots,
+    sphere_cartesian_coordinates = sphere_cartesian_coordinates.reshape(-1, 3)
+
+    bottom_vertex = np.array([0, 0, -radius])
+
+    # Add the top and bottom caps
+    sphere_cartesian_coordinates = np.vstack(
+        [top_vertex, sphere_cartesian_coordinates, bottom_vertex]
     )
 
-    # Show the plots
-    plt.suptitle(plot_title, fontweight="bold", fontsize=14)
-    plt.subplots_adjust(left=0.05, right=0.95, wspace=0.25)
-    plt.show()
+    # And now, to begin defining the faces
+    cells: List[np.ndarray] = []
+
+    # Define the top triangle fan
+    face_count = 3 * np.ones(theta_steps, dtype=int)
+    first_ring_starts = np.arange(1, theta_steps + 1)
+    first_ring_ends = np.roll(first_ring_starts, -1)
+    apex = np.zeros(theta_steps, dtype=int)
+    top_fan_cells = np.stack(
+        [face_count, apex, first_ring_starts, first_ring_ends], axis=-1
+    )
+    cells.append(top_fan_cells)
+
+    # Define each row
+    for i in range(0, phi_steps - 2):
+        first_vertex_in_row = 1 + i * theta_steps
+        upper_ring = np.arange(first_vertex_in_row, first_vertex_in_row + theta_steps)
+
+        vertex_count_column = 4 * np.ones(theta_steps, dtype=int)
+        top_left_corner = upper_ring
+        top_right_corner = np.roll(top_left_corner, -1)
+        bottom_left_corner = upper_ring + theta_steps
+        bottom_right_corner = top_right_corner + theta_steps
+
+        ring_cells = np.stack(
+            [
+                vertex_count_column,
+                top_left_corner,
+                top_right_corner,
+                bottom_right_corner,
+                bottom_left_corner,
+            ],
+            axis=-1,
+        )
+
+        cells.append(ring_cells)
+
+    # Define the bottom triangle fan
+    bottom_apex_index = len(sphere_cartesian_coordinates) - 1
+    face_count = 3 * np.ones(theta_steps, dtype=int)
+    last_ring_starts = np.arange(bottom_apex_index - theta_steps, bottom_apex_index)
+    last_ring_ends = np.roll(last_ring_starts, -1)
+    bottom_apex = bottom_apex_index * np.ones(theta_steps, dtype=int)
+    bottom_fan_cells = np.stack(
+        [face_count, bottom_apex, last_ring_starts, last_ring_ends], axis=-1
+    )
+    cells.append(bottom_fan_cells)
+
+    cell_array = np.concatenate(cells, axis=-1)
+
+    # Create the mesh
+    uv_sphere_mesh = pv.PolyData(sphere_cartesian_coordinates, cell_array)
+
+    return uv_sphere_mesh
 
 
 def __update_sphere_viewing_angle(
@@ -1136,7 +2222,7 @@ def __update_sphere_viewing_angle(
 
     Returns
     -------
-    Iterable[mpl_toolkits.mplot3d.axes3d.Axes3D]
+    Iterable of mpl_toolkits.mplot3d.axes3d.Axes3D
         An iterable containing a reference to the 3D sphere axes.
     """
 
@@ -1173,22 +2259,17 @@ def animate_sphere_plot(
     sphere_figure
         The :class:`matplotlib.figure.Figure` containing the sphere
         plot.
-
     sphere_axes
         The :class:`mpl_toolkits.mplot3d.axes3d.Axes3D` containing the
         sphere plot. These axes **must** be 3D axes.
-
     rotation_direction
         Direction for the **sphere** to rotate.
         See :class:`RotationDirection` for more information.
-
     angle_increment
         Increment of the angle in **degrees** for the rotation at each
         frame. This value should be positive.
-
     animation_delay
         Time delay between frames in milliseconds.
-
     reset_initial_orientation
         Indicate whether the sphere should be reset to its original
         orientation before recording the animation. This argument should
@@ -1244,199 +2325,13 @@ def animate_sphere_plot(
     return animation
 
 
-def produce_3d_triangle_sphere_plot(
-    ax: mpl_toolkits.mplot3d.axes3d.Axes3D,
-    sphere: trimesh.primitives.Sphere,
-    face_counts: np.ndarray,
-    colour_map: str = "viridis",
-    sphere_alpha: float = 1.0,
-    norm: Optional[plt.Normalize] = None,
-    **kwargs: Optional[dict[str, Any]],
-) -> mpl_toolkits.mplot3d.axes3d.Axes3D:
-    """Produce a 3D sphere plot based on a triangle mesh.
-
-    Using the provided axes, plot a sphere with face colours corresponding
-    to the provided values. This sphere has constant radius.
-
-    Parameters
-    ----------
-    ax
-        Axes on which to plot the sphere.
-    sphere
-        Mesh of type :class:`trimesh.primitives.Sphere` to plot.
-    face_counts
-        Values assigned to each face in the `sphere`.
-    colour_map
-        Colour map used to colour the sphere, by default "viridis".
-    norm
-        Optional :class:`matplotlib.colors.Normalize` object to use to
-        normalise the colours.
-    sphere_alpha
-        Opacity of the sphere.
-    **kwargs
-        Keyword arguments for the plot labelling.
-        See :func:`.produce_labelled_3d_plot` for options.
-
-
-    Returns
-    -------
-    mpl_toolkits.mplot3d.axes3d.Axes3D
-        The axes on which the provided sphere is plotted.
-
-    Warnings
-    --------
-    The provided axes must have the projection set to 3D
-    using ``projection="3d"``.
-
-    The histogram data provided must occupy the entire sphere. No
-    manipulations will be performed in this function to get the face
-    colours to match the number of faces.
-
-    See Also
-    --------
-    vectorose.triplot.run_spherical_histogram_pipeline:
-        Produce a sphere and histogram labellings to pass to this function.
-    .produce_labelled_3d_plot:
-        Label the axes of the 3D plot.
-    .produce_spherical_histogram_plot:
-        Similar function for a UV sphere.
-    """
-
-    # Get the face colours
-    if norm is None:
-        norm = matplotlib.colors.Normalize(
-            vmin=face_counts.min(), vmax=face_counts.max()
-        )
-    else:
-        norm.autoscale_None(face_counts)
-
-    scalar_mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap=colour_map)
-
-    face_colours = scalar_mapper.to_rgba(face_counts)
-
-    # Now, prepare the sphere for plotting
-    vertices: np.ndarray = sphere.vertices
-    x_coordinates = vertices[:, 0]
-    y_coordinates = vertices[:, 1]
-    z_coordinates = vertices[:, 2]
-
-    triangles = sphere.faces
-
-    # Plot the sphere
-    ax.plot_trisurf(
-        x_coordinates,
-        y_coordinates,
-        z_coordinates,
-        triangles=triangles,
-        facecolor=face_colours,
-        alpha=sphere_alpha,
-        shade=False,
-    )
-
-    # Now, configure the axes
-    sphere_bounds = sphere.bounds
-    min_location = sphere_bounds.min()
-    max_location = sphere_bounds.max()
-
-    sphere_radius = (max_location - min_location) / 2
-
-    # print(f"Sphere has radius {sphere_radius}...")
-
-    kwargs["radius"] = sphere_radius
-
-    ax = produce_labelled_3d_plot(ax=ax, norm=norm, colour_map=colour_map, **kwargs)
-
-    ax.set_aspect("equal")
-
-    return ax
-
-
-def produce_3d_tregenza_sphere_plot(
-    ax: mpl_toolkits.mplot3d.axes3d.Axes3D,
-    tregenza_sphere: TregenzaSphereBase,
-    histogram_data: List[np.ndarray],
-    sphere_alpha: float = 1.0,
-    colour_map: str = "viridis",
-    norm: Optional[plt.Normalize] = None,
-    correct_area_weighting: bool = True,
-    **kwargs,
-) -> mpl_toolkits.mplot3d.axes3d.Axes3D:
-    """Produce a 3D sphere plot based on a Tregenza sphere.
-
-    Using the provided axes, plot a Tregenza sphere with face colours
-    corresponding to the provided histogram values.
-
-    Parameters
-    ----------
-    ax
-        Axes on which to plot the sphere.
-    tregenza_sphere
-        Tregenza sphere on which to plot the values.
-    histogram_data
-        Histogram data to plot. The length of this list must correspond to
-        the number of rings in the `tregenza_sphere` and the length of each
-        entry must correspond to the respective patch count.
-    sphere_alpha
-        Opacity of the sphere.
-    colour_map
-        Colour map to use when plotting the sphere, by default "viridis".
-    norm
-        Optional :class:`matplotlib.colors.Normalize` object to use to
-        normalise the colours.
-    correct_area_weighting
-        Indicate whether to correct for area weighting in the face colours.
-    **kwargs
-        Keyword arguments for the plot labelling.
-        See :func:`.produce_labelled_3d_plot` for options.
-
-    Returns
-    -------
-    mpl_toolkits.mplot3d.axes3d.Axes3D
-        The axes on which the provided sphere is plotted.
-
-    Warnings
-    --------
-    The histogram data must have a size matching the provided Tregenza
-    sphere.
-
-    """
-
-    # Get the plot on the axes
-    flattened_histogram_data = np.concatenate(histogram_data)
-
-    if norm is None:
-        norm = matplotlib.colors.Normalize()
-
-    norm.autoscale_None(flattened_histogram_data)
-
-    ax = tregenza_sphere.create_tregenza_plot(
-        ax=ax,
-        face_data=histogram_data,
-        cmap=colour_map,
-        norm=norm,
-        sphere_alpha=sphere_alpha,
-    )
-
-    # Define the sphere radius
-    sphere_radius = 1
-
-    kwargs["radius"] = sphere_radius
-
-    # Add the labels to the plot
-    ax = produce_labelled_3d_plot(ax=ax, norm=norm, colour_map=colour_map, **kwargs)
-
-    ax.set_aspect("equal")
-
-    return ax
-
-
 def construct_confidence_cone(
     angular_radius: float,
     number_of_patches: int = 80,
     mean_orientation: Optional[np.ndarray] = None,
     two_sided_cone: bool = True,
     use_degrees: bool = False,
-    **kwargs
+    **kwargs,
 ) -> List[mpl_toolkits.mplot3d.art3d.Poly3DCollection]:
     """Construct the patches for a confidence cone.
 
@@ -1463,13 +2358,15 @@ def construct_confidence_cone(
         Indicate whether the provided angular radius is in degrees.
     **kwargs
         Keyword arguments for the patch construction.
-        See :class:`Poly3DCollection` for details.
+        See :class:`~mpl_toolkits.mplot3d.art3d.Poly3DCollection` for
+        details.
 
     Returns
     -------
-    list[mpl_toolkits.mplot3d.art3d.Poly3DCollection]
-        List of :class:`Poly3DCollection` representing each patch of the
-        confidence cone. These patches are triangular.
+    list of mpl_toolkits.mplot3d.art3d.Poly3DCollection
+        List of :class:`~mpl_toolkits.mplot3d.art3d.Poly3DCollection`
+        representing each patch of the confidence cone. These patches are
+        triangular.
     """
 
     # Convert to radians, if necessary
@@ -1481,12 +2378,12 @@ def construct_confidence_cone(
 
     # Construct the rotation matrix
     if mean_orientation is not None:
-        mean_orientation_spherical = compute_vector_orientation_angles(
+        mean_orientation_spherical = util.compute_vector_orientation_angles(
             vectors=mean_orientation
         )
 
-        mean_phi = mean_orientation_spherical[AngularIndex.PHI]
-        mean_theta = mean_orientation_spherical[AngularIndex.THETA]
+        mean_phi = mean_orientation_spherical[util.AngularIndex.PHI]
+        mean_theta = mean_orientation_spherical[util.AngularIndex.THETA]
 
         rotation = Rotation.from_euler("xz", [-mean_phi, -mean_theta])
     else:
@@ -1503,7 +2400,7 @@ def construct_confidence_cone(
 
         ring_vertices = np.stack([start_vertex, end_vertex], axis=0)
 
-        ring_vertices_cartesian = convert_spherical_to_cartesian_coordinates(
+        ring_vertices_cartesian = util.convert_spherical_to_cartesian_coordinates(
             ring_vertices
         )
 
@@ -1528,64 +2425,6 @@ def construct_confidence_cone(
     return patches
 
 
-def construct_uv_sphere(
-    phi_steps: int = 80,
-    theta_steps: int = 160,
-    radius: float = 1
-) -> np.ndarray:
-    """Construct a sphere with rectangular faces.
-
-    Construct a UV sphere where each ring has the same number of faces.
-
-    Parameters
-    ----------
-    phi_steps
-        Number of faces along the phi axis.
-    theta_steps
-        Number of faces along the theta axis, within a ring.
-    radius
-        Sphere radius.
-
-    Returns
-    -------
-    numpy.ndarray
-        Array containing the Cartesian coordinates of the sphere vertices
-        in a format to plot using :meth:`Axes3D.plt_surface`. This array
-        will have shape ``(phi_steps + 1, theta_steps + 1, 3)`` where the
-        last axis corresponds to the ``X, Y, Z`` components.
-
-    Warnings
-    --------
-    This sphere should not be used to plot histograms. It is provided for
-    visualisations that do not involve plotting data on the surface of the
-    sphere.
-
-    Notes
-    -----
-    The coordinates computed using this function can easily be used to plot
-    a sphere using :meth:`Axes3D.plt_surface`. To do so, the X, Y and Z
-    coordinate sheets must be separated by indexing along the last axis.
-
-    """
-
-    # Compute the phi and theta values
-    phi = np.linspace(start=0, stop=np.pi, num=phi_steps + 1, endpoint=True)
-    theta = np.linspace(start=0, stop=2*np.pi, num=theta_steps + 1, endpoint=True)
-
-    # Now, build the 2D spherical coordinates
-    phi_grid, theta_grid = np.meshgrid(phi, theta)
-
-    # Convert to Cartesian coordinates
-    sphere_angles = np.stack([phi_grid, theta_grid], axis=-1)
-
-    sphere_cartesian_coordinates = convert_spherical_to_cartesian_coordinates(
-        angular_coordinates=sphere_angles,
-        radius=radius
-    )
-
-    return sphere_cartesian_coordinates
-
-
 def produce_3d_confidence_cone_plot(
     ax: mpl_toolkits.mplot3d.axes3d.Axes3D,
     confidence_cone_patches: List[mpl_toolkits.mplot3d.art3d.Poly3DCollection],
@@ -1593,7 +2432,7 @@ def produce_3d_confidence_cone_plot(
     sphere_radius: float = 1,
     sphere_alpha: float = 0.5,
     sphere_colour: str = "#a8a8a8",
-    **kwargs
+    **kwargs,
 ) -> mpl_toolkits.mplot3d.axes3d.Axes3D:
     """Produce a 3D confidence cone plot.
 
@@ -1631,7 +2470,8 @@ def produce_3d_confidence_cone_plot(
     See Also
     --------
     .construct_confidence_cone : Generate the confidence cone patches.
-    .construct_uv_sphere : Generate vertices for a quad-based sphere.
+    .construct_uv_sphere_vertices :
+        Generate vertices for a quad-based sphere.
     """
 
     # Plot the confidence cone

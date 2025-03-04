@@ -5,9 +5,10 @@
 :maxdepth: 1
 :hidden:
 
-example.ipynb
+users_guide/users_guide.md
+auto_examples/index
+autoapi/index
 changelog.md
 contributing.md
 conduct.md
-autoapi/index
 ```

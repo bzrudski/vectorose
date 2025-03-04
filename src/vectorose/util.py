@@ -7,12 +7,19 @@
 
 This module provides utility functions for manipulating vectors in
 Cartesian and spherical coordinates.
+
+References
+----------
+.. [#fisher-lewis-embleton] Fisher, N. I., Lewis, T., & Embleton, B. J.
+   J. (1993). Statistical analysis of spherical data ([New ed.], 1.
+   paperback ed). Cambridge Univ. Press.
 """
 
 import enum
 from typing import Any, Optional, Sequence, Tuple, Union
 
 import numpy as np
+import pandas as pd
 from scipy.spatial.transform import Rotation
 
 
@@ -27,6 +34,117 @@ class AngularIndex(enum.IntEnum):
 
     THETA = 1
     """Angle theta, incline with respect to positive ``z``; index 1."""
+
+
+class AngleName(str, enum.Enum):
+    """Angular index definition.
+
+    Stores the name of the different angles to avoid ambiguity in code.
+    """
+
+    PHI = "phi"
+    """Angle phi, in-plane with respect to positive ``y``; index 0."""
+
+    THETA = "theta"
+    """Angle theta, incline with respect to positive ``z``; index 1."""
+
+
+class MagnitudeType(enum.IntEnum):
+    """Type of vector magnitude."""
+
+    THREE_DIMENSIONAL = 0
+    """Euclidean magnitude in 3D space."""
+
+    IN_PLANE = 1
+    """Magnitude of the ``(x,y)``-projection of the vector."""
+
+
+def convert_vectors_to_data_frame(vectors: np.ndarray) -> pd.DataFrame:
+    """Convert vector array into a DataFrame.
+
+    Convert an array of vectors into a pandas :class:`pandas.DataFrame`.
+
+    Parameters
+    ----------
+    vectors
+        Array of shape ``(n, 3)`` or ``(n, 6)`` containing the vectors. If
+        three columns are present, they are considered as the ``x, y, z``
+        vector components, respectively. If six columns are present, the
+        final three columns are considered as the vector components, while
+        the first three columns are considered the ``x, y, z`` spatial
+        locations of the vectors.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Data frame of the same shape as `vectors`. Spatial columns, if
+        present, are labelled ``x, y, z`` while the vector component
+        columns are labelled ``vx, vy, vz``.
+    """
+
+    number_of_columns = vectors.shape[-1]
+
+    columns = ["vx", "vy", "vz"]
+
+    if number_of_columns > 3:
+        columns = ["x", "y", "z"] + columns
+
+    vector_df = pd.DataFrame(vectors, columns=columns)
+
+    return vector_df
+
+
+def compute_vector_magnitudes(vectors: np.ndarray) -> np.ndarray:
+    """Compute vector magnitudes.
+
+    Compute vector magnitudes in 3D, as well as the component of the
+    magnitude in the ``(x,y)``-plane.
+
+    Parameters
+    ----------
+    vectors
+        Array of shape ``(n, 3)`` containing the x, y and z *components* of
+        the ``n`` 3-dimensional vectors.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array of shape ``(n, 2)`` containing the vector magnitudes. The
+        first column contains the true 3D vector magnitude. While the
+        second column contains the magnitude of the projection onto the
+        ``xy``-plane.
+
+    Notes
+    -----
+    The vector magnitudes are computed using the following equations:
+
+    .. math::
+
+        \\| v \\| &= \\sqrt{{v_x}^2 + {v_y}^2 + {v_z} ^ 2}
+
+        \\| v \\|_{xy} &= \\sqrt{{v_x}^2 + {v_y}^2}
+
+    The both magnitudes are implemented in :func:`numpy.linalg.norm`.
+
+    """
+
+    if vectors.ndim > 1:
+        n = len(vectors)
+    else:
+        n = 1
+
+    three_dimensional_magnitude = np.linalg.norm(vectors, axis=-1)
+    in_plane_magnitude = np.linalg.norm(vectors[..., :2], axis=-1)
+
+    magnitudes_array = np.zeros((n, 2))
+    magnitudes_array[:, MagnitudeType.IN_PLANE] = in_plane_magnitude
+    magnitudes_array[:, MagnitudeType.THREE_DIMENSIONAL] = three_dimensional_magnitude
+
+    # Squeeze out single dimensions, if only a single vector is passed in.
+    if n == 1:
+        magnitudes_array = np.squeeze(magnitudes_array, axis=0)
+
+    return magnitudes_array
 
 
 def flatten_vector_field(vector_field: np.ndarray) -> np.ndarray:
@@ -165,7 +283,7 @@ def normalise_vectors(vectors: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     vectors = np.atleast_2d(vectors)
 
     # Compute the vector magnitudes
-    vector_components = vectors[:, -3:]
+    vector_components = vectors[..., -3:]
     vector_magnitudes = np.linalg.norm(vector_components, axis=-1)
 
     # Divide by the magnitudes
@@ -178,8 +296,8 @@ def normalise_vectors(vectors: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
     # Create a new array with the modified components if necessary
     if normalised_components.shape != vectors.shape:
-        normalised_vectors = normalised_components.copy()
-        normalised_vectors[:, -3:] = normalised_components
+        normalised_vectors = vectors.copy()
+        normalised_vectors[..., -3:] = normalised_components
     else:
         normalised_vectors = normalised_components
 
@@ -187,70 +305,6 @@ def normalise_vectors(vectors: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         normalised_vectors = np.squeeze(normalised_vectors)
 
     return normalised_vectors, vector_magnitudes
-
-
-def generate_representative_unit_vectors(
-    vectors: np.ndarray,
-    number_of_samples: Optional[int] = None,
-) -> np.ndarray:
-    """Generate a representative sample of unit vectors.
-
-    Using the magnitudes of a set of non-zero, non-unit vectors as weight,
-    create a sample of unit vectors whose frequency is proportional to the
-    magnitudes.
-
-    Parameters
-    ----------
-    vectors
-        Array of shape ``(n, 3)`` containing non-normalised vectors in
-        Cartesian coordinates.
-    number_of_samples
-        Number of vectors to draw randomly. If `None`, then the minimum of
-        the ceiling of the number of vectors divided by the minimum of the
-        normalised magnitudes, or simple ``10e7`` is used.
-
-    Returns
-    -------
-    numpy.ndarray
-        The randomly sampled vectors in an array of shape ``(m, 3)`` where
-        ``m`` is either the value of `number_of_samples` or the
-        automatically computed number described above if
-        `number_of_samples` is `None`.
-
-    Notes
-    -----
-    This function is included to allow computing directional statistics on
-    the inputted vector fields. Most described approaches rely on
-    collections of *unit* vectors. Simply normalising the vectors may alter
-    the meaning of the presented data. The rationale behind this function
-    is to sample unit vectors of direction with probability proportional to
-    the respective magnitudes. This process produces a collection of unit
-    vectors whose distribution of orientations matches the weights imposed
-    by the original magnitudes.
-
-    """
-
-    unit_vectors, magnitudes = normalise_vectors(vectors)
-
-    normalised_magnitudes = normalise_array(magnitudes, axis=0)
-
-    if number_of_samples is None:
-        number_of_vectors = len(normalised_magnitudes)
-        number_of_samples = np.ceil(
-            number_of_vectors / normalised_magnitudes.min()
-        )
-
-        number_of_samples = np.min([number_of_samples, 1e7]).astype(int)
-
-    selected_vectors = np.random.default_rng().choice(
-        unit_vectors,
-        size=number_of_samples,
-        replace=True,
-        p=normalised_magnitudes,
-        axis=0,
-    )
-
-    return selected_vectors
 
 
 def convert_vectors_to_axes(vectors: np.ndarray) -> np.ndarray:
@@ -264,32 +318,23 @@ def convert_vectors_to_axes(vectors: np.ndarray) -> np.ndarray:
     Parameters
     ----------
     vectors
-        NumPy array of shape ``(n, 3)`` or ``(n, 6)`` containing the
+        Array of shape ``(n, 3)`` or ``(n, 6)`` containing the
         vectors.
 
     Returns
     -------
     numpy.ndarray
-        NumPy array of the same shape as the original, but with all vectors
+        Array of the same shape as the original, but with all vectors
         oriented towards a non-negative Z value.
-
-    References
-    ----------
-    .. [#fisher-lewis-embleton] Fisher, N. I., Lewis, T., & Embleton, B. J.
-       J. (1993). Statistical analysis of spherical data ([New ed.], 1.
-       paperback ed). Cambridge Univ. Press.
     """
 
     # Get the vector components
-    vector_components = vectors[:, -3:]
+    axes = vectors.copy()
+    axes_components = axes[:, -3:]
 
     # Invert the vectors with z component below zero
-    indices_to_flip = vector_components[:, -1] < 0
-    vector_components[indices_to_flip] = -vector_components[indices_to_flip]
-
-    # Assign the axes to the positions, if necessary.
-    axes = vectors.copy()
-    axes[:, -3:] = vector_components
+    indices_to_flip = axes_components[:, -1] < 0
+    axes_components[indices_to_flip] = -axes_components[indices_to_flip]
 
     return axes
 
@@ -303,13 +348,13 @@ def create_symmetric_vectors_from_axes(axes: np.ndarray) -> np.ndarray:
     Parameters
     ----------
     axes
-        NumPy array of shape ``(n, 3)`` containing the axes. All entries in
+        Array of shape ``(n, 3)`` containing the axes. All entries in
         this array should have a positive Z-value.
 
     Returns
     -------
     numpy.ndarray
-        NumPy array of shape ``(2n, 3)`` containing the vectors along each
+        Array of shape ``(2n, 3)`` containing the vectors along each
         direction. The inverted vectors appear in the same order as the
         axes **after the non-inverted vectors**.
 
@@ -328,15 +373,16 @@ def create_symmetric_vectors_from_axes(axes: np.ndarray) -> np.ndarray:
 
 
 def convert_spherical_to_cartesian_coordinates(
-    angular_coordinates: np.ndarray, radius: Union[float, np.ndarray] = 1
+    angular_coordinates: np.ndarray,
+    radius: Union[float, np.ndarray] = 1,
+    use_degrees: bool = False
 ) -> np.ndarray:
     """Convert spherical coordinates to cartesian coordinates.
 
     Convert spherical coordinates provided in terms of phi and theta
     into cartesian coordinates. For the conversion to be possible, a
     sphere radius must also be specified. If none is provided, the
-    sphere is assumed to be the unit sphere. The angles must be provided
-    in **radians**.
+    sphere is assumed to be the unit sphere.
 
     Parameters
     ----------
@@ -347,11 +393,13 @@ def convert_spherical_to_cartesian_coordinates(
         used on the output of :func:`np.mgrid`, if the arrays have been
         stacked such that the final axis is used to distinguish between phi
         and theta.
-
     radius
         A :class:`float` or :class:`numpy.ndarray` representing the radius
         of the sphere. If the value passed is an array, it must have ``n``
         rows, one for each data point. Default: ``radius=1``.
+    use_degrees
+        Indicate whether the provided angular coordinates are in degrees.
+        If `False` (default), radians are assumed.
 
     Return
     ------
@@ -381,6 +429,10 @@ def convert_spherical_to_cartesian_coordinates(
     and ``n`` rows.
     """
 
+    # Convert to radians if necessary
+    if use_degrees:
+        angular_coordinates = np.radians(angular_coordinates)
+
     # Simple definition of a sphere used here.
     phi: np.ndarray = angular_coordinates[..., AngularIndex.PHI]
     theta: np.ndarray = angular_coordinates[..., AngularIndex.THETA]
@@ -400,38 +452,25 @@ def compute_vector_orientation_angles(
 ) -> np.ndarray:
     """Compute the vector orientation angles phi and theta.
 
-    For all vectors passed in ``vectors``, compute the :math:`\\phi` and
-    :math:`\\theta` orientation angles. The :math:`\\phi` angle corresponds
-    to the tilt with respect to the ``z`` axis, while the :math:`\\theta`
-    angle is the angle in the ``xy``-plane with respect to the ``y`` axis.
-    See **Notes** for more details on the definition and calculations
-    of these angles.
-
-    The unit for the angles is *radians* unless ``use_degrees`` is set
-    to ``True``. The returned angles are in the range of 0
-    to :math:`\\pi` (180\u00b0) for :math:`\\phi` and 0 to :math:`2\\pi`
-    (180\u00b0) for :math:`\\theta`. The first column in the returned array
-    corresponds to :math:`\\phi` and the second to :math:`\\theta`. See
-    :class:`AngularIndex` for more details about the ordering of the
-    angles.
+    For all provided vectors, compute the ``phi`` and ``theta`` angles. The
+    ``phi`` angle corresponds to the co-latitude, representing the tilt
+    with respect to the ``z``-axis, while ``theta`` is the azimuthal angle
+    in the ``xy``-plane with respect to the positive ``y``-axis.
 
     Parameters
     ----------
     vectors
-        2D NumPy array containing 3 columns, corresponding to the x, y and
-        z **components** of the vectors, and ``n`` rows, one for each
-        vector. **Note:** We only require the vector *components*, not the
-        *coordinates* in space.
-
+        Array of shape ``(n, 3)`` containing 3 columns, corresponding to
+        the x, y and z *components* of ``n`` 3-dimensional vectors.
     use_degrees
-        indicate whether the returned angles should be in degrees.
-        If ``False`` (default), the angles will be returned in *radians*.
+        Indicate whether the returned angles should be in degrees.
+        Otherwise, the angles are in **radians**.
 
     Returns
     -------
     numpy.ndarray
-        2D NumPy array containing 2 columns, corresponding to
-        :math:`\\phi,\\theta` for ``n`` rows.
+        Array of shape ``(n, 2)`` containing the ``phi`` and ``theta``
+        angles for each vector.
 
     Notes
     -----
@@ -459,14 +498,11 @@ def compute_vector_orientation_angles(
 
         \\theta_i &= \\textup{arctan} \\left( \\frac{x_i}{y_i} \\right)
 
-    It is important to note that these angles have specific ranges to avoid
-    the possibility of describing the same angle in two different ways. The
-    :math:``\\phi`` angle must be in the range :math:`0 \\leq \\phi < \\pi`
-    in radians, or :math:`0 \\leq \\phi < 180` in degrees. The value of
-    :math:`\\theta` is defined in :math:`-\\pi \\leq \\theta < \\pi` in
-    radians, or :math:`-180 \\leq \\theta < 180` in degrees. This function
-    restricts the range of :math:`\\theta` further due to the nature of
-    the orientations considered in the current application.
+    To ensure that each direction has a unique description, we restrict the
+    angles to specific ranges. The ``phi`` angle is in the range
+    ``0 <= phi <= 180`` degrees, or ``0 <= phi <= pi`` radians, while the
+    ``theta`` angle is in the range ``0 <= theta < 360`` degrees or
+    ``0 <= theta < 2 * pi`` radians.
     """
 
     if vectors.ndim > 1:
@@ -474,25 +510,16 @@ def compute_vector_orientation_angles(
     else:
         n = 1
 
-    # Ensure that all vectors are in octants with positive x.
-    # vectors = np.copy(vectors)
-    # vectors[vectors[:, 0] < 0] = -vectors[vectors[:, 0] < 0]
-
     x: np.ndarray = vectors[..., 0]
     y: np.ndarray = vectors[..., 1]
     z: np.ndarray = vectors[..., 2]
 
-    # Compute the raw angles using arctan2
+    # Compute the orientation angles using arctan2
     phi = np.arctan2(np.sqrt(x**2 + y**2), z)
     theta = np.arctan2(x, y)
 
-    # Now, we need to fix the angles
-    phi = np.where(phi < 0, phi + 2 * np.pi, phi)
-    # phi[phi == np.pi] = 0
-
-    theta = np.where(theta < 0, theta + 2 * np.pi, theta)
-    theta = np.where(theta >= 2 * np.pi, theta - 2 * np.pi, theta)
-    # theta[theta == np.pi] = 0
+    # Now, we need to fix the theta angles to get the correct range
+    theta %= (2 * np.pi)
 
     # Convert to degrees if necessary
     if use_degrees:
@@ -504,9 +531,71 @@ def compute_vector_orientation_angles(
     angular_coordinates[..., AngularIndex.THETA] = theta
 
     # If there is only one vector, squeeze out the extra axis
-    angular_coordinates = np.squeeze(angular_coordinates)
+    if n == 1:
+        angular_coordinates = np.squeeze(angular_coordinates)
 
     return angular_coordinates
+
+
+def compute_spherical_coordinates(
+    vectors: np.ndarray, use_degrees: bool=False
+) -> np.ndarray:
+    """Compute spherical coordinates for a set of vectors.
+
+    Compute true spherical coordinates for a set of provided vectors. These
+    coordinates express a vector as an orientation, consisting of the
+    angles phi and theta, and a magnitude.
+
+    Parameters
+    ----------
+    vectors
+        2D NumPy array containing 3 columns, corresponding to the x, y and
+        z **components** of the vectors, and ``n`` rows, one for each
+        vector. **Note:** We only require the vector *components*, not the
+        *coordinates* in space.
+    use_degrees
+        indicate whether the returned angles should be in degrees.
+        If ``False`` (default), the angles will be returned in *radians*.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array of shape ``(n, 3)`` containing the vectors in spherical
+        coordinates, consisting of ``phi``, ``theta`` and ``magnitude``
+        columns.
+
+    See Also
+    --------
+    compute_compute_vector_orientation_angles :
+        Compute phi and theta angles from Cartesian coordinates.
+    numpy.linalg.norm :
+        Compute the magnitude (norm) of vectors in Cartesian coordinates.
+    """
+
+    # Get the number of vectors
+    if vectors.ndim > 1:
+        n = len(vectors)
+    else:
+        n = 1
+
+    # Compute the orientation angles
+    orientations = compute_vector_orientation_angles(vectors, use_degrees)
+
+    # Compute the magnitudes
+    magnitudes = np.atleast_1d(np.linalg.norm(vectors, axis=-1))[:, None]
+
+    if n == 1:
+        magnitudes = np.squeeze(magnitudes, axis=0)
+
+    # Combine everything
+    spherical_coordinates = np.hstack([orientations, magnitudes])
+
+    # If there is only one vector, squeeze out the extra dimension
+    # if n == 1:
+    #     spherical_coordinates = np.squeeze(spherical_coordinates, axis=0)
+
+    # And return it all
+    return spherical_coordinates
 
 
 def convert_to_math_spherical_coordinates(
@@ -545,7 +634,7 @@ def convert_to_math_spherical_coordinates(
     Embleton [#fisher-lewis-embleton]_ define the angle :math:`\\theta` as
     the angle of inclination from the vertical axis, while the in-plane
     angle :math:`\\phi` is the counter-clockwise (anticlockwise) angle in
-    the ``xy``-plane, measured with respect to the ``+y`` axis.
+    the ``xy``-plane, measured with respect to the ``+x`` axis.
 
     """
 
@@ -604,7 +693,6 @@ def convert_math_spherical_coordinates_to_vr_coordinates(
         the angles defined as in the function
         :func:`.compute_vector_orientation_angles`.
 
-
     Notes
     -----
     The polar coordinates in section 2.2 (a) of by Fisher, Lewis and
@@ -661,6 +749,10 @@ def rotate_vectors(
     numpy.ndarray
         Array of shape ``(n, 3)`` containing the rotated vector components.
 
+    See Also
+    --------
+    scipy.spatial.transform.Rotation : Abstraction used for the rotations.
+
     Notes
     -----
     Although the approach described by Fisher, Lewis and
@@ -682,48 +774,66 @@ def rotate_vectors(
     return rotated_vectors
 
 
-# Non-vector operations
-def perform_binary_search(
-    seq: Union[Sequence, np.ndarray], item: Any, lower_bound: int = 0
-) -> int:
-    """Perform a binary search.
+def compute_arc_lengths(vector: np.ndarray, vector_collection: np.ndarray) -> np.ndarray:
+    """Compute the arc lengths between a vector and many vectors.
 
-    Find the index of a specified item, or of the greatest item less than
-    the desired item.
+    For each vector in a set of vectors, compute the arc length to a
+    specified vector. The arc length is the angular distance on the surface
+    of the unit sphere.
 
     Parameters
     ----------
-    seq
-        Sequence to search.
-    item
-        Item to locate.
-    lower_bound
-        Start index of the sequence.
+    vector
+        Array of shape ``(3,)`` containing the reference vector from which
+        all arc lengths are measured.
+    vector_collection
+        Array of shape ``(n, 3)`` containing ``n`` three-dimensional
+        vectors. The arc lengths of each vector will be measured with
+        respect to `vector`.
 
     Returns
     -------
-    int
-        Index of the requested item, or of the greatest item less than the
-        requested one.
+    numpy.ndarray
+        Array of shape ``(n,)`` containing the arc length from the
+        reference `vector` to each of the vectors in the provided
+        collection.
 
+    Warnings
+    --------
+    The angular distance reported can also be interpreted as the angle in
+    **radians** between the reference vector and each respective vector.
+
+    Notes
+    -----
+    The results can only be interpreted on the unit sphere. While vectors
+    of any length may be passed in, the arc length interpretation relies
+    on a unit sphere. Otherwise, the results can still be interpreted as
+    angles between the vector tails, but **should not** be considered any
+    sort of magnitude-linked arc length.
+
+    The explanation for this method comes in part from Section 5.3.1(ii) in
+    Fisher, Lewis and Embleton [#fisher-lewis-embleton]_. This method
+    relies on the relationship between dot-products and angles, as
+
+    .. math::
+
+        \\mathbf{u} \\cdot \\mathbf{v} = \\|\\mathbf{u}\\| \cdot
+        \\|\\mathbf{v}\\| \\cos \\theta
+
+    where :math:`\\theta` is the angle between the tails of vectors
+    :math:`\\mathbf{u}` and :math:`\\mathbf{v}`.
     """
-    # Check the list length - return the current index if only one or no values.
-    if len(seq) == 1:
-        return lower_bound
 
-    # Get the middle index
-    middle_index = np.floor(len(seq) / 2).astype(int)
-    middle_value = seq[middle_index]
+    number_of_vectors = len(vector_collection)
 
-    # print(f"Considering the item {middle_value} at index {middle_index}")
+    # Compute the dot products between each vector and the new vector
+    dot_products = np.dot(vector_collection, vector)
 
-    if item == middle_value:
-        return lower_bound + middle_index
-    elif item < middle_value:
-        # Recurse left
-        return perform_binary_search(seq[:middle_index], item, lower_bound=lower_bound)
-    elif item > middle_value:
-        # Recurse right
-        return perform_binary_search(
-            seq[middle_index:], item, lower_bound=lower_bound + middle_index
-        )
+    # To mitigate any floating point errors, divide by norms
+    vectors_magnitudes = np.linalg.norm(vector_collection, axis=-1)
+    new_vector_magnitudes = np.repeat(np.linalg.norm(vector), number_of_vectors)
+    angle_cosines = dot_products / (new_vector_magnitudes * vectors_magnitudes)
+
+    # Now, get the arc lengths, knowing that we are on a unit sphere.
+    arc_lengths = np.arccos(angle_cosines)
+    return arc_lengths

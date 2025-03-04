@@ -6,9 +6,9 @@
 
 # -- Project information -----------------------------------------------------
 
-project = u"vectorose"
-copyright = u"2024, Benjamin Z. Rudski, Joseph Deering"
-author = u"Benjamin Z. Rudski, Joseph Deering"
+project = "vectorose"
+copyright = "2024, Benjamin Z. Rudski, Joseph Deering"
+author = "Benjamin Z. Rudski, Joseph Deering"
 
 # -- General configuration ---------------------------------------------------
 
@@ -21,14 +21,36 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
-    "sphinx.ext.todo"
+    "sphinx.ext.todo",
+    "sphinxcontrib.bibtex",
+    "sphinxcontrib.video",
+    "sphinx_design",
+    "sphinx_gallery.gen_gallery",
+    "pyvista.ext.viewer_directive",
+    "sphinx_copybutton",
 ]
 autoapi_dirs = ["../src"]
+autoapi_options = [
+    "members",
+    "undoc-members",
+    "private-members",
+    "show-inheritance",
+    "show-module-summary",
+    "special-members",
+]
+
+autoapi_keep_files = False
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    # "auto_examples/*.py",
+    "auto_examples/*.ipynb",
+]
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -36,6 +58,10 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # a list of builtin themes.
 #
 html_theme = "pydata_sphinx_theme"
+html_logo = "../resources/app_icons/icon_white_200x200.png"
+html_favicon = "../resources/app_icons/icon_white_16x16.png"
+html_title = "VectoRose Documentation"
+html_short_title = "VectoRose Docs"
 
 # -- Options for napoleon ----------------------------------------------------
 
@@ -44,20 +70,55 @@ napoleon_use_rtype = False
 
 # We want the types to be pre-processed
 napoleon_preprocess_types = True
-napoleon_custom_sections = [
-    ("Members", "params_style")
-]
+napoleon_custom_sections = [("Members", "params_style")]
 
 # -- Options for intersphinx_mapping -----------------------------------------
 
 # See https://gist.github.com/bskinn/0e164963428d4b51017cebdb6cda5209
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3', None),
-    'numpy': ('https://numpy.org/doc/stable/', None),
-    'matplotlib': ('https://matplotlib.org/stable/', None),
-    'pandas': ('https://pandas.pydata.org/docs', None),
-    'trimesh': ('https://trimesh.org/', None),
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "matplotlib": ("https://matplotlib.org/stable/", None),
+    "pandas": ("https://pandas.pydata.org/docs", None),
+    "trimesh": ("https://trimesh.org/", None),
+    "pyvista": ("https://docs.pyvista.org/", None),
 }
 
 # -- Options for to-do -------------------------------------------------------
 todo_include_todos = True
+
+# -- Options for myst-nb -----------------------------------------------------
+myst_enable_extensions = ["dollarmath", "amsmath", "attrs_inline", "deflist"]
+myst_dmath_double_inline = True
+myst_heading_anchors = 4
+
+# -- Options for sphinxcontrib-bibtex ----------------------------------------
+bibtex_bibfiles = ["refs.bib"]
+bibtex_default_style = "alpha"
+bibtex_reference_style = "author_year"
+
+# -- Options for sphinx-gallery ----------------------------------------------
+
+import pyvista as pv
+from pyvista.plotting.utilities.sphinx_gallery import DynamicScraper
+pv.BUILDING_GALLERY = True
+pv.OFF_SCREEN = True
+
+
+sphinx_gallery_conf = {
+    "examples_dirs": "../examples",
+    "gallery_dirs": "auto_examples/",
+    "image_scrapers": (
+        "matplotlib",
+        DynamicScraper(),
+        # "pyvista"
+    ),
+    "run_stale_examples": False,
+    "filename_pattern": r"\.py",
+    "reference_url": {
+        "vectorose": None,
+    },
+    "download_all_examples": False,
+    "remove_config_comments": True,
+    "matplotlib_animations": (True, "mp4"),
+}

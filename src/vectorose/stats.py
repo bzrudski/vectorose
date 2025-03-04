@@ -7,11 +7,11 @@ Warnings
 --------
 For many of the statistical operations defined here, a set of *unit
 vectors* is required in order for interpretation to be possible. To produce
-a set of normalised vectors, use either :func:`util.normalise_vectors` to
-perform a naive normalisation,
-or :func:`util.generate_representative_unit_vectors` to produce unit
-vectors with orientations appearing at frequencies proportional to their
-original magnitudes.
+a set of unit vectors, the function :func:`.util.normalise_vectors` can be
+called.
+
+The vectors passed to these functions should not contain spatial location
+coordinates.
 
 Notes
 -----
@@ -23,10 +23,16 @@ References
 .. [#fisher-lewis-embleton] Fisher, N. I., Lewis, T., & Embleton, B. J.
        J. (1993). Statistical analysis of spherical data ([New ed.], 1.
        paperback ed). Cambridge Univ. Press.
+
+.. [#woodcock-1977] Woodcock, N. H. (1977). Specification of fabric shapes
+       using an eigenvalue method. Geological Society of America Bulletin,
+       88(9), 1231.
+       https://doi.org/10.1130/0016-7606(1977)88<1231:SOFSUA>2.0.CO;2
+
 """
 import dataclasses
 import functools
-from typing import List, NamedTuple, Optional
+from typing import NamedTuple, Optional, Tuple
 
 from scipy.optimize import NonlinearConstraint, minimize, fsolve
 from scipy.stats import chi2, vonmises_fisher
@@ -53,15 +59,12 @@ class HypothesisResult:
 
 def compute_resultant_vector(
     vector_field: np.ndarray,
-    is_axial: bool = False,
     compute_mean_resultant: bool = True,
 ) -> np.ndarray:
     """Compute the resultant vector for a set of orientations.
 
-    Compute the resultant vector from a set of orientations. If the data
-    are vectorial, all components are simply added together. If the data
-    are axial, first all entries with negative Z-coordinates (Y in 2D) are
-    inverted, and then the components are summed.
+    Compute the resultant vector from a set of orientations or direction.
+    This vector is computed as the sum of all constituent vectors.
 
     Parameters
     ----------
@@ -70,12 +73,6 @@ def compute_resultant_vector(
         shape ``(n, d)`` or an ``n+1``-dimensional array containing the
         components at their spatial locations, with the components present
         along the *last* axis.
-    is_axial
-        Indicate whether the data should be considered as axes, instead of
-        vectors. In this case, all entries with a negative Z-component will
-        be inverted, to ensure that all data are located in the upper
-        hemisphere. In the 2D case, the negative Y-component is considered
-        instead.
     compute_mean_resultant
         Indicate whether the mean resultant should be returned instead of
         the non-normalised resultant vector.
@@ -93,13 +90,6 @@ def compute_resultant_vector(
     Lewis and Embleton's book [#fisher-lewis-embleton]_ on statistics on
     the sphere.
 
-
-    References
-    ----------
-    Fisher, N. I., Lewis, T., & Embleton, B. J. J. (1993). Statistical
-        analysis of spherical data ([New ed.], 1. paperback ed). Cambridge
-        Univ. Press.
-
     """
 
     # Check the shape of the input, reshape if necessary.
@@ -111,13 +101,8 @@ def compute_resultant_vector(
     else:
         stacked_vectors = vector_field.copy()
 
-    # If the data are axial, then we need to invert.
-    if is_axial:
-        positions_to_flip = stacked_vectors[:, -1] < 0
-        stacked_vectors[positions_to_flip] *= -1
-
     # Now, we need to sum all the components
-    resultant_vector = stacked_vectors.sum(axis=0)
+    resultant_vector = stacked_vectors.sum(axis=0).astype(float)
 
     if compute_mean_resultant:
         n = len(stacked_vectors)
@@ -127,7 +112,7 @@ def compute_resultant_vector(
 
 
 def compute_orientation_matrix(
-    vectors: np.ndarray, is_axial: bool = False
+    vectors: np.ndarray
 ) -> np.ndarray:
     """Compute the orientation matrix for a set of vectors.
 
@@ -141,9 +126,6 @@ def compute_orientation_matrix(
     vectors
         Array of shape ``(n, d)`` where ``n`` is the number of vectors and
         ``d`` is the number of dimensions.
-    is_axial
-        Indicate whether the data should be considered as axial. In this
-        case, all entries with a negative last dimension will be inverted.
 
     Returns
     -------
@@ -151,12 +133,6 @@ def compute_orientation_matrix(
         Array of shape ``(d, d)`` corresponding to the orientation matrix.
 
     """
-
-    # Produce axial data, if requested
-    if is_axial:
-        vectors = vectors.copy()
-        positions_to_invert = vectors[:, -1] < 0
-        vectors[positions_to_invert] *= -1
 
     # Compute the orientation matrix using the inner product
     transposed_vectors = vectors.T
@@ -167,7 +143,6 @@ def compute_orientation_matrix(
 
 def compute_orientation_matrix_eigs(
     vector_field: np.ndarray,
-    is_axial: bool = False
 ) -> np.linalg.linalg.EigResult:
     """Compute the eigenvectors and eigenvalues of the orientation matrix.
 
@@ -181,10 +156,6 @@ def compute_orientation_matrix_eigs(
         shape ``(n, d)`` or an ``n+1``-dimensional array containing the
         components at their spatial locations, with the components present
         along the *last* axis.
-    is_axial
-        Indicate whether the data should be considered as axial. In this
-        case, all entries with a negative last dimension will be inverted.
-
 
     Returns
     -------
@@ -197,13 +168,16 @@ def compute_orientation_matrix_eigs(
     NumPy to compute the eigenvectors and eigenvalues.
     """
 
-    orientation_matrix = compute_orientation_matrix(vector_field, is_axial)
+    orientation_matrix = compute_orientation_matrix(vector_field)
 
     return np.linalg.eig(orientation_matrix)
 
 
 class OrientationMatrixParameters(NamedTuple):
-    """Orientation matrix parameters."""
+    """Orientation matrix parameters.
+
+    These parameters were first described by Woodcock. [#woodcock-1977]_
+    """
 
     shape_parameter: float
     """Shape parameter, also known as gamma."""
@@ -213,9 +187,11 @@ class OrientationMatrixParameters(NamedTuple):
 
 
 def compute_orientation_matrix_parameters(eigs: np.ndarray) -> OrientationMatrixParameters:
-    """Compute the orientation matrix parameters.
+    """Compute Woodcock's orientation matrix parameters.
 
-    Compute the gamma and zeta parameters, defined in Fisher, Lewis and
+    Compute the shape and strength parameters based on the orientation
+    matrix, using the process first described by Woodcock [#woodcock-1977]_
+    and using the notation presented by Fisher, Lewis and
     Embleton. [#fisher-lewis-embleton]_
 
     Parameters
@@ -232,7 +208,8 @@ def compute_orientation_matrix_parameters(eigs: np.ndarray) -> OrientationMatrix
     Notes
     -----
     See section 3.4 of Fisher, Lewis and Embleton [#fisher-lewis-embleton]_
-    for computational details.
+    for computational and notational details. For the original description,
+    see Woodcock. [#woodcock-1977]
     """
 
     # Sort the eigenvalues
@@ -355,12 +332,8 @@ def _compute_sum_of_arc_lengths(new_vector: np.ndarray, vectors: np.ndarray) -> 
         The sum of arc lengths from all vectors to the specified vector.
     """
 
-    dot_products = np.sum(new_vector * vectors, axis=-1)
+    arc_lengths = util.compute_arc_lengths(new_vector, vectors)
 
-    # print(f"Min dot product: {dot_products.min()}")
-    # print(f"Max dot product: {dot_products.max()}")
-
-    arc_lengths = np.arccos(dot_products)
     sum_of_arc_lengths = np.sum(arc_lengths)
 
     return sum_of_arc_lengths
@@ -803,85 +776,6 @@ def compute_confidence_cone_radius(
 
 # TODO: Add function to compute the vertex points for the mean confidence cone
 
-def calculate_coplanarity_index(
-    vector_field: np.ndarray,
-    number_of_samples: int = 3,
-) -> float:
-    """Compute co-planarity index for a set of vectors.
-
-    Using random samples from the vector field, compute the co-planarity
-    index using the average scalar triple products.
-
-    Parameters
-    ----------
-    vector_field
-        The vector field to consider, represented as either an array of
-        shape ``(n, d)`` or an ``n+1``-dimensional array containing the
-        components at their spatial locations, with the components present
-        along the *last* axis.
-    number_of_samples
-        Number of sets of three vectors to sample to compute the scalar
-        triple product.
-
-    Returns
-    -------
-    float
-        The average scalar triple product for the sampled vectors.
-
-    Warnings
-    --------
-    The vectors must be normalised to unit length before computing these
-    statistics.
-
-    Notes
-    -----
-    Sampling is performed without replacement in a given set, and with
-    replacement between sets. The scalar triple product is used to
-    determine co-planarity, as three vectors :math:`v_1, v_2, v_3` are
-    co-planar if:
-
-    .. math::
-        v_1 \\cdot (v_2 \\times v_3) = 0
-
-    The absolute values of the scalar triple produces are summed in order
-    to compute the average. The co-planarity index is taken as:
-
-    .. math::
-        1 - \\left(v_1 \\cdot (v_2 \\times v_3)\\right)
-
-    Values closer to 1 correspond to coplanar vectors and values closer to
-    zero correspond to low co-planarity.
-    """
-
-    # Flatten vector field
-    vector_field = util.flatten_vector_field(vector_field)
-
-    # Compute the scalar triple products
-    scalar_triple_products: List[float] = []
-
-    for i in range(number_of_samples):
-        # Select the random vectors
-        random_vectors = np.random.default_rng().choice(
-            vector_field, axis=0, size=3, replace=False
-        )
-
-        # Compute the scalar triple product
-        v0 = random_vectors[0]
-        v1 = random_vectors[1]
-        v2 = random_vectors[2]
-
-        scalar_triple_product = np.dot(v0, np.cross(v1, v2))
-
-        # Add to the list
-        scalar_triple_products.append(scalar_triple_product)
-
-    # Compute the average scalar triple product
-    average_scalar_triple = np.sum(np.abs(scalar_triple_products)) / number_of_samples
-
-    coplanarity_index = 1 - average_scalar_triple
-
-    return coplanarity_index
-
 
 @dataclasses.dataclass
 class FisherVonMisesParameters:
@@ -934,3 +828,94 @@ def fit_fisher_vonmises_distribution(
 
     # And return
     return parameters
+
+
+def compute_magnitude_orientation_correlation(
+    vectors: np.ndarray, significance_level: float = 0.05
+) -> Tuple[float, HypothesisResult]:
+    """Compute the correlation between the magnitude and orientation.
+
+    Following the procedure outlined in section 8.2.4 in Fisher, Lewis and
+    Embleton, [#fisher-lewis-embleton]_ compute the correlation between the
+    magnitude and orientation of a set of **non-unit** vectors.
+
+    Parameters
+    ----------
+    vectors
+        Array of shape ``(n, 3)`` containing the vectors to analyse. These
+        should **not** be unit vectors.
+    significance_level
+        The test significance to compare the computed p-value against.
+
+    Returns
+    -------
+    correlation_coefficient : float
+        Biased estimate of the correlation coefficient.
+    hypothesis_result : HypothesisResult
+        Result of the hypothesis test to determine if the magnitude and
+        orientation are correlated.
+
+    Warnings
+    --------
+    This implementation assumes that a **large sample** is used (i.e.,
+    ``n`` > 25).
+
+    Notes
+    -----
+    The correlation coefficient is computed using the deviations from the
+    mean of each variable. The jackknife approach has not yet been
+    implemented.
+
+    In this statistical test, the **null hypothesis** is that the magnitude
+    and orientation are **not** correlated. If the test statistics is below
+    the chi-squared value at the desired significance level, we reject this
+    null hypothesis.
+
+    The current implementation modifies the description in Fisher, Lewis
+    and Embleton [#fisher-lewis-embleton]_ by performing array operations.
+    """
+
+    # Normalise vectors and compute magnitudes to separate the variables
+    unit_vectors, magnitudes = util.normalise_vectors(vectors)
+
+    # Make the magnitudes also a column
+    magnitudes = np.expand_dims(magnitudes, -1)
+
+    # The unit_vectors occupy the place of X, and the magnitudes that of Y
+    x_bar = np.mean(unit_vectors, axis=0)
+    y_bar = np.mean(magnitudes)
+
+    # Perform the subtractions
+    x_sub = unit_vectors - x_bar
+    y_sub = magnitudes - y_bar
+
+    # And now for the multiplications
+    s_11 = x_sub.T @ x_sub
+    s_12 = x_sub.T @ y_sub
+    s_22 = y_sub.T @ y_sub
+
+    # Now, build the matrix from which the correlations are computed
+    s_matrix = np.linalg.inv(s_11) @ s_12 @ np.linalg.inv(s_22) @ s_12.T
+
+    # Now, we must sum the diagonals.
+    n, p = magnitudes.shape
+    q = np.min([p, 3])
+
+    rho_hat: float = s_matrix.diagonal().sum() / q
+
+    # Now, for the hypothesis testing
+    df = 3 * p
+    test_statistic = q * n * rho_hat
+    p_value = chi2.sf(test_statistic, df=df)
+
+    can_reject_null = p_value < significance_level
+
+    # Combine everything into the results
+    test_result = HypothesisResult(
+        can_reject_null,
+        p_value,
+        significance_level
+    )
+
+    # And return everything
+    return rho_hat, test_result
