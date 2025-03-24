@@ -659,10 +659,6 @@ various conditional distributions derived from a single set of vectors can
 reveal important insights about how the vectors orientation patterns change
 with vector magnitude.
 
-We've now reached the end of the basics of VectoRose. Make sure to check
-out the {doc}`Example Gallery<../auto_examples/index>` to see more in-depth
-examples of how to use VectoRose.
-
 ```{admonition} **Help Wanted!**
 :class: important
 
@@ -676,3 +672,7 @@ to implement it.
 If you have an implementation, then great! Please add it to the
 {mod}`.stats` module and open a pull request!
 ```
+
+In the next section, we'll return to the world of 3D histogram plotting to
+see how to produce nice histogram animations that can be easily shared with
+the world.

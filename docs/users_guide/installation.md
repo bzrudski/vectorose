@@ -1,3 +1,15 @@
+---
+jupytext:
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.16.4
+kernelspec:
+  display_name: Python 3 (ipykernel)
+  language: python
+  name: python3
+---
 # Installing VectoRose
 
 Installing VectoRose is very straightforward. You must have Python version
@@ -13,7 +25,7 @@ the wheel from our GitHub releases page.
 You can make sure that VectoRose was properly installed by opening a Python
 console:
 
-```python
+```{code-cell} ipython3
 import vectorose as vr
 
 print(vr.__version__)

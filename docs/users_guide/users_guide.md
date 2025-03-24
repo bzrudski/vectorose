@@ -22,5 +22,7 @@ data_format.md
 plot_types.md
 advanced_histograms.md
 statistics.md
+animations.md
+rotated_layers.md
 references.md
 ```
