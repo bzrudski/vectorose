@@ -21,6 +21,7 @@ import matplotlib.colors
 import matplotlib.figure
 import matplotlib.projections
 import matplotlib.pyplot as plt
+import matplotlib.ticker
 import mpl_toolkits.mplot3d.art3d
 import mpl_toolkits.mplot3d.axes3d
 import numpy as np
@@ -1326,7 +1327,8 @@ def produce_polar_histogram_plot(
     label_axis: bool = True,
     axis_ticks: np.ndarray = np.arange(0, 360, 30),
     axis_ticks_unit: AngularUnits = AngularUnits.DEGREES,
-    colour: str = "blue",
+    colour: str = "C0",
+    max_angle: Optional[float] = None,
 ) -> matplotlib.projections.polar.PolarAxes:
     """Produce a 1D polar histogram plot.
 
@@ -1360,6 +1362,9 @@ def produce_polar_histogram_plot(
         specifying the axis ticks. Default is :attr:`AngularUnits.DEGREES`.
     colour
         Histogram bar colour. Must be a valid matplotlib colour [#f1]_.
+    max_angle
+        Maximum angle to represent on the angular axis in **degrees**. Must
+        be between 0 and 360°. If `None`, a complete circle is drawn.
 
     Returns
     -------
@@ -1369,6 +1374,9 @@ def produce_polar_histogram_plot(
     Warnings
     --------
     The axes provided **must** be created using ``projection="Polar"``.
+
+    The `max_angle` parameter allows for a portion of the circular plot to
+    be drawn. **Any values beyond this maximum will be truncated.**
 
     See Also
     --------
@@ -1383,8 +1391,12 @@ def produce_polar_histogram_plot(
     bin_width = bins[1] - bins[0]
     ax.set_theta_direction(rotation_direction.value)
     ax.set_theta_zero_location(zero_position.value)
-    ax.set_title(plot_title, pad=20)
-    ax.axes.yaxis.set_ticklabels([])
+    ax.set_title(plot_title, pad=30)
+    # ax.axes.yaxis.set_ticklabels([])
+
+    if max_angle is not None:
+        ax.set_thetamax(max_angle)
+        axis_ticks = axis_ticks[axis_ticks <= max_angle]
 
     if label_axis:
         if axis_ticks_unit is AngularUnits.DEGREES:
@@ -1395,6 +1407,33 @@ def produce_polar_histogram_plot(
         ax.xaxis.set_ticks([])
 
     ax.bar(bins, data, align="edge", width=bin_width, color=colour)
+
+    # max_data = data.max()
+
+    # base = np.ceil(max_data / 5).astype(int)
+    # offset = np.ceil(max_data / 10).astype(int)
+    #
+    # ax.axes.yaxis.set_major_locator(matplotlib.ticker.IndexLocator(base, offset=offset))
+
+    ax.axes.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(5, prune="both"))
+    ax.axes.tick_params(
+        axis="y",
+        labelsize="medium",
+        labelcolor="#202020",
+        labeltop=True,
+    )
+
+    ax.axes.tick_params(
+        axis="both",
+        grid_linestyle=":",
+    )
+
+    if max_angle is None:
+        ax.set_rlabel_position(10)
+        ax.axes.tick_params(
+            axis="y",
+            labelrotation=-10,
+        )
 
     return ax
 
@@ -1481,6 +1520,9 @@ def produce_phi_theta_polar_histogram_plots(
     )
 
     # Construct the phi polar plot
+    # Get the angular cutoff
+    max_phi = phi_data["end"].max()
+
     ax2 = fig.add_subplot(122, projection="polar")
     ax2 = produce_polar_histogram_plot(
         ax=ax2,
@@ -1489,6 +1531,7 @@ def produce_phi_theta_polar_histogram_plots(
         zero_position=zero_position_2d,
         rotation_direction=rotation_direction,
         plot_title=r"$\phi$ (Angle from $+Z$)",
+        max_angle=max_phi
     )
 
     # Show the plots
