@@ -46,8 +46,7 @@ exclude_patterns = [
     "_build",
     "Thumbs.db",
     ".DS_Store",
-    "auto_examples/*.py",
-    "auto_examples/*.ipynb",
+    "auto_examples/*",
 ]
 
 # -- Options for HTML output -------------------------------------------------
