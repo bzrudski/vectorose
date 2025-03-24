@@ -25,8 +25,6 @@ extensions = [
     "sphinxcontrib.bibtex",
     "sphinxcontrib.video",
     "sphinx_design",
-    "sphinx_gallery.gen_gallery",
-    "pyvista.ext.viewer_directive",
     "sphinx_copybutton",
 ]
 autoapi_dirs = ["../src"]
@@ -48,7 +46,7 @@ exclude_patterns = [
     "_build",
     "Thumbs.db",
     ".DS_Store",
-    # "auto_examples/*.py",
+    "auto_examples/*.py",
     "auto_examples/*.ipynb",
 ]
 
@@ -96,29 +94,3 @@ myst_heading_anchors = 4
 bibtex_bibfiles = ["refs.bib"]
 bibtex_default_style = "alpha"
 bibtex_reference_style = "author_year"
-
-# -- Options for sphinx-gallery ----------------------------------------------
-
-import pyvista as pv
-from pyvista.plotting.utilities.sphinx_gallery import DynamicScraper
-pv.BUILDING_GALLERY = True
-pv.OFF_SCREEN = True
-
-
-sphinx_gallery_conf = {
-    "examples_dirs": "../examples",
-    "gallery_dirs": "auto_examples/",
-    "image_scrapers": (
-        "matplotlib",
-        DynamicScraper(),
-        # "pyvista"
-    ),
-    "run_stale_examples": False,
-    "filename_pattern": r"\.py",
-    "reference_url": {
-        "vectorose": None,
-    },
-    "download_all_examples": False,
-    "remove_config_comments": True,
-    "matplotlib_animations": (True, "mp4"),
-}
