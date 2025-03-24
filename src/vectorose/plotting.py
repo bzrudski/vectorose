@@ -760,7 +760,7 @@ class SpherePlotter:
         theta: Optional[float] = None,
         use_degrees: bool = True,
         zoom: Optional[float] = None,
-        focal_depth: Optional[float] = None
+        focal_depth: Optional[float] = None,
     ):
         """Move the camera to focus on a specific orientation.
 
@@ -833,7 +833,7 @@ class SpherePlotter:
         camera_position_parameters = [
             tuple(camera_location.tolist()),
             (0, 0, 0),
-            tuple(up_vector.tolist())
+            tuple(up_vector.tolist()),
         ]
 
         self._plotter.camera_position = camera_position_parameters
@@ -878,13 +878,9 @@ class SpherePlotter:
         """
 
         if filename.endswith(".gif"):
-            self._plotter.open_gif(
-                filename, 0, fps
-            )
+            self._plotter.open_gif(filename, 0, fps)
         else:
-            self._plotter.open_movie(
-                filename, fps, quality
-            )
+            self._plotter.open_movie(filename, fps, quality)
 
         self._has_movie_open = True
 
