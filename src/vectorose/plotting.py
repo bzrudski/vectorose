@@ -603,7 +603,13 @@ class SpherePlotter:
 
         self._plotter.clear()
 
-    def produce_plot(self, add_sliders: bool = True, series_name: str = "frequency"):
+    def produce_plot(
+        self,
+        add_sliders: bool = True,
+        series_name: str = "frequency",
+        min_value: Optional[float] = None,
+        max_value: Optional[float] = None,
+    ):
         """Produce the 3D visual plot for the current spheres.
 
         Parameters
@@ -613,6 +619,10 @@ class SpherePlotter:
             plotting window.
         series_name
             Name of the scalars to consider.
+        min_value
+            Optional minimum value for the colour map.
+        max_value
+            Optional maximum value for the colour map.
 
         Warnings
         --------
@@ -628,16 +638,20 @@ class SpherePlotter:
 
         sphere_meshes = [self._sphere_meshes[i] for i in self._visible_shells]
 
-        # Get the bounds for the plotting
-        all_frequencies = np.concatenate(
-            [m.cell_data[series_name] for m in sphere_meshes]
-        )
+        if min_value is None or max_value is None:
+            # Get the bounds for the plotting
+            all_frequencies = np.concatenate(
+                [m.cell_data[series_name] for m in sphere_meshes]
+            )
 
-        # Remove any NaN values for the clim
-        all_frequencies = all_frequencies[~np.isnan(all_frequencies)]
+            # Remove any NaN values for the clim
+            all_frequencies = all_frequencies[~np.isnan(all_frequencies)]
 
-        min_value = all_frequencies.min()
-        max_value = all_frequencies.max()
+            if min_value is None:
+                min_value = all_frequencies.min()
+
+            if max_value is None:
+                max_value = all_frequencies.max()
 
         # Add the sphere actors
         for i, mesh in enumerate(self._sphere_meshes):
