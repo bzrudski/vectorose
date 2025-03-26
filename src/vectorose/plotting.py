@@ -1509,7 +1509,7 @@ def produce_phi_theta_polar_histogram_plots(
         theta_bins = np.radians(theta_bins)
 
     # Construct the theta polar plot
-    ax1 = fig.add_subplot(121, projection="polar")
+    ax1 = fig.add_subplot(122, projection="polar")
     ax1 = produce_polar_histogram_plot(
         ax=ax1,
         data=theta_histogram,
@@ -1523,7 +1523,7 @@ def produce_phi_theta_polar_histogram_plots(
     # Get the angular cutoff
     max_phi = phi_data["end"].max()
 
-    ax2 = fig.add_subplot(122, projection="polar")
+    ax2 = fig.add_subplot(121, projection="polar")
     ax2 = produce_polar_histogram_plot(
         ax=ax2,
         data=phi_histogram,
@@ -1536,7 +1536,8 @@ def produce_phi_theta_polar_histogram_plots(
 
     # Show the plots
     fig.suptitle(plot_title, fontweight="bold", fontsize=14)
-    fig.subplots_adjust(left=0.05, right=0.95, wspace=0.25)
+    fig.subplots_adjust(wspace=0.25)
+    # fig.subplots_adjust(left=0.05, right=0.95, wspace=0.25)
     return fig
 
 
