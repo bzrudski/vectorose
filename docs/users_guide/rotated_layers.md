@@ -11,7 +11,7 @@ kernelspec:
   name: python3
 ---
 
-# Rotated Layers
+# Rotated Layers Example
 
 ```{code-cell} ipython3
 :tags: [remove-cell]
@@ -29,7 +29,7 @@ pd.options.display.max_rows = 20
 
 In all our examples until now, we've been considering randomly-generated
 vectors drawn from probability distributions. Now, let's consider vectors
-that have a bit of meaning.
+that have a bit of spatial meaning.
 
 In the study of bone, *anisotropy* refers to the co-alignment of nearby
 structures. In this example, we'll consider the anisotropy of a more

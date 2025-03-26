@@ -110,15 +110,15 @@ The other two work for any {class}`.SpherePlotter`.
 Before going into the specifics for each, there are some parameters
 common to all types of animations:
 
-``filename``
-: Defines the path to the saved movie file. Must end with ``*.mp4``
-  or with ``.gif``.
+`filename`
+: Defines the path to the saved movie file. Must end with `*.mp4`
+  or with `.gif`.
 
-``quality``
+`quality`
 : The desired image quality, between 0 and 10. Ignored if saving as a
   GIF image.
 
-``fps``
+`fps`
 : The frame rate, given as the number of frames per second. A higher
   value results in a faster animation.
 
