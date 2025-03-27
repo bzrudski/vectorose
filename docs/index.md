@@ -120,11 +120,12 @@ Histogram construction requires two steps:
 2. Computing histograms and generating the histogram plots.
 
 The first step requires a discrete representation of a sphere inspired by a
-Tregenza sphere {cite:p}`beckersGeneralRuleDisk2012`, which divides the
-surface of the sphere into 5806 faces, most of which are rectangular, of
-approximately equal surface area. Two keyword arguments can be used to set
-the number of magnitude bins (`number_of_shells`) and to fix the histogram
-domain (`magnitude_range`).
+Tregenza sphere {cite:p}`beckersGeneralRuleDisk2012,
+tregenzaSubdivisionSkyHemisphere1987`, which divides the surface of the
+sphere into 5806 faces, most of which are rectangular, of approximately
+equal surface area. Two keyword arguments can be used to set the number of
+magnitude bins (`number_of_shells`) and to fix the histogram domain
+(`magnitude_range`).
 
 In the second step, a variety of histograms can be constructed. These
 histograms may consider the counts (or frequencies) of vectors at each
