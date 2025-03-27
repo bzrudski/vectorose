@@ -68,7 +68,8 @@ Using VectoRose, it is possible to:
 :align: center
 
 Bivariate histogram showing the frequency of vectors at each combination of
-orientation and magnitude.
+orientation and magnitude. Smaller shells represent lower magnitude vectors
+within the dataset.
 ```
 
 ```{figure} ./assets/sample_plots/rotating_orientation.gif
@@ -77,7 +78,14 @@ orientation and magnitude.
 :align: center
 
 Marginal spherical histogram showing the direction distribution of vectors.
-Magnitude differences are ignored.
+All magnitudes are considered equally, and as such magnitude differences
+are ignored.
+```
+
+```{hint}
+Curious about how these figures were generated? Check out the
+{doc}`Producing Animations <users_guide/animations>` page in the **Users'
+Guide**.
 ```
 
 ## Installation
@@ -111,11 +119,12 @@ Histogram construction requires two steps:
 1. Assigning all vectors to magnitude and orientation bins.
 2. Computing histograms and generating the histogram plots.
 
-The first step requires a discrete representation of a sphere, such as a
-fine Tregenza sphere, which divides the surface of the sphere into 5806
-faces, most of which are rectangular, of approximately equal surface area.
-Two keyword arguments can be used to set the number of magnitude bins
-(`number_of_shells`) and to fix the histogram domain (`magnitude_range`).
+The first step requires a discrete representation of a sphere inspired by a
+Tregenza sphere {cite:p}`beckersGeneralRuleDisk2012`, which divides the
+surface of the sphere into 5806 faces, most of which are rectangular, of
+approximately equal surface area. Two keyword arguments can be used to set
+the number of magnitude bins (`number_of_shells`) and to fix the histogram
+domain (`magnitude_range`).
 
 In the second step, a variety of histograms can be constructed. These
 histograms may consider the counts (or frequencies) of vectors at each
@@ -164,6 +173,15 @@ my_sphere_plotter.show()
 When this code is run in a Jupyter notebook, an interactive plotting output
 will appear beneath the code cell. When this code is run in a Python
 console, a new interactive window will appear that blocks the main thread.
+In both cases, a set of sliders appear that allow the opacity of the nested
+spheres to be configured. You can change which sphere is visible and
+control the opacity of all spheres.
+
+```{hint}
+In the static HTML version of this page, the visualisation sliders don't
+appear. Try copying the above code and running it in a Python console or a
+Jupyter Notebook to see the interactive viewer and try the sliders.
+```
 
 In addition to showing the plot in 3D, VectoRose includes various functions
 to produce animations and screenshots of spherical histograms.
@@ -193,6 +211,7 @@ Now, let's take a look at the produced animation.
 ```{image} ./assets/readme_examples/histogram_construction_shells.gif
 :alt: Shell animation for VectoRose example.
 :scale: 50%
+:align: center
 ```
 
 ### Directional Statistics
@@ -203,7 +222,16 @@ by {cite:t}`fisherStatisticalAnalysisSpherical1993`.
 
 VectoRose implements a variety of descriptive statistics and hypothesis
 tests. Most of these consider pure directions or orientations, which are
-represented as unit vectors.
+represented as unit vectors. These statistics include:
+
+* Correlation between magnitude and orientation
+* Hypothesis testing of uniform vs. unimodal distribution
+* Woodcock's shape and strength parameters
+* Mean resultant vector
+* Spherical median vector
+* Von Mises-Fisher parameter estimation
+  * Mean direction, including confidence cone
+  * Concentration parameter
 
 In this code snippet, we generate two sets of mock vectors: a cluster,
 following a von Mises-Fisher distribution, and a girdle, following a Watson
@@ -258,7 +286,7 @@ print(f"The Watson distribution has shape parameter {girdle_woodcock_parameters.
 
 
 Additional statistical operations are provided in the VectoRose API and are
-described in the {doc}`**User's Guide** <users_guide/users_guide>`.
+described in the **{doc}`User's Guide <users_guide/users_guide>`**.
 
 ## Citation
 
