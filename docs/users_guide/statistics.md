@@ -115,7 +115,7 @@ likely not hold and the results will probably be invalid (no pun intended).
 
 ## Extracting Unit Vectors
 
-In light that last comment, you may be wondering how to get these unit
+In light of that last comment, you may be wondering how to get these unit
 vectors. There are a number of ways that we can do this, and this process
 depends on whether we are studying the marginal orientation distribution or
 a conditional orientation distribution.
@@ -255,7 +255,9 @@ The process consists of a hypothesis test. The **null hypothesis** that the
 data are *uniformly* distributed is tested against the **alternate
 hypothesis** that the data are unimodally distributed.
 
-```{attention} The Eye of the Beholder
+```{admonition} The Eye of the Beholder
+:class: attention
+
 Always check your plot first! Only perform this test if it is reasonably
 possible that the data follow one of these two models. If the plot clearly
 shows neither of these forms, then this is **not** the test to use. 
@@ -411,9 +413,13 @@ $$\label{eqn:mean-resultant-vector}
 $$
 
 Its magnitude, known as the **mean resultant length** is
+
 $$\label{eqn:mean-resultant-length}
-        \|\overline{\mathbf{R}}\| = \sqrt{\overline{R}_x^2 + \overline{R}_y^2 + \overline{R}_z^2}
+        \|\overline{\mathbf{R}}\| = \sqrt{
+            \overline{R}_x^2 + \overline{R}_y^2 + \overline{R}_z^2
+        }
 $$
+
 where $\overline{R}_x, \overline{R}_y, \overline{R}_z$ refer to the
 respective $x,y,z$ components of the mean resultant vector
 $\overline{\mathbf{R}}$ {cite:p}`fisherStatisticalAnalysisSpherical1993`.
@@ -456,11 +462,22 @@ print(f"The mean resultant length is {mean_resultant_length}.")
 We now have the mean direction, and we have a bit of insight into how the
 vectors are distributed.
 
+```{warning}
+If your data are *axial* (oriented) and not vectorial (directed), make sure
+that all your vectors are defined in the **upper hemisphere** using
+{func}`.util.convert_vectors_to_axes`. Otherwise, you will get unexpected
+results.
+
+Due to the important differences between axial and vectorial data, it is
+also vital that you **do not** compare the values between these two types
+of data (unless you are **absolutely** sure that you should be). Otherwise,
+you'll just be comparing apples to oranges.
+```
 
 ### Spherical Median Direction
 
 Although the mean resultant vector is simple to compute,
-{cite:t}fisherStatisticalAnalysisSpherical1993 note that it *does not
+{cite:t}`fisherStatisticalAnalysisSpherical1993` note that it *does not
 necessarily* provide the best insight into dominant orientations in the
 case of asymmetric data. To provide a more general indication of
 preferred orientation, they discuss the **spherical median**, first

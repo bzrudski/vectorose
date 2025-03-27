@@ -38,7 +38,7 @@ layers.
 
 We've constructed this assembly using [Blender](https://blender.org) and
 we've computed the anisotropy using the the method
-introduced by {cite:t}`reznikovTechnicalNoteMapping2022a`, implemented in
+introduced by {cite:t}`reznikovTechnicalNoteMapping2022`, implemented in
 the [Dragonfly 3D World](https://dragonfly.comet.tech/) image analysis
 software.
 
@@ -47,6 +47,7 @@ of the mesh, as well as the visualisation of the vector field coloured by
 degree of anisotropy (magnitude) and orientation.
 
 ```{figure} ./assets/twisted_blocks/ResultsTwist.png
+:align: center
 
 This simulated structure consists of layers of cylinders. Each block of
 four layers is rotated by 15&#x00b0; relative to the previous one.
@@ -119,6 +120,11 @@ Now, let's begin constructing the histograms. We'll start with the
 magnitude histogram, showing the **degree of anisotropy**.
 
 ```{code-cell} ipython3
+---
+mystnb:
+    figure:
+        align: center
+---
 magnitude_histogram = sphere.construct_marginal_magnitude_histogram(
     labelled_vectors, return_fraction=True
 )

@@ -102,8 +102,7 @@ our [online repository](https://github.com/bzrudski/).
 
 ```{attention}
 This plugin is not developed or supported by Comet Technologies Canada,
-Inc. They have no role in its development and have not endorsed it. We
-provide this plugin completely independently and we are solely
+Inc. We provide this plugin completely independently and we are solely
 responsible for its development. Except as required by law, this extension
 is provided with NO WARRANTY.
 ```

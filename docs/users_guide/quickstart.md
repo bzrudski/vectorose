@@ -489,8 +489,7 @@ that can be obtained from collections of vectors.
 This is the end of our **Quick Start** guide. This guide is not meant to be
 a comprehensive overview; it's just a first look to help you get up and
 running. If you want to explore VectoRose in more depth, we recommend
-continuing to read this **Users' Guide** and make sure to check out our
-{doc}`Example Gallery<../auto_examples/index>`.
+continuing to read this **Users' Guide**.
 
 In addition to our resources, it can also help to familiarise yourself with
 [**NumPy**](https://numpy.org/doc/stable/) and

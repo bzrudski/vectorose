@@ -149,7 +149,7 @@ itself, as well as the scene. Let's produce some animations to show the
 possibilities.  Nested sphere animations are produced using the
 {meth}`.SpherePlotter.produce_shells_video` method.
 
-Let's first set ``inward_direction=True``.
+Let's first set `inward_direction=True`{l=python}.
 
 ```{code-cell} ipython3
 my_bivariate_plotter.produce_shells_video(
@@ -162,7 +162,7 @@ my_bivariate_plotter.produce_shells_video(
 ![Nested inward shell video](./assets/animations-guide/nested_inward.gif)
 
 The shells pass from largest to smallest. Now let's set
-``inward_direction=False`` to see the difference.
+`inward_direction=False`{l=python} to see the difference.
 
 ```{code-cell} ipython3
 my_bivariate_plotter.produce_shells_video(
@@ -175,7 +175,7 @@ my_bivariate_plotter.produce_shells_video(
 ![Nested outward shell video](./assets/animations-guide/nested_outward.gif)
 
 The shells now pass from smallest to largest.
-We can also use the ``boomerang`` parameter to have the shells go through
+We can also use the `boomerang` parameter to have the shells go through
 the reverse order after they have each appeared.
 
 ```{code-cell} ipython3
@@ -189,7 +189,7 @@ my_bivariate_plotter.produce_shells_video(
 ![Nested boomerang shell video](./assets/animations-guide/nested_boomerang.gif)
 
 Finally, we can also add the shell number to the bottom of the video
-during the animation using the ``add_shell_text`` parameter.
+during the animation using the `add_shell_text` parameter.
 
 ```{code-cell} ipython3
 my_bivariate_plotter.produce_shells_video(
@@ -235,7 +235,7 @@ Nested sphere animations are produced using the
 {meth}`.SpherePlotter.produce_rotating_video` method.
 This method has parameters that control the number of frames generated.
 A higher number of frames results in a smoother but larger video.
-Let's see some examples using ``my_orientation_plotter``, which shows the
+Let's see some examples using `my_orientation_plotter`, which shows the
 marginal orientation distribution for our data.
 First, we'll use a lower frame rate of 10 frames per second and produce
 36 frames.
@@ -302,7 +302,7 @@ The key methods involved are:
 
 ```{warning}
 The movie writer does **not** interpolate between frames. If you want
-A smooth animation, you need to make a lot of frames.
+a smooth animation, you need to make a lot of frames.
 ```
 
 Let's combine these methods with {meth}`.SpherePlotter.rotate_to_view` to

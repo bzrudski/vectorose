@@ -320,7 +320,14 @@ function {func}`.produce_phi_theta_polar_histogram_plots`. We'll
 demonstrate the latter.
 
 ```{code-cell} ipython3
-vr.plotting.produce_phi_theta_polar_histogram_plots(phi_histogram, theta_histogram)
+---
+mystnb:
+    figure:
+        align: center
+---
+phi_theta_figure = vr.plotting.produce_phi_theta_polar_histogram_plots(
+  phi_histogram, theta_histogram
+)
 ```
 
 We now have two polar histogram plots showing the distribution of our data.
@@ -412,7 +419,7 @@ To resolve the issues present with the UV, continuing work undertaken by
 approximate a sphere using rectangular patches of **near-equal area**.
 {cite:t}`beckersGeneralRuleDisk2012` first
 divided the sphere into a series of rings using *almucantars* based on a
-constant angle of inclination. Each ring is then subdivided int
+constant angle of inclination. Each ring is then subdivided into
 rectangular patches based on a consistent azimuthal angle specific to that
 ring. This pattern achieves near-equal area patch sizing across the entire
 sphere. Instead of a triangular fan, the sphere pole is filled with a

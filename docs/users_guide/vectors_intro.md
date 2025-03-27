@@ -61,19 +61,20 @@ representation, we must compute these three values.
 
 The **magnitude** is simply calculated as the vector norm. Thus, the
 magnitude of a 3D vector $\vec{v}$ is calculated as:
+
 $$
 r = \| \vec{v}\| = \sqrt{v_x ^2 + v_y^2 + v_z^2}
 $$
+
 where $v_x,v_y,v_z$ are the respective *x, y, z* vector components.
 
 The **direction** is represented by the $\phi$ and $\theta$ angles. These
 angles are computed from the Cartesian vector components using the
 following equations:
+
 $$
-\begin{align}
-\phi &= \arctan\left(\frac{\sqrt{v_x^2 + v_y^2}}{v_z}\right) \label{eqn:phi-definition}\\
-\theta &= \arctan\left(\frac{v_x}{v_y}\right) \label{eqn:theta-definition}
-\end{align}
+\phi &= \arctan\left(\frac{\sqrt{v_x^2 + v_y^2}}{v_z}\right) \\
+\theta &= \arctan\left(\frac{v_x}{v_y}\right)
 $$
 
 ```{warning}
@@ -120,7 +121,7 @@ blowing east is quite different from wind blowing west.
 
 Meanwhile, cardiac fibre orientation {cite:p}`lombaertHumanAtlasCardiac2012b,
 dileepCardiomyocyteOrientationRecovery2023` and bone trabecular anisotropy
-{cite:p}`reznikovTechnicalNoteMapping2022a` are both examples of **axial**
+{cite:p}`reznikovTechnicalNoteMapping2022` are both examples of **axial**
 data. These structures are aligned in a certain spatial orientation, but
 don't have a specified forward and reverse direction.
 
