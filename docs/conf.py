@@ -7,7 +7,7 @@
 # -- Project information -----------------------------------------------------
 
 project = "vectorose"
-copyright = "2024, Benjamin Z. Rudski, Joseph Deering"
+copyright = "2024- , Benjamin Z. Rudski, Joseph Deering"
 author = "Benjamin Z. Rudski, Joseph Deering"
 
 # -- General configuration ---------------------------------------------------
@@ -46,7 +46,6 @@ exclude_patterns = [
     "_build",
     "Thumbs.db",
     ".DS_Store",
-    "auto_examples/*",
 ]
 
 # -- Options for HTML output -------------------------------------------------
