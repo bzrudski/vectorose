@@ -531,10 +531,10 @@ parameters**:
 The **mean direction** $\mu$ indicates where the single cluster is located
 on the surface of the sphere.
 
-The **concentration parameter** is analogous to the inverse of the standard
-deviation of the Gaussian distribution; the higher the concentration
-parameter, the more the vectors are co-localised (or concentrated) to a
-single point.
+The **concentration parameter** $\kappa$ is analogous to the inverse of the
+standard deviation of the Gaussian distribution; the higher the
+concentration parameter, the more the vectors are co-localised (or
+concentrated) to a single point.
 
 VectoRose can estimate both parameters to fit a von Mises-Fisher to the
 provided vectors. VectoRose can compute the mean direction and
