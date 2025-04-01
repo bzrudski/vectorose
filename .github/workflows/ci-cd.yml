@@ -4,6 +4,9 @@
 name: ci-cd
 on: [push, pull_request]
 
+env:
+  PYVISTA_OFF_SCREEN: true
+
 jobs:
   ci:
     # Set up operating system
