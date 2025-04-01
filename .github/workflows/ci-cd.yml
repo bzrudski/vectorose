@@ -4,6 +4,9 @@
 name: ci-cd
 on: [push, pull_request]
 
+permissions:
+  contents: write
+
 env:
   PYVISTA_OFF_SCREEN: true
   DISPLAY: ':99.0'
