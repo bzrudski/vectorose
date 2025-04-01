@@ -40,7 +40,9 @@ jobs:
             files: ./coverage.xml # Coverage report
 
       - name: Build documentation
-        run: poetry run make html --directory docs/
+        uses: coactions/setup-xvfb@v1
+        with:
+          run: poetry run make html --directory docs/
 
   cd:
     permissions:
