@@ -98,7 +98,7 @@ spreadsheets may not be supported.
 We have created a plugin for the [*Dragonfly 3D World*](https://dragonfly.comet.tech/)
 image analysis software developed by Comet Technologies Canada, Inc. to
 export vector fields in these formats. This plugin can be downloaded from
-our [online repository](https://github.com/bzrudski/).
+our online repository (**COMING SOON**).
 
 ```{attention}
 This plugin is not developed or supported by Comet Technologies Canada,
