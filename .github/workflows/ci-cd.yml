@@ -6,6 +6,7 @@ on: [push, pull_request]
 
 env:
   PYVISTA_OFF_SCREEN: true
+  DISPLAY: ':99.0'
 
 jobs:
   ci:
