@@ -9,8 +9,16 @@ load these data, how the data can be visualised and how the data can be
 statistically studied.
 
 We recommend reading this guide in order, as each section builds on the
-previous ones. Make sure to also check out our examples that provide longer
-detailed demonstrations of how to use VectoRose.
+previous ones. Some pages explain concepts, while other provide longer
+worked examples with detailed demonstrations of how to use VectoRose.
+
+```{admonition} Help Wanted!
+:class: note
+
+Have a suggestion for something to add to our guide? Please open an issue
+at [https://github.com/bzrudski/vectorose/issues](https://github.com/bzrudski/vectorose/issues)
+or write a new page and open a pull request.
+```
 
 ```{toctree}
 :maxdepth: 1
