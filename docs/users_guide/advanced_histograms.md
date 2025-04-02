@@ -36,7 +36,8 @@ other types of advanced plots that we can construct to further analyse our
 data.
 
 We'll use the same dataset as in the previous example, which we'll load
-from the NumPy file [random_vectors.npy](./random_vectors.npy) right now.
+from the NumPy file {download}`random_vectors.npy <./random_vectors.npy>`
+right now.
 
 ```{attention}
 You probably know this by now, but don't forget to import VectoRose into

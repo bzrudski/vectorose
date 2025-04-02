@@ -21,9 +21,9 @@ quick example pipeline, without diving so deeply into the theory behind
 everything.
 
 In this page, we'll be using a sample dataset of simulated vectors. These
-vectors, stored in [`quickstart_vectors.npy`](quickstart_vectors.npy), are
-from a simulated dataset. We'll analyse these vectors quite closely during
-this example.
+vectors, stored in {download}`quickstart_vectors.npy
+<quickstart_vectors.npy>`, are from a simulated dataset. We'll analyse
+these vectors quite closely during this example.
 
 ## What is VectoRose?
 

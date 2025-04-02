@@ -146,7 +146,7 @@ includes the function {func}`.produce_1d_scalar_histogram` in the
 
 Throughout this section of the **Users' Guide**, we'll do a running example
 using some random vectors stored in the file
-[`random_vectors.npy`](./random_vectors.npy).
+{download}`random_vectors.npy <./random_vectors.npy>`.
 
 Before getting into the histogram plots, let's load these vectors from the
 file. We'll assume that the represent vectorial data, but we'll still make

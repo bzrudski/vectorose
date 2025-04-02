@@ -49,8 +49,8 @@ the different types of animations that can be produced, as well as the
 parameters that can be set to modify these animations.
 
 As in the previous sections, we'll use the vectors found in the NumPy file
-[random_vectors.npy](./random_vectors.npy). Once again, we'll start by
-loading the vectors from this file.
+{download}`random_vectors.npy <./random_vectors.npy>`. Once again, we'll
+start by loading the vectors from this file.
 
 ```{code-cell} ipython3
 import vectorose as vr

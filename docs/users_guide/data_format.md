@@ -112,7 +112,8 @@ To save some time writing code, we recommend using `vr` as a shorthand for
 
 Vectors are imported using the function
 {func}`vectorose.io.import_vector_field`. For example, if your vectors are
-in a NumPy array file called `random_vectors.npy`, we can load the vectors
+in a NumPy array file called {download}`random_vectors.npy
+<./random_vectors.npy>`, we can load the vectors
 by writing:
 
 ```{code-cell} ipython3
@@ -177,9 +178,10 @@ steps that can be performed:
 
 ## Example
 
-We have a collection of vectors in [`random_vectors.csv`](./random_vectors.csv).
-Take a look at this file... the columns are separated by commas and the
-first row is a header, and there are no spatial coordinates present.
+We have a collection of vectors in {download}`random_vectors.csv
+<./random_vectors.csv>`. Take a look at this file... the columns are
+separated by commas and the first row is a header, and there are no spatial
+coordinates present.
 
 Let's load these vectors, remove any zero-vectors and convert these vectors
 into an axial representation. Here's how we can perform this task:

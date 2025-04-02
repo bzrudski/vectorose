@@ -87,9 +87,9 @@ We'll introduce and briefly explain the statistical routines and how to use
 them in VectoRose.
 
 To demonstrate the statistics functionality, we'll continue using our
-sample vector dataset from [random_vectors.npy](./random_vectors.npy).
-As usual, we'll start by loading these vectors and removing any
-zero-magnitude vectors.
+sample vector dataset from {download}`random_vectors.npy
+<./random_vectors.npy>`. As usual, we'll start by loading these vectors and
+removing any zero-magnitude vectors.
 
 ```{code-cell} ipython3
 import vectorose as vr

@@ -72,7 +72,7 @@ import vectorose as vr
 ## Data Import
 
 Let's start by importing and preprocessing the vectors. These vectors are
-found in the file [TwistedBlocks.npy](./TwistedBlocks.npy).
+found in the file {download}`TwistedBlocks.npy <./TwistedBlocks.npy>`.
 For pre-processing, we will remove zero-vectors, convert all the vectors
 to axes (as anisotropy is an axial quantity) and create symmetric
 vectors to improve the visualisation.
