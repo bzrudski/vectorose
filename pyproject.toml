@@ -1,6 +1,6 @@
 [project]
 name = "vectorose"
-version = "0.1.0"
+version = "0.2.0"
 description = "Plot polar and spherical histograms from orientation data."
 authors = [
     {name = "Benjamin Z. Rudski", email = "benjamin.rudski@mail.mcgill.ca"},
@@ -44,7 +44,7 @@ sphinx-copybutton = "^0.5.2"
 
 [tool.semantic_release]
 version_toml = [
-    "pyproject.toml:tool.poetry.version"
+    "pyproject.toml:project.version"
 ]
 branch = "main" # branch to make releases of
 build_command = "poetry build" # build dists
