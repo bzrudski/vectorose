@@ -93,26 +93,6 @@ VectoRose can only open the newer ``*.xlsx`` files. The older ``*.xls``
 spreadsheets may not be supported.
 ```
 
-### Data Export Software Plugins
-
-We have created a plugin for the [*Dragonfly 3D World*](https://dragonfly.comet.tech/)
-image analysis software developed by Comet Technologies Canada, Inc. to
-export vector fields in these formats. This plugin can be downloaded from
-our online repository (**COMING SOON**).
-
-```{attention}
-This plugin is not developed or supported by Comet Technologies Canada,
-Inc. We provide this plugin completely independently and we are solely
-responsible for its development. Except as required by law, this extension
-is provided with NO WARRANTY.
-```
-
-```{note}
-Have another software tool that generates vectors? Feel free to write a
-plugin and share the link with us so that we can share it with the
-community.
-```
-
 ## Importing Vectors into VectoRose
 
 Once we have vectors in one of the file formats described above, we can
