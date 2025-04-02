@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 import pyvista as pv
 
-# pv.start_xvfb()
+pv.start_xvfb()
 pv.set_jupyter_backend("html")
 pv.global_theme.font.fmt = "%.6g"
 # pv.global_theme.window_size = [1024, 1024]
