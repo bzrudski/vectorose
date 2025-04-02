@@ -91,7 +91,7 @@ to `"html"`.
 
 ```{code-cell} ipython3
 import pyvista as pv
-# pv.start_xvfb()
+pv.start_xvfb()
 pv.set_jupyter_backend("html")
 ```
 
