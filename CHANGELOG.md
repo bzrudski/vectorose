@@ -1,6 +1,48 @@
 # CHANGELOG
 
 
+## v0.2.1 (2025-04-02)
+
+### Bug Fixes
+
+- Add download role to linked files in the docs.
+  ([`6072e05`](https://github.com/bzrudski/vectorose/commit/6072e05614424af15d305c725536022054b9e957))
+
+- Deactivate xvfb in the docs pages and index.
+  ([`4ecfd0f`](https://github.com/bzrudski/vectorose/commit/4ecfd0fd8e595a29ed047dd547778a2d0b90e6be))
+
+### Build System
+
+- Add project urls.
+  ([`44a866a`](https://github.com/bzrudski/vectorose/commit/44a866a2dd57a792be2787ad24563727615502d4))
+
+- Add PyPI release to CD job.
+  ([`1d67a16`](https://github.com/bzrudski/vectorose/commit/1d67a1680207db473195e8a8952883c980d5140a))
+
+- Manually increment version and correct reference to project version.
+  ([`0f2b14d`](https://github.com/bzrudski/vectorose/commit/0f2b14d24ec9274d7d840d3a2a6ccc17adcae823))
+
+- Use poetry for the docs dependencies.
+  ([`4451bb6`](https://github.com/bzrudski/vectorose/commit/4451bb6b279faa8f292b93f22b0d2d52d9430710))
+
+### Documentation
+
+- Activate the XVFB in the docs index.
+  ([`ed4cbb9`](https://github.com/bzrudski/vectorose/commit/ed4cbb980d3e52c531bcc62ef0d2ee07527f887d))
+
+- Activate the XVFB in the docs pages.
+  ([`c8ccfc9`](https://github.com/bzrudski/vectorose/commit/c8ccfc9ab627e6a2058b49662cfa06f673321513))
+
+- Add xvfb to the rtd configuration.
+  ([`93e05f7`](https://github.com/bzrudski/vectorose/commit/93e05f70f375160295dc9cd9664ab67d6293f615))
+
+- Delete outdated example.
+  ([`af7600b`](https://github.com/bzrudski/vectorose/commit/af7600b24e92328cd9078dd8a4fb6286cb07f160))
+
+- Remove software plugins section for now.
+  ([`ba7c020`](https://github.com/bzrudski/vectorose/commit/ba7c02004db9e2426e93b8aa554b490887552744))
+
+
 ## v0.2.0 (2025-04-01)
 
 ### Bug Fixes

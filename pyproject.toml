@@ -1,6 +1,6 @@
 [project]
 name = "vectorose"
-version = "0.2.0"
+version = "0.2.1"
 description = "Plot polar and spherical histograms from orientation data."
 authors = [
     {name = "Benjamin Z. Rudski", email = "benjamin.rudski@mail.mcgill.ca"},
