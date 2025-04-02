@@ -1,6 +1,9 @@
 # Read the Docs configuration file for Sphinx projects
 # Modified from the Read the Docs documentation.
 # See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
+#
+# Also modified from the Build customisation page found in the docs at
+# https://docs.readthedocs.com/platform/stable/build-customization.html
 
 version: 2
 
@@ -9,13 +12,11 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.10"
+  jobs:
+    post_install:
+      # Install poetry
+      - pip install poetry
+      - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH poetry install --with dev
 
 sphinx:
   configuration: docs/conf.py
-
-# Configuration
-python:
-  install:
-    - requirements: docs/requirements.txt
-    - method: pip
-      path: .
