@@ -199,11 +199,11 @@ magnitude levels. But, it's a bit difficult to get a full appreciation of
 the data just from this one plot. For starters, we can only really see one
 shell at a time. This limitation **can** be resolved using some of the
 methods of the {class}`.SpherePlotter` class. A single shell of interest
-can be activated by setting the {property}`.SpherePlotter.active_shell`
+can be activated by setting the {attr}`.SpherePlotter.active_shell`
 property and the opacity of that shell can be modified by setting
-{property}`.SpherePlotter.active_shell_opacity` while the opacity of all
+{attr}`.SpherePlotter.active_shell_opacity` while the opacity of all
 other shells can be modified by setting
-{property}`.SpherePlotter.inactive_shell_opacity`.
+{attr}`.SpherePlotter.inactive_shell_opacity`.
 
 Still, it may be helpful to study the **marginal** histograms to get a
 big-picture overview of the data.
