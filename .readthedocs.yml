@@ -12,6 +12,9 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.10"
+  apt_packages:
+    - libgl1-mesa-glx
+    - xvfb
   jobs:
     post_install:
       # Install poetry
