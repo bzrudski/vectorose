@@ -817,7 +817,7 @@ def compute_arc_lengths(vector: np.ndarray, vector_collection: np.ndarray) -> np
 
     .. math::
 
-        \\mathbf{u} \\cdot \\mathbf{v} = \\|\\mathbf{u}\\| \cdot
+        \\mathbf{u} \\cdot \\mathbf{v} = \\|\\mathbf{u}\\| \\cdot
         \\|\\mathbf{v}\\| \\cos \\theta
 
     where :math:`\\theta` is the angle between the tails of vectors
