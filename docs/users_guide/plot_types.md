@@ -597,7 +597,7 @@ my_sphere = vr.tregenza_sphere.FineTregenzaSphere()
 
 We can view the structure of the sphere by converting it to a pandas
 {class}`~pandas.DataFrame` object using the
-{meth}`.TregenzaSphere.toDataFrame` method:
+{meth}`.TregenzaSphere.to_dataframe` method:
 
 ```{code-cell}
 my_sphere.to_dataframe()

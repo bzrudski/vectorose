@@ -178,9 +178,9 @@ steps that can be performed:
 
 ## Example
 
-We have a collection of vectors in {download}`random_vectors.csv
-<./random_vectors.csv>`. Take a look at this file... the columns are
-separated by commas and the first row is a header, and there are no spatial
+We have a collection of vectors in {download}`random_vectors.csv <./random_vectors.csv>`.
+Take a look at this file... the columns are separated by commas and the
+first row is a header, and there are no spatial
 coordinates present.
 
 Let's load these vectors, remove any zero-vectors and convert these vectors
