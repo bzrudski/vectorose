@@ -24,6 +24,11 @@ dependencies = [
     "ipywidgets (>=8.1.5, <9)",
 ]
 
+[project.urls]
+homepage = "https://github.com/bzrudski/vectorose"
+repository = "https://github.com/bzrudski/vectorose"
+documentation = "https://vectorose.readthedocs.io/en/latest/index.html"
+
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.4"
