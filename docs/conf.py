@@ -59,6 +59,17 @@ html_favicon = "../resources/app_icons/icon_white_16x16.png"
 html_title = "VectoRose Documentation"
 html_short_title = "VectoRose Docs"
 
+html_theme_options = {
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/bzrudski/vectorose",
+            "icon": "fa-brands fa-github",
+            "type": "fontawesome",
+        }
+    ]
+}
+
 # -- Options for napoleon ----------------------------------------------------
 
 # We want the return type to be presented inline
