@@ -245,7 +245,7 @@ class PolarDiscretiser:
             Histogram containing each bin start, end, count and frequency
             values.
         """
-        bin_assignment_column = f"{angle_name}_bin"
+        bin_assignment_column = f"{angle_name.value}_bin"
 
         if angle_name == util.AngleName.PHI:
             bins = self._phi_bins
