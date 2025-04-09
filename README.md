@@ -1,6 +1,6 @@
 # VectoRose
 
-![VectoRose: visualise and analyse 3D directed data](./resources/splash/splash.png)
+![VectoRose: visualise and analyse 3D directed data](https://github.com/bzrudski/vectorose/blob/main/resources/splash/splash.png?raw=true)
 
 Spherical and polar histogram plotting for non-unit vectorial and axial
 data.
@@ -36,9 +36,9 @@ Using VectoRose, it is possible to:
   orientations and directions, as described by Fisher, Lewis and
   Embleton.[^fle]
 
-![Nested shells representing vectors of non-unit length.](./resources/sample_plots/nested_shells.gif)
+![Nested shells representing vectors of non-unit length.](https://github.com/bzrudski/vectorose/blob/main/resources/sample_plots/nested_shells.gif?raw=true)
 
-![Rotation animation showing various orientations.](./resources/sample_plots/rotating_orientation.gif)
+![Rotation animation showing various orientations.](https://github.com/bzrudski/vectorose/blob/main/resources/sample_plots/rotating_orientation.gif?raw=true)
 
 ## Installation
 
@@ -121,7 +121,7 @@ my_sphere_plotter.produce_plot()
 my_sphere_plotter.show()
 ```
 
-![Shell animation for VectoRose example](./resources/readme_examples/histogram_construction_shells.gif)
+![Shell animation for VectoRose example](https://github.com/bzrudski/vectorose/blob/main/resources/readme_examples/histogram_construction_shells.gif?raw=true)
 
 When this code is run in a Jupyter notebook, an interactive plotting output
 will appear beneath the code cell. When this code is run in a Python
@@ -250,10 +250,11 @@ The VectoRose project is developed by Benjamin Z. Rudski and Joseph Deering
 under the supervision of Dr. Natalie Reznikov at McGill University, in
 Montreal, Quebec, Canada &#x1f1e8;&#x1f1e6;.
 
-Works consult in this project are available in our online documentation, as
-well as in [`docs/refs.bib`](./docs/refs.bib). For the directional
-statistics approaches, we made extensive use of *Statistic analysis of
-spherical data* by Fisher, Lewis and Embleton.[^fle]
+Works consult in this project are available in our [online documentation](
+https://vectorose.readthedocs.io/en/latest/users_guide/references.html), as
+well as in [`docs/refs.bib`](https://github.com/bzrudski/vectorose/blob/main/docs/refs.bib).
+For the directional statistics approaches, we made extensive use of
+*Statistic analysis of spherical data* by Fisher, Lewis and Embleton.[^fle]
 
 We also made extensive use of the book [*Python Packages*](https://py-pkgs.org/)
 by Tomas Beuzen and Tiffany Timbers to inform the structure and development
