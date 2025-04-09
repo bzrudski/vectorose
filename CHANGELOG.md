@@ -1,6 +1,45 @@
 # CHANGELOG
 
 
+## v0.2.2 (2025-04-09)
+
+### Bug Fixes
+
+- Correct key issue in data frame grouping for polar data.
+  ([`7578a90`](https://github.com/bzrudski/vectorose/commit/7578a90d73e7d0d391042de502027cb6f94c0117))
+
+### Build System
+
+- Add issue tracker link to the project info.
+  ([`546a600`](https://github.com/bzrudski/vectorose/commit/546a6009bdebc6da4aaadafa5ebb7d1b33208228))
+
+- Increase timeout for myst-nb in docs.
+  ([`5659cb0`](https://github.com/bzrudski/vectorose/commit/5659cb0e4c6acc8df4e0e464c7c20a796ccc9fa1))
+
+- Remove unnecessary extra for PyVista.
+  ([`f904837`](https://github.com/bzrudski/vectorose/commit/f904837cf5169a9a6572b25641c93f7acac0b51b))
+
+### Documentation
+
+- Add directional statistics details to repository README.md.
+  ([`adba089`](https://github.com/bzrudski/vectorose/commit/adba0891188ede3dd31179795ca3b91ff86c828d))
+
+- Add GitHub icon to online docs.
+  ([`de81cbe`](https://github.com/bzrudski/vectorose/commit/de81cbee5526eb0479e209b17abea547adb2c756))
+
+- Add missing CSV file.
+  ([`724b801`](https://github.com/bzrudski/vectorose/commit/724b801a398f60c3cca8ef4b3210817732f9a50f))
+
+- Fix bad escape sequence.
+  ([`b2b6659`](https://github.com/bzrudski/vectorose/commit/b2b66594a86db1fd0c9d2205fc94405eb88ebe92))
+
+- Replace property role with attr.
+  ([`748e140`](https://github.com/bzrudski/vectorose/commit/748e14033d1649c792954f92e409f64c73e7802d))
+
+- Switch README.md to use absolute links for PyPI compatibility.
+  ([`3d691b4`](https://github.com/bzrudski/vectorose/commit/3d691b4450d42583e79fb276aaebe122f2a8a2eb))
+
+
 ## v0.2.1 (2025-04-02)
 
 ### Bug Fixes
@@ -35,6 +74,9 @@
 
 - Add xvfb to the rtd configuration.
   ([`93e05f7`](https://github.com/bzrudski/vectorose/commit/93e05f70f375160295dc9cd9664ab67d6293f615))
+
+- Correct cross-references and data file downloads.
+  ([`d51e764`](https://github.com/bzrudski/vectorose/commit/d51e764845669121cd8da95f06893a7ce846c11b))
 
 - Delete outdated example.
   ([`af7600b`](https://github.com/bzrudski/vectorose/commit/af7600b24e92328cd9078dd8a4fb6286cb07f160))
