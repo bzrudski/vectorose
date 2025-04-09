@@ -28,7 +28,7 @@ dependencies = [
 homepage = "https://github.com/bzrudski/vectorose"
 repository = "https://github.com/bzrudski/vectorose"
 documentation = "https://vectorose.readthedocs.io/en/latest/index.html"
-
+"Bug Tracker" = "https://github.com/bzrudski/vectorose/issues"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.4"
