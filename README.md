@@ -138,7 +138,16 @@ Lewis and Embleton.[^fle]
 
 VectoRose implements a variety of descriptive statistics and hypothesis
 tests. Most of these consider pure directions or orientations, which are
-represented as unit vectors.
+represented as unit vectors. These statistics include:
+
+* Correlation between magnitude and orientation
+* Hypothesis testing of uniform vs. unimodal distribution
+* Woodcock's shape and strength parameters
+* Mean resultant vector
+* Spherical median vector
+* Von Mises-Fisher parameter estimation
+  * Mean direction, including confidence cone
+  * Concentration parameter
 
 In this code snippet, we generate two sets of mock vectors: a cluster,
 following a von Mises-Fisher distribution, and a girdle, following a Watson
