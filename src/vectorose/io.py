@@ -311,8 +311,8 @@ def import_vector_field(
                 -1, d
             )
 
-            # Remove any rows containing NaN
-            vector_field = vector_field[~np.any(np.isnan(vector_field), axis=1)]
+        # Remove any rows containing NaN
+        vector_field = vector_field[~np.any(np.isnan(vector_field), axis=1)]
 
     # Use Pandas in the other cases
     else:
