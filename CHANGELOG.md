@@ -1,6 +1,24 @@
 # CHANGELOG
 
 
+## v0.2.3 (2025-04-18)
+
+### Bug Fixes
+
+- Remove NaN vectors from 2D NumPy array files.
+  ([`b067e06`](https://github.com/bzrudski/vectorose/commit/b067e06c19c4e35a85ba23a03979638dff51aa90))
+
+### Build System
+
+- Update codecov action version and add token.
+  ([`881a22b`](https://github.com/bzrudski/vectorose/commit/881a22b32224c1025d1c3b64f4030586cc2bb900))
+
+### Testing
+
+- Add unit tests for vector fields with NaN values.
+  ([`0408273`](https://github.com/bzrudski/vectorose/commit/0408273cafaccce9dbf172b80471513804eb7387))
+
+
 ## v0.2.2 (2025-04-09)
 
 ### Bug Fixes
