@@ -38,9 +38,10 @@ jobs:
           run: poetry run pytest tests/ --cov=vectorose --cov-report=xml
 
       - name: Use Codecov to track coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5.4.2
         with:
             files: ./coverage.xml # Coverage report
+            token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Build documentation
         uses: coactions/setup-xvfb@v1
