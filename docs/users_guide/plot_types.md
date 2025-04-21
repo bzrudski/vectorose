@@ -21,7 +21,7 @@ import pandas as pd
 import platform
 import pyvista as pv
 
-if platform.uname() != "Windows":
+if platform.system() != "Windows":
   pv.start_xvfb()
 
 pv.set_jupyter_backend("html")

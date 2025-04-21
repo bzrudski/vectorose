@@ -93,7 +93,7 @@ to `"html"`.
 import pyvista as pv
 import platform
 
-if platform.uname() != "Windows":
+if platform.system() != "Windows":
   pv.start_xvfb()
 
 pv.set_jupyter_backend("html")
