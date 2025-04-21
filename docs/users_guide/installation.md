@@ -56,6 +56,13 @@ pv.start_xvfb()
 pv.set_jupyter_backend("trame")
 ```
 
+```{attention}
+The line `pv.start_xvfb()`{l=python} is only required if running on a
+Unix-like or Unix-based operating system (Linux or macOS). For techincal
+reasons, it is not required when running on Windows (and will, in fact,
+produce an error).
+```
+
 For more details on using the PyVista plotting packing with Jupyter Lab,
 check out [this page](https://docs.pyvista.org/user-guide/jupyter/).
 

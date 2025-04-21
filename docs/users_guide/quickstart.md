@@ -91,8 +91,19 @@ to `"html"`.
 
 ```{code-cell} ipython3
 import pyvista as pv
-pv.start_xvfb()
+import platform
+
+if platform.uname() != "Windows":
+  pv.start_xvfb()
+
 pv.set_jupyter_backend("html")
+```
+
+```{attention}
+The line `pv.start_xvfb()`{l=python} is only required if running on a
+Unix-like or Unix-based operating system (Linux or macOS). For techincal
+reasons, it is not required when running on Windows (and will, in fact,
+produce an error).
 ```
 
 We can also change how our data tables produced using Pandas appear using
