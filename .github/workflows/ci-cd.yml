@@ -32,10 +32,11 @@ jobs:
       - name: Install package
         run: poetry install
 
+      - name: setup-headless-display-action
+        uses: pyvista/setup-headless-display-action@v3.2
+
       - name: Run tests
-        uses: coactions/setup-xvfb@v1
-        with:
-          run: poetry run pytest tests/ --cov=vectorose --cov-report=xml
+        run: poetry run pytest tests/ --cov=vectorose --cov-report=xml
 
       - name: Use Codecov to track coverage
         uses: codecov/codecov-action@v5.4.2
@@ -44,9 +45,7 @@ jobs:
             token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Build documentation
-        uses: coactions/setup-xvfb@v1
-        with:
-          run: poetry run make html --directory docs/
+        run: poetry run make html --directory docs/
 
   cd:
     permissions:
