@@ -1,0 +1,36 @@
+# Modified from the Py-Pkgs tutorial.
+# Accompanying the book _Python Packages_ by Beuzen and Timbers.
+# See https://py-pkgs.org/08-ci-cd for full details.
+name: ci-cd
+on: [push, pull_request]
+
+env:
+  PYVISTA_OFF_SCREEN: true
+  DISPLAY: ':99.0'
+
+jobs:
+  ci:
+    # Set up operating system
+    runs-on: windows-latest
+
+    # Define job steps
+    steps:
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+            python-version: '3.10'
+
+      - name: Check-out repository
+        uses: actions/checkout@v3
+
+      - name: Install poetry
+        uses: snok/install-poetry@v1
+
+      - name: Install package
+        run: poetry install
+
+      - name: Run tests
+        run: poetry run pytest tests/ --cov=vectorose --cov-report=xml
+
+      - name: Build documentation
+        run: poetry run make html --directory docs/
