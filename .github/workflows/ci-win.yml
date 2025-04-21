@@ -1,7 +1,7 @@
 # Modified from the Py-Pkgs tutorial.
 # Accompanying the book _Python Packages_ by Beuzen and Timbers.
 # See https://py-pkgs.org/08-ci-cd for full details.
-name: ci-cd
+name: ci-win
 on: [push, pull_request]
 
 env:
