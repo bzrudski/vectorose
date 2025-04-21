@@ -100,11 +100,6 @@ myst_dmath_double_inline = True
 myst_heading_anchors = 4
 nb_execution_timeout = 90
 
-import platform
-
-if platform.system() == "Windows":
-    nb_execution_timeout = -1
-
 # -- Options for sphinxcontrib-bibtex ----------------------------------------
 bibtex_bibfiles = ["refs.bib"]
 bibtex_default_style = "alpha"
