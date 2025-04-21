@@ -12,6 +12,9 @@ jobs:
   ci:
     # Set up operating system
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
 
     # Define job steps
     steps:
