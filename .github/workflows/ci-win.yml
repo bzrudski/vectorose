@@ -32,7 +32,7 @@ jobs:
       - name: Install package
         run: poetry install
 
-      - name: setup-headless-display-action
+      - name: Setup PyVista headless display
         uses: pyvista/setup-headless-display-action@v3.2
 
       - name: Run tests
