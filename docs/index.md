@@ -13,9 +13,6 @@ kernelspec:
 
 # VectoRose
 
-Spherical and polar histogram plotting for non-unit vectorial and axial
-data.
-
 ```{code-cell} ipython3
 :tags: [remove-cell]
 
@@ -34,6 +31,15 @@ pd.options.display.max_rows = 20
 ```
 
 ![VectoRose: visualise and analyse 3D directed data](../resources/splash/splash.png)
+
+Spherical and polar histogram plotting for non-unit vectorial and axial
+data.
+
+[![PyPI - Version](https://img.shields.io/pypi/v/vectorose)](https://pypi.org/project/vectorose/)
+[![codecov](https://codecov.io/github/bzrudski/vectorose/graph/badge.svg)](https://codecov.io/github/bzrudski/vectorose)
+[![docs](https://app.readthedocs.org/projects/vectorose/badge/)](https://vectorose.readthedocs.io/en/latest/)
+[![CI/CD](https://github.com/bzrudski/vectorose/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/bzrudski/vectorose/actions/workflows/ci-cd.yml)
+[![CI - Windows](https://github.com/bzrudski/vectorose/actions/workflows/ci-win.yml/badge.svg)](https://github.com/bzrudski/vectorose/actions/workflows/ci-win.yml)
 
 ## Overview
 
