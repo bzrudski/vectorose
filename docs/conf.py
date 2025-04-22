@@ -4,6 +4,13 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+# -- Windows Setup -----------------------------------------------------------
+import platform
+import asyncio
+
+if platform.system() == "Windows":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 # -- Project information -----------------------------------------------------
 
 project = "vectorose"
