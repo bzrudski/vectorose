@@ -378,13 +378,12 @@ angle using the {meth}`.TregenzaSphere.get_closest_faces` method.
 In our case, the bin around $(\phi, \theta) = (50, 0)$ looks interesting.
 Using {meth}`.TregenzaSphere.get_closest_faces` after some pre-processing,
 we find that this angle falls in ring 15, bin 0. Let's extract that bin.
-Since our histogram has a multi-level index, we need to index by **ring**,
-then **bin** and finally by **shell**. Since we want all shells, we can
-just leave off the last index. Alternatively, we *could* put a colon `:`,
-but we don't have to.
+Since our histogram has a multi-level index, we need to index by **shell**,
+then **ring** and finally by **bin**. Since we want all shells, we must
+included a colon `:` as the first index.
 
 ```{code-cell} ipython3
-my_selected_direction_bin = my_conditional_magnitude_histogram[15, 0]
+my_selected_direction_bin = my_conditional_magnitude_histogram[:, 15, 0]
 
 my_selected_direction_bin.to_frame()
 ```
