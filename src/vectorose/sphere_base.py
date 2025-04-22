@@ -507,8 +507,8 @@ class SphereBase(abc.ABC):
         pandas.Series
             The proportion of vectors in each magnitude shell relative to
             all vectors having that orientation. The index used is the
-            reverse of that obtained in the bivariate case, having the
-            orientation parameters first and the magnitude second.
+            same as that obtained in the bivariate case, having the
+            magnitude first, followed by the orientation parameters.
 
         Warnings
         --------

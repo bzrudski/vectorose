@@ -143,7 +143,7 @@ def compute_orientation_matrix(
 
 def compute_orientation_matrix_eigs(
     vector_field: np.ndarray,
-) -> np.linalg.linalg.EigResult:
+) -> NamedTuple:
     """Compute the eigenvectors and eigenvalues of the orientation matrix.
 
     Compute the eigen-decomposition of the orientation matrix. This
@@ -159,8 +159,10 @@ def compute_orientation_matrix_eigs(
 
     Returns
     -------
-    numpy.linalg.linalg.EigResult
-        Eigenvectors and eigenvalues of the orientation matrix.
+    eigenvectors : numpy.ndarray
+        Eigenvectors of the orientation matrix.
+    eigenvalues : numpy.ndarray
+         Eigenvalues of the orientation matrix.
 
     Notes
     -----
