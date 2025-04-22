@@ -1,6 +1,64 @@
 # CHANGELOG
 
 
+## v0.2.4 (2025-04-22)
+
+### Bug Fixes
+
+- Set `include_groups=False` in all the cases when using a GroupBy as per changes in pandas (fixes
+  deprecation warnings, especially during testing).
+  ([`e59baeb`](https://github.com/bzrudski/vectorose/commit/e59baeb5511446fd436a6659e355816318ebcfcb))
+
+- Update stats to fit with changes to NumPy and pandas interfaces.
+  ([`f42c8ef`](https://github.com/bzrudski/vectorose/commit/f42c8efdc12427717bcf17b3b75e352e7509a23d))
+
+### Build System
+
+- Add continuous integration for Windows.
+  ([`5fbd3a7`](https://github.com/bzrudski/vectorose/commit/5fbd3a7611d5c8752f57ba12c7d5cfacde40001c))
+
+- Fix documentation building for Windows.
+  ([`80cd22b`](https://github.com/bzrudski/vectorose/commit/80cd22b1ae3cb81e2b46e53b5c78a2aa8e96c332))
+
+- Remove version constraints on NumPy, update dependencies.
+  ([`304256b`](https://github.com/bzrudski/vectorose/commit/304256bb3437758a80f85fdc9e6bc394a5200d63))
+
+- Rename headless display setup step.
+  ([`a3f630e`](https://github.com/bzrudski/vectorose/commit/a3f630ed201c57a0812c8bd0ad4f6038374afbcf))
+
+- Switch to bash for Windows CI workflow.
+  ([`d691a42`](https://github.com/bzrudski/vectorose/commit/d691a42e31f18e111eeed62b14b9fc158545745d))
+
+- Update name for Windows CI workflow.
+  ([`a38cf01`](https://github.com/bzrudski/vectorose/commit/a38cf0157d52e47d562ddad6f0986af6b354a860))
+
+- Use pyvista headless setup action in CI/CD.
+  ([`b00c5cd`](https://github.com/bzrudski/vectorose/commit/b00c5cd4021ea40909e74eb73a7d75cea97c4ed8))
+
+### Documentation
+
+- Add badges to README.md and to docs index.
+  ([`4b26f04`](https://github.com/bzrudski/vectorose/commit/4b26f045bc15ff6dceaa26992d554fc62976af56))
+
+- Correct the documentation to build on Windows.
+  ([`3aaf841`](https://github.com/bzrudski/vectorose/commit/3aaf841cb53c5215c0fa998ac99dfa45f8d609b4))
+
+- Fix the order of indexing for conditional histograms.
+  ([`6463fd2`](https://github.com/bzrudski/vectorose/commit/6463fd29ab4bfa683912f57303de97f3fbbfe9cb))
+
+- Remove M1 warning.
+  ([`8f2c498`](https://github.com/bzrudski/vectorose/commit/8f2c4984e4760f1e4086693ad8a8ca64d3a5c3a2))
+
+- Remove timeout for builds on Windows.
+  ([`90a7279`](https://github.com/bzrudski/vectorose/commit/90a7279ad3a3b3553d99e51dce5a64312b10a4c5))
+
+- Replace uname with system for platform checking.
+  ([`1a454fd`](https://github.com/bzrudski/vectorose/commit/1a454fd0632a666e464af814a02413df219b010a))
+
+- Revert docs configuration.
+  ([`6a9a6d8`](https://github.com/bzrudski/vectorose/commit/6a9a6d81f58b6b6c25b07114757dd24262ead11d))
+
+
 ## v0.2.3 (2025-04-18)
 
 ### Bug Fixes
