@@ -253,14 +253,15 @@ class PolarDiscretiser:
             bins = self._theta_bins
 
         # Count the vectors in each bin
-        counts = labelled_vectors.groupby(bin_assignment_column).apply(len)
+        counts = labelled_vectors.groupby(bin_assignment_column).apply(
+            len, include_groups=False
+        )
         counts.name = "count"
 
         # Normalise to get the frequencies
         number_of_vectors = len(labelled_vectors)
         frequencies = counts / number_of_vectors
         frequencies.name = "frequency"
-
 
         # Combine everything to get a nice histogram
         counts = counts.reindex(index=bins.index, fill_value=0)
@@ -312,4 +313,3 @@ class PolarDiscretiser:
         angle_name = util.AngleName.THETA
 
         return self._construct_histogram(labelled_vectors, angle_name)
-

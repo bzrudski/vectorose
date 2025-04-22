@@ -334,7 +334,9 @@ class TregenzaSphere(SphereBase):
         ring_weights = self._rings.loc[:, "weight"]
         original_index = histogram.index
         weighted_face_data = (
-            histogram.groupby("ring", group_keys=False).apply(lambda x: x)
+            histogram.groupby("ring", group_keys=False).apply(
+                lambda x: x, include_groups=False
+            )
             * ring_weights
         )
         weighted_face_data = weighted_face_data.reindex(original_index)

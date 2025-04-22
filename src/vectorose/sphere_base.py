@@ -150,7 +150,9 @@ class SphereBase(abc.ABC):
 
         return processed_vector_data
 
-    def _initial_vector_component_preparation(self, vectors: pd.DataFrame) -> pd.DataFrame:
+    def _initial_vector_component_preparation(
+        self, vectors: pd.DataFrame
+    ) -> pd.DataFrame:
         """Prepare the vector components for histogram construction.
 
         Override this method to include specific operations that should be
@@ -331,7 +333,9 @@ class SphereBase(abc.ABC):
         grouping_columns = self.hist_group_cols
 
         # Use groupby to perform the grouping
-        original_histogram = binned_data.groupby(grouping_columns).apply(len)
+        original_histogram = binned_data.groupby(grouping_columns).apply(
+            len, include_groups=False
+        )
 
         # Modify the index to account for any missing bins.
         multi_index = self._construct_histogram_index()
@@ -379,7 +383,9 @@ class SphereBase(abc.ABC):
         """
 
         # Group based only on the magnitude bin
-        counts_by_shell = binned_data.groupby(self.magnitude_shell_cols).apply(len)
+        counts_by_shell = binned_data.groupby(self.magnitude_shell_cols).apply(
+            len, include_groups=False
+        )
 
         # Construct the index (in case some bins are zero).
         magnitude_index = self._construct_magnitude_index()
@@ -428,7 +434,9 @@ class SphereBase(abc.ABC):
         """
 
         # Group based on only the orientation data
-        counts_by_orientation = binned_data.groupby(self.orientation_cols).apply(len)
+        counts_by_orientation = binned_data.groupby(self.orientation_cols).apply(
+            len, include_groups=False
+        )
 
         # Construct the index (in case some orientations are zero).
         orientation_index = self._construct_orientation_index()
@@ -651,8 +659,10 @@ class SphereBase(abc.ABC):
 
     @abc.abstractmethod
     def convert_vectors_to_cartesian_array(
-        self, labelled_vectors: pd.DataFrame, create_unit_vectors: bool = False,
-        include_spatial_locations: bool = False
+        self,
+        labelled_vectors: pd.DataFrame,
+        create_unit_vectors: bool = False,
+        include_spatial_locations: bool = False,
     ) -> np.ndarray:
         """Convert a set of labelled vectors into Cartesian coordinates.
 
