@@ -10,6 +10,7 @@ data.
 [![docs](https://app.readthedocs.org/projects/vectorose/badge/)](https://vectorose.readthedocs.io/en/latest/)
 [![CI/CD](https://github.com/bzrudski/vectorose/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/bzrudski/vectorose/actions/workflows/ci-cd.yml)
 [![CI - Windows](https://github.com/bzrudski/vectorose/actions/workflows/ci-win.yml/badge.svg)](https://github.com/bzrudski/vectorose/actions/workflows/ci-win.yml)
+[![JOSS status](https://joss.theoj.org/papers/c260aad945f8fc4719ad9f7da9db1f26/status.svg)](https://joss.theoj.org/papers/c260aad945f8fc4719ad9f7da9db1f26)
 
 ## Overview
 
