@@ -21,8 +21,10 @@ import pandas as pd
 import platform
 import pyvista as pv
 
-if platform.system() != "Windows":
-  pv.start_xvfb()
+try:
+    pv.start_xvfb()
+except OSError:
+    pass
 
 pv.set_jupyter_backend("html")
 pv.global_theme.font.fmt = "%.6g"

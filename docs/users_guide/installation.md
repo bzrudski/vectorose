@@ -46,15 +46,28 @@ work, add the following to the first cell in your notebook:
 
 ```python
 import pyvista as pv
-pv.start_xvfb()
+
+try:
+    pv.start_xvfb()
+except OSError:
+    pass
+
 pv.set_jupyter_backend("trame")
 ```
 
 ```{attention}
-The line `pv.start_xvfb()`{l=python} is only required if running on a
-Unix-like or Unix-based operating system (Linux or macOS). For techincal
-reasons, it is not required when running on Windows (and will, in fact,
-produce an error).
+The line `pv.start_xvfb()`{l=python} is only required if running under the
+X Window System (common on Linux, may also be installed on macOS). As the 
+Windows operating system does **not** use the X Window System, this step is
+not required when running on Windows (and will, in fact, produce an error).
+
+If you are **absolutely sure** that your computer uses the X Window System,
+make sure to include the line `pv.start_xvfb()`{l=python}. Likewise, if you
+are **absolutely sure** that your system does not use it, omit the line.
+
+If you are **unsure**, do what we did above, and wrap the line in a
+`try-except` block. That way, if an error does occur, your code will
+continue to run.
 ```
 
 For more details on using the PyVista plotting packing with Jupyter Lab,
