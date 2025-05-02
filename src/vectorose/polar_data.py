@@ -188,14 +188,17 @@ class PolarDiscretiser:
 
         columns = ["vx", "vy", "vz"]
 
+        components = vectors
+
         if ncols == 6:
             columns = ["x", "y", "z"] + columns
+            components = vectors[:, 3:]
 
         # Build up the data frame
         vector_data_frame = pd.DataFrame(vectors, columns=columns)
 
         # Convert the spherical coordinates
-        spherical_coordinates = util.compute_spherical_coordinates(vectors, True)
+        spherical_coordinates = util.compute_spherical_coordinates(components, True)
 
         spherical_coordinates_data_frame = pd.DataFrame(
             spherical_coordinates, columns=["phi", "theta", "magnitude"]
