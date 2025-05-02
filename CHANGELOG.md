@@ -1,6 +1,42 @@
 # CHANGELOG
 
 
+## v0.2.5 (2025-05-02)
+
+### Bug Fixes
+
+- Correct bug in `PolarDiscretiser` that converted spatial coordinates to spherical coordinates
+  instead of vector components.
+  ([`0e27257`](https://github.com/bzrudski/vectorose/commit/0e272574d595259bbdcf74b180035713c25dfa99))
+
+### Build System
+
+- **deps**: Bump h11 in the pip group across 1 directory
+  ([`3567306`](https://github.com/bzrudski/vectorose/commit/3567306012ce8c1493b64724540b07caf4b3b5ae))
+
+Bumps the pip group with 1 update in the / directory: [h11](https://github.com/python-hyper/h11).
+
+Updates `h11` from 0.14.0 to 0.16.0 -
+  [Commits](https://github.com/python-hyper/h11/compare/v0.14.0...v0.16.0)
+
+--- updated-dependencies: - dependency-name: h11 dependency-version: 0.16.0
+
+dependency-type: indirect
+
+dependency-group: pip ...
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+### Documentation
+
+- Embed x-frame buffer function `pv.start_xvfb` in try-catch.
+  ([`815f8a5`](https://github.com/bzrudski/vectorose/commit/815f8a5857420192a59e21664892e89028bc98b5))
+
+To provide a more general solution, instead of checking the platform, we're now doing the slightly
+  more brute-force approach of trying to import and then ignoring if it doesn't work. This helps
+  address differing outputs on macOS.
+
+
 ## v0.2.4 (2025-04-22)
 
 ### Bug Fixes
