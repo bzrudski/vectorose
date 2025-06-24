@@ -14,13 +14,16 @@ construction.
 """
 
 import numpy as np
+import pytest
+
 import vectorose as vr
 import vectorose.mock_data
 
 RANDOM_SEED = 20241219
 
 
-def generate_test_vectors() -> np.ndarray:
+@pytest.fixture
+def test_vectors() -> np.ndarray:
     """Generate test vectors for the unit tests."""
 
     vectors = vr.mock_data.create_vonmises_fisher_vectors_single_direction(
@@ -350,7 +353,7 @@ def test_assign_histogram_bins_vectorial_theta():
     assert np.all(actual_theta_indices == expected_theta_indices)
 
 
-def test_construct_phi_histogram():
+def test_construct_phi_histogram(test_vectors):
     """Test phi histogram construction.
 
     Test for :meth:`.PolarDiscretiser.construct_phi_histogram` with
@@ -358,9 +361,8 @@ def test_construct_phi_histogram():
     """
 
     discretiser = construct_vectorial_polar_discretiser()
-    vectors = generate_test_vectors()
 
-    labelled_vectors = discretiser.assign_histogram_bins(vectors)
+    labelled_vectors = discretiser.assign_histogram_bins(test_vectors)
 
     # Build the phi histogram
     phi_histogram = discretiser.construct_phi_histogram(labelled_vectors)
@@ -377,10 +379,10 @@ def test_construct_phi_histogram():
     assert np.isclose(summed_values["frequency"], 1)
 
     # Check the count
-    assert summed_values["count"] == len(vectors)
+    assert summed_values["count"] == len(test_vectors)
 
 
-def test_construct_theta_histogram():
+def test_construct_theta_histogram(test_vectors):
     """Test theta histogram construction.
 
     Test for :meth:`.PolarDiscretiser.construct_theta_histogram` with
@@ -388,9 +390,8 @@ def test_construct_theta_histogram():
     """
 
     discretiser = construct_vectorial_polar_discretiser()
-    vectors = generate_test_vectors()
 
-    labelled_vectors = discretiser.assign_histogram_bins(vectors)
+    labelled_vectors = discretiser.assign_histogram_bins(test_vectors)
 
     # Build the theta histogram
     theta_histogram = discretiser.construct_theta_histogram(labelled_vectors)
@@ -407,4 +408,4 @@ def test_construct_theta_histogram():
     assert np.isclose(summed_values["frequency"], 1)
 
     # Check the count
-    assert summed_values["count"] == len(vectors)
+    assert summed_values["count"] == len(test_vectors)
