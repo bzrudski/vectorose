@@ -1329,6 +1329,8 @@ def produce_polar_histogram_plot(
     axis_ticks_unit: AngularUnits = AngularUnits.DEGREES,
     colour: str = "C0",
     max_angle: Optional[float] = None,
+    r_min: float = 0,
+    r_max: Optional[float] = None
 ) -> matplotlib.projections.polar.PolarAxes:
     """Produce a 1D polar histogram plot.
 
@@ -1365,6 +1367,12 @@ def produce_polar_histogram_plot(
     max_angle
         Maximum angle to represent on the angular axis in **degrees**. Must
         be between 0 and 360°. If `None`, a complete circle is drawn.
+    r_min
+        Minimum bound along the r axis. If `None`, then set automatically
+        from the data.
+    r_max
+        Maximum bound along the r axis. If `None`, then set automatically
+        from the data.
 
     Returns
     -------
@@ -1393,6 +1401,12 @@ def produce_polar_histogram_plot(
     ax.set_theta_zero_location(zero_position.value)
     ax.set_title(plot_title, pad=30)
     # ax.axes.yaxis.set_ticklabels([])
+
+    if r_max is None:
+        r_max = data.max()
+
+    if r_min is None:
+        r_min = data.min()
 
     if max_angle is not None:
         ax.set_thetamax(max_angle)
@@ -1435,6 +1449,8 @@ def produce_polar_histogram_plot(
             labelrotation=-10,
         )
 
+    ax.set_ylim(r_min, r_max)
+
     return ax
 
 
@@ -1447,6 +1463,10 @@ def produce_phi_theta_polar_histogram_plots(
     use_counts: bool = False,
     plot_title: Optional[str] = None,
     fig: Optional[plt.Figure] = None,
+    r_phi_min: Optional[float] = 0,
+    r_phi_max: Optional[float] = None,
+    r_theta_min: Optional[float] = 0,
+    r_theta_max: Optional[float] = None,
 ) -> plt.Figure:
     """Produce and show the 1D polar phi and theta histograms.
 
@@ -1476,6 +1496,18 @@ def produce_phi_theta_polar_histogram_plots(
     fig
         Figure on which to produce the plots. If `None`, a new figure is
         created.
+    r_phi_min
+        Minimum r-axis value for the phi plot. If `None`, computed from the
+        data.
+    r_phi_max
+        Maximum r-axis value for the phi plot. If `None`, computed from the
+        data.
+    r_theta_min
+        Minimum r-axis value for the theta plot. If `None`, computed from the
+        data.
+    r_theta_max
+        Maximum r-axis value for the theta plot. If `None`, computed from the
+        data.
 
     Returns
     -------
@@ -1517,6 +1549,8 @@ def produce_phi_theta_polar_histogram_plots(
         zero_position=zero_position_2d,
         rotation_direction=rotation_direction,
         plot_title=r"$\theta$ (Angle in $XY$)",
+        r_min=r_theta_min,
+        r_max=r_theta_max,
     )
 
     # Construct the phi polar plot
@@ -1531,7 +1565,9 @@ def produce_phi_theta_polar_histogram_plots(
         zero_position=zero_position_2d,
         rotation_direction=rotation_direction,
         plot_title=r"$\phi$ (Angle from $+Z$)",
-        max_angle=max_phi
+        max_angle=max_phi,
+        r_min=r_phi_min,
+        r_max=r_phi_max,
     )
 
     # Show the plots
