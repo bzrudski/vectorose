@@ -41,8 +41,10 @@ other types of advanced plots that we can construct to further analyse our
 data.
 
 We'll use the same dataset as in the previous example, which we'll load
-from the NumPy file {download}`random_vectors.npy <./random_vectors.npy>`
-right now.
+from the NumPy file {download}`two_clusters.npy <./two_clusters.npy>`
+right now. As we mentioned before, these vectors are bundled in the
+{mod}`.data` module, as {attr}`.SampleData.TWO_CLUSTERS` and so we can
+access them without downloading any extra files.
 
 ```{attention}
 You probably know this by now, but don't forget to import VectoRose into
@@ -51,8 +53,9 @@ your Python shell by writing `import vectorose as vr`{l=python}.
 
 ```{code-cell} ipython3
 import vectorose as vr
+import vectorose.data
 
-my_vectors = vr.io.import_vector_field("random_vectors.npy", location_columns=None)
+my_vectors = vr.data.SampleData.TWO_CLUSTERS.load()
 my_vectors = vr.util.remove_zero_vectors(my_vectors)
 
 my_vectors

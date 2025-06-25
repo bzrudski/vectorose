@@ -112,14 +112,14 @@ To save some time writing code, we recommend using `vr` as a shorthand for
 
 Vectors are imported using the function
 {func}`vectorose.io.import_vector_field`. For example, if your vectors are
-in a NumPy array file called {download}`random_vectors.npy
-<./random_vectors.npy>`, we can load the vectors
+in a NumPy array file called {download}`two_clusters.npy
+<./two_clusters.npy>`, we can load the vectors
 by writing:
 
 ```{code-cell} ipython3
 import vectorose as vr
 
-vectors = vr.io.import_vector_field("random_vectors.npy")
+vectors = vr.io.import_vector_field("two_clusters.npy")
 
 vectors
 ```
@@ -178,7 +178,7 @@ steps that can be performed:
 
 ## Example
 
-We have a collection of vectors in {download}`random_vectors.csv <./random_vectors.csv>`.
+We have a collection of vectors in {download}`two_clusters.csv <./two_clusters.csv>`.
 Take a look at this file... the columns are separated by commas and the
 first row is a header, and there are no spatial
 coordinates present.
@@ -191,7 +191,7 @@ import vectorose as vr
 
 # Load the vectors from the CSV file
 vectors = vr.io.import_vector_field(
-    "random_vectors.csv", contains_headers=True, location_columns=None, separator=","
+    "two_clusters.csv", contains_headers=True, location_columns=None, separator=","
 )
 
 print(f"We have loaded {vectors.shape[0]} vectors from the file.")
@@ -213,6 +213,47 @@ quite a few zero-vectors that we had in our dataset.
 For more details about importing vector fields, check out the
 documentation on {mod}`vectorose.io` and for more on pre-processing,
 consult the page on {mod}`vectorose.util`.
+```
+
+### Bundled Examples
+
+To make the process of loading sample data easier when following along with
+the documentation, we have bundled three sample datasets that can be loaded
+directly in VectoRose without needing to download any additional files.
+These datasets can be accessed via the class {class}`.data.SampleData`.
+
+````{attention}
+The sample data are found in the {mod}`vectorose.data` module, which is not
+automatically imported. You **must** explicitly import the {mod}`.data`
+submodule using:
+
+```python
+import vectorose.data
+```
+
+Even if the `vr` alias is used for `vectorose`, the full package name
+should still be used for this import. 
+````
+
+In the case of the `two_clusters` dataset, we can open the vectors easily
+using the {meth}`.SampleData.load` method of the object
+{attr}`.SampleData.TWO_CLUSTERS`:
+
+```{code-cell} ipython3
+import vectorose.data
+
+vectors = vr.data.SampleData.TWO_CLUSTERS.load()
+
+print(f"We have loaded {vectors.shape[0]} vectors from the file.")
+
+# Remove zero-magnitude vectors
+vectors = vr.util.remove_zero_vectors(vectors)
+print(f"We have {vectors.shape[0]} non-zero vectors.")
+
+# Convert to axial data
+vectors = vr.util.convert_vectors_to_axes(vectors)
+
+vectors
 ```
 
 But, loading vectors is just the beginning! Now that we know how to load

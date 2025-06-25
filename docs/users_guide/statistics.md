@@ -92,14 +92,16 @@ We'll introduce and briefly explain the statistical routines and how to use
 them in VectoRose.
 
 To demonstrate the statistics functionality, we'll continue using our
-sample vector dataset from {download}`random_vectors.npy
-<./random_vectors.npy>`. As usual, we'll start by loading these vectors and
-removing any zero-magnitude vectors.
+sample vector dataset from {download}`two_clusters.npy
+<./two_clusters.npy>`. As usual, we'll start by loading these vectors from
+the bundled file using the {meth}`~.data.SampleData.load`
+method of the object {attr}`.data.SampleData.TWO_CLUSTERS`.
 
 ```{code-cell} ipython3
 import vectorose as vr
+import vectorose.data
 
-my_vectors = vr.io.import_vector_field("random_vectors.npy", location_columns=None)
+my_vectors = vr.data.SampleData.TWO_CLUSTERS.load()
 my_vectors = vr.util.remove_zero_vectors(my_vectors)
 
 my_vectors
