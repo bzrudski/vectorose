@@ -54,6 +54,10 @@ version_toml = [
 branch = "main" # branch to make releases of
 build_command = "poetry build" # build dists
 
+[tool.semantic_release.changelog.default_templates]
+changelog_file = "CHANGELOG.md"
+mask_initial_release = false
+
 [tool.semantic_release.publish]
 upload_to_vcs_release = true
 
