@@ -634,8 +634,7 @@ class SpherePlotter:
         :meth:`SpherePlotter.show` must be called to view the plot.
 
         If `use_log_scale` is set to `True`, the input scalar data must
-        be greater than or equal to one. Negative values will not be
-        plotted.
+        be greater than zero.
         """
 
         plotter = self._plotter
@@ -659,7 +658,7 @@ class SpherePlotter:
                 min_value = all_frequencies.min()
 
             if use_log_scale:
-                min_value = max(min_value, 1)
+                min_value = max(min_value, 1e-15)
 
             if max_value is None:
                 max_value = all_frequencies.max()
@@ -670,7 +669,7 @@ class SpherePlotter:
 
             if use_log_scale:
                 scalars = scalars.astype(float)
-                scalars[scalars < 1] = np.nan
+                scalars[scalars < min_value] = np.nan
 
             actor: pv.Actor
             actor = plotter.add_mesh(
