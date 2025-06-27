@@ -610,6 +610,7 @@ class SpherePlotter:
         series_name: str = "frequency",
         min_value: Optional[float] = None,
         max_value: Optional[float] = None,
+        use_log_scale: bool = False,
     ):
         """Produce the 3D visual plot for the current spheres.
 
@@ -624,11 +625,17 @@ class SpherePlotter:
             Optional minimum value for the colour map.
         max_value
             Optional maximum value for the colour map.
+        use_log_scale
+            Indicate whether to use a log scale.
 
         Warnings
         --------
         This function produces the :class:`pyvista.Plotter`. The method
         :meth:`SpherePlotter.show` must be called to view the plot.
+
+        If `use_log_scale` is set to `True`, the input scalar data must
+        be greater than or equal to one. Negative values will not be
+        plotted.
         """
 
         plotter = self._plotter
@@ -651,17 +658,27 @@ class SpherePlotter:
             if min_value is None:
                 min_value = all_frequencies.min()
 
+            if use_log_scale:
+                min_value = max(min_value, 1)
+
             if max_value is None:
                 max_value = all_frequencies.max()
 
         # Add the sphere actors
         for i, mesh in enumerate(self._sphere_meshes):
+            scalars = np.copy(mesh.cell_data[series_name])
+
+            if use_log_scale:
+                scalars = scalars.astype(float)
+                scalars[scalars < 1] = np.nan
+
             actor: pv.Actor
             actor = plotter.add_mesh(
                 mesh,
                 clim=[min_value, max_value],
                 cmap=self.cmap,
                 scalars=series_name,
+                log_scale=use_log_scale
             )
             actor.visibility = i in self._visible_shells
             self._sphere_actors.append(actor)
