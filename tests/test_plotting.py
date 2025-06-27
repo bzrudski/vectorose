@@ -114,6 +114,19 @@ def mock_nested_histogram_meshes(
 
     return sphere_meshes
 
+@pytest.fixture
+def mock_nested_histogram_meshes_counts(
+    setup_pyvista_environment,
+    label_vectors: tuple[pd.DataFrame, np.ndarray, vr.tregenza_sphere.TregenzaSphere]
+) -> list[pv.PolyData]:
+    """Generate several nested dummy meshes for testing."""
+
+    labelled_vectors, magnitude_bins, sphere = label_vectors
+    hist = sphere.construct_histogram(labelled_vectors, return_fraction=False)
+    sphere_meshes = sphere.create_histogram_meshes(hist, magnitude_bins)
+
+    return sphere_meshes
+
 
 def test_sphere_plotter_initialisation_one_mesh(dummy_mesh):
     """Test for creating a SpherePlotter with one mesh.
@@ -164,6 +177,18 @@ def test_has_produced_plot(mock_nested_histogram_meshes):
     """
     plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
     plotter.produce_plot()
+
+    assert plotter.has_produced_plot, "`has_produced_plot` should be `True`."
+
+
+def test_has_produced_plot_log_scale(mock_nested_histogram_meshes_counts):
+    """Test for checking whether a log-scale plot has been produced.
+
+    Test for :attr:`.SpherePlotter.has_produced_plot` when a plot has been
+    produced with a log scale.
+    """
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes_counts)
+    plotter.produce_plot(use_log_scale=True)
 
     assert plotter.has_produced_plot, "`has_produced_plot` should be `True`."
 
