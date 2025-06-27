@@ -54,13 +54,14 @@ the different types of animations that can be produced, as well as the
 parameters that can be set to modify these animations.
 
 As in the previous sections, we'll use the vectors found in the NumPy file
-{download}`random_vectors.npy <./random_vectors.npy>`. Once again, we'll
-start by loading the vectors from this file.
+{download}`two_clusters.npy <./two_clusters.npy>`. Once again, we'll
+start by loading the vectors from {attr}`.data.SampleData.TWO_CLUSTERS`.
 
 ```{code-cell} ipython3
 import vectorose as vr
+import vectorose.data
 
-my_vectors = vr.io.import_vector_field("random_vectors.npy", location_columns=None)
+my_vectors = vr.data.SampleData.TWO_CLUSTERS.load()
 my_vectors = vr.util.remove_zero_vectors(my_vectors)
 
 my_vectors

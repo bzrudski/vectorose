@@ -21,9 +21,10 @@ quick example pipeline, without diving so deeply into the theory behind
 everything.
 
 In this page, we'll be using a sample dataset of simulated vectors. These
-vectors, stored in {download}`quickstart_vectors.npy
-<quickstart_vectors.npy>`, are from a simulated dataset. We'll analyse
-these vectors quite closely during this example.
+vectors, stored in {download}`cluster_girdle.npy
+<cluster_girdle.npy>`, are from a simulated dataset. These vectors are also
+bundled with VectoRose as an example, and don't need to be downloaded
+separately. We'll analyse these vectors quite closely during this example.
 
 ## What is VectoRose?
 
@@ -135,8 +136,26 @@ Let's begin by loading our vectors into Python. To do this, we can use the
 function {func}`vectorose.io.import_vector_field`.
 
 ```{code-cell} ipython3
-vectors = vr.io.import_vector_field("quickstart_vectors.npy", location_columns=None)
+vectors = vr.io.import_vector_field("cluster_girdle.npy", location_columns=None)
+
+vectors
 ```
+
+````{tip}
+As was mentioned above, you don't need to download the vector to be able to
+analyse them in this example. We have included a few sample datasets with
+VectoRose, including the `cluster_girdle` vectors, in the
+:class:`.data.SampleData` class. To load the cluster girdle dataset,
+simply run the following code:
+```{code} python
+import vectorose.data
+
+vectors = vr.data.SampleData.CLUSTER_GIRDLE.load()
+```
+
+We show both methods to illustrate how to load your own data into
+VectoRose.
+````
 
 Before doing any of our analysis, we must remove the zero-magnitude vectors
 using {func}`.util.remove_zero_vectors`.

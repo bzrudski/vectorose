@@ -151,7 +151,9 @@ includes the function {func}`.produce_1d_scalar_histogram` in the
 
 Throughout this section of the **Users' Guide**, we'll do a running example
 using some random vectors stored in the file
-{download}`random_vectors.npy <./random_vectors.npy>`.
+{download}`two_clusters.npy <./two_clusters.npy>`. These vectors are also
+bundled in the {mod}`.data` module, as {attr}`.SampleData.TWO_CLUSTERS` and
+so we can access them without downloading any extra files.
 
 Before getting into the histogram plots, let's load these vectors from the
 file. We'll assume that the represent vectorial data, but we'll still make
@@ -164,9 +166,10 @@ able to access everything included in VectoRose.
 
 ```{code-cell} ipython3
 import vectorose as vr
+import vectorose.data
 
 # Load the vectors
-my_vectors = vr.io.import_vector_field("random_vectors.npy", location_columns=None)
+my_vectors = vr.data.SampleData.TWO_CLUSTERS.load()
 my_vectors = vr.util.remove_zero_vectors(my_vectors)
 
 my_vectors
