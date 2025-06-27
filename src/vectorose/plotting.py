@@ -657,8 +657,8 @@ class SpherePlotter:
             if min_value is None:
                 min_value = all_frequencies.min()
 
-            if use_log_scale:
-                min_value = max(min_value, 1e-15)
+                if use_log_scale:
+                    min_value = all_frequencies[all_frequencies > 0].min()
 
             if max_value is None:
                 max_value = all_frequencies.max()
