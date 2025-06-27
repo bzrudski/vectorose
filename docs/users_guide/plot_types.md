@@ -743,6 +743,123 @@ The workflow for using a triangulated sphere is almost identical. Simply
 replace the {class}`.FineTregenzaSphere` with {class}`.TriangleSphere` in
 the code above.
 
+##### Logarithmic Scale Colour Mapping
+
+In our previous example, the spherical histogram used a linear colour
+scale. In certain cases other cases, the values may be spread over a large
+range. It may be beneficial to colour the sphere faces using a
+[logarithmic scale](https://en.wikipedia.org/wiki/Logarithmic_scale). Using
+VectoRose, it's easy to create a spherical histogram with a log scale.
+
+```{attention}
+The log scale relies on the logarithmic function $y = \log(x)$. This
+function is defined for all input values between zero and positive infinity
+and produces all real numbers as output. Very importantly, the logarithm is
+**not defined at zero**.
+```
+
+```{caution}
+There are currently some issues with plotting histograms that contain faces
+with a value of zero. As part of the plotting process, we currently set all
+zero-valued faces to have a value of `numpy.nan`. This will be corrected in
+a future release. The minimum for the colour bar is automatically set to
+the smallest non-zero value in the dataset.
+```
+
+The key step for generating log scale plots is to set
+`use_log_scale=True`{l=python} when calling
+{meth}`.SpherePlotter.produce_plot`. Here are two examples using our set of
+vectors.
+
+First, let's use the frequencies that we computed earlier:
+
+```{code-cell} ipython3
+my_sphere_plotter = vr.plotting.SpherePlotter(my_histogram_meshes)
+my_sphere_plotter.produce_plot(use_log_scale=True)
+```
+
+```{code-cell} ipython3
+:tags: [remove-cell]
+import os
+export_dir = "./assets/log_scale/"
+if not os.path.isdir(export_dir):
+  os.mkdir(export_dir)
+
+my_sphere_plotter.export_screenshot(
+  "./assets/log_scale/log_scale_fraction_video.png",
+  False
+)
+
+my_sphere_plotter.produce_rotating_video(
+  "./assets/log_scale/log_scale_fraction_video.mp4",
+  quality=5,
+  fps=12,
+  number_of_frames=36,
+  hide_sliders=True
+)
+```
+
+
+```{video} ./assets/log_scale/log_scale_fraction_video.mp4
+:width: 100%
+:autoplay:
+:loop:
+:poster: ./assets/log_scale/log_scale_fraction_video.png
+:alt: Example video of the histogram with a log scale.
+```
+
+Now, let's recompute the histogram using counts instead. We'll call the
+method {meth}`.SphereBase.construct_histogram`, but this time with
+`return_fraction=False`{l=python}. Then, we'll regenerate the meshes and
+plot them.
+
+```{code-cell} ipython3
+my_histogram = my_sphere.construct_histogram(
+  labelled_vectors, return_fraction=False
+)
+
+my_histogram_meshes = my_sphere.create_histogram_meshes(
+    my_histogram, magnitude_bins=None
+)
+
+my_sphere_plotter = vr.plotting.SpherePlotter(my_histogram_meshes)
+my_sphere_plotter.produce_plot(use_log_scale=True)
+```
+
+```{code-cell} ipython3
+:tags: [remove-cell]
+import os
+export_dir = "./assets/log_scale/"
+if not os.path.isdir(export_dir):
+  os.mkdir(export_dir)
+
+my_sphere_plotter.export_screenshot(
+  "./assets/log_scale/log_scale_count_video.png",
+  False
+)
+
+my_sphere_plotter.produce_rotating_video(
+  "./assets/log_scale/log_scale_count_video.mp4",
+  quality=5,
+  fps=12,
+  number_of_frames=36,
+  hide_sliders=True
+)
+```
+
+
+```{video} ./assets/log_scale/log_scale_count_video.mp4
+:width: 100%
+:autoplay:
+:loop:
+:poster: ./assets/log_scale/log_scale_count_video.png
+:alt: Example video of the histogram with a log scale.
+```
+
+
+Notice that in both cases, the colour bar automatically adjust to show the
+correct, non-linear scale. The plots also appear more saturated.
+
 ## Vector Histograms
 
 We've now seen how to construct 1D histograms of vector magnitude and
