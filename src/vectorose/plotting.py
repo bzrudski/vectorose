@@ -679,7 +679,8 @@ class SpherePlotter:
                 scalars=scalars,
                 log_scale=use_log_scale,
                 scalar_bar_args={
-                    "title": series_name.title()
+                    "title": series_name.title(),
+                    "nan_annotation": True,
                 }
             )
             actor.visibility = i in self._visible_shells
