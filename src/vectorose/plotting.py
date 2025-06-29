@@ -676,8 +676,11 @@ class SpherePlotter:
                 mesh,
                 clim=[min_value, max_value],
                 cmap=self.cmap,
-                scalars=series_name,
-                log_scale=use_log_scale
+                scalars=scalars,
+                log_scale=use_log_scale,
+                scalar_bar_args={
+                    "title": series_name.title()
+                }
             )
             actor.visibility = i in self._visible_shells
             self._sphere_actors.append(actor)
