@@ -681,7 +681,7 @@ class SpherePlotter:
                 scalar_bar_args={
                     "title": series_name.title(),
                     "nan_annotation": True,
-                }
+                },
             )
             actor.visibility = i in self._visible_shells
             self._sphere_actors.append(actor)
@@ -1350,7 +1350,7 @@ def produce_polar_histogram_plot(
     colour: str = "C0",
     max_angle: Optional[float] = None,
     r_min: float = 0,
-    r_max: Optional[float] = None
+    r_max: Optional[float] = None,
 ) -> matplotlib.projections.polar.PolarAxes:
     """Produce a 1D polar histogram plot.
 
@@ -1772,12 +1772,12 @@ def produce_labelled_3d_plot(
         theta_position_for_phi_labels = np.ones(number_of_phi_labels) * np.pi / 2
 
         spherical_coordinates_of_phi_labels = np.zeros((number_of_phi_labels, 2))
-        spherical_coordinates_of_phi_labels[
-            :, util.AngularIndex.PHI
-        ] = phi_label_positions
-        spherical_coordinates_of_phi_labels[
-            :, util.AngularIndex.THETA
-        ] = theta_position_for_phi_labels
+        spherical_coordinates_of_phi_labels[:, util.AngularIndex.PHI] = (
+            phi_label_positions
+        )
+        spherical_coordinates_of_phi_labels[:, util.AngularIndex.THETA] = (
+            theta_position_for_phi_labels
+        )
 
         phi_label_positions_cartesian = util.convert_spherical_to_cartesian_coordinates(
             angular_coordinates=spherical_coordinates_of_phi_labels,
@@ -1822,13 +1822,13 @@ def produce_labelled_3d_plot(
 
         spherical_coordinates_of_theta_labels = np.zeros((number_of_theta_labels, 2))
 
-        spherical_coordinates_of_theta_labels[
-            :, util.AngularIndex.THETA
-        ] = theta_label_positions
+        spherical_coordinates_of_theta_labels[:, util.AngularIndex.THETA] = (
+            theta_label_positions
+        )
 
-        spherical_coordinates_of_theta_labels[
-            :, util.AngularIndex.PHI
-        ] = phi_position_for_theta_labels
+        spherical_coordinates_of_theta_labels[:, util.AngularIndex.PHI] = (
+            phi_position_for_theta_labels
+        )
 
         theta_label_positions_cartesian = (
             util.convert_spherical_to_cartesian_coordinates(
