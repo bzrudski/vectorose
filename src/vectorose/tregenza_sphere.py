@@ -459,8 +459,8 @@ class TregenzaSphere(SphereBase):
         # And now, to test, let's add the face indices as scalars
         face_indices = range(number_of_faces)
 
-        ring_mesh.cell_data["ring-index"] = np.tile(ring.name, number_of_faces)
-        ring_mesh.cell_data["face-index"] = face_indices
+        ring_mesh.cell_data["ring"] = np.tile(ring.name, number_of_faces)
+        ring_mesh.cell_data["bin"] = face_indices
 
         return ring_mesh
 
@@ -499,8 +499,8 @@ class TregenzaSphere(SphereBase):
         # Now, create the mesh
         cap = pv.PolyData(vertices, cap_cell)
 
-        cap.cell_data["ring-index"] = [index]
-        cap.cell_data["face-index"] = [0]
+        cap.cell_data["ring"] = [index]
+        cap.cell_data["bin"] = [0]
 
         return cap
 
