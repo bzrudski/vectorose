@@ -392,7 +392,7 @@ class SpherePlotter:
                 mode=ElementType.CELL,
                 show=False,
                 show_message=False,
-                left_clicking=True,
+                left_clicking=False,
             )
         else:
             self.clear_picked_cells()
