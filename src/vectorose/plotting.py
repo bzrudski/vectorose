@@ -557,10 +557,12 @@ class SpherePlotter:
             actor = self._plotter.add_mesh(
                 new_cell,
                 line_width=10,
-                edge_color="aaaa00",
+                color="aa00aa",
+                edge_color="aa00aa",
                 style="wireframe",
                 render_lines_as_tubes=True,
                 pickable=False,
+                show_scalar_bar=False,
             )
             self._picked_cells.append(cell)
             self._picked_cell_actors[i] = actor
