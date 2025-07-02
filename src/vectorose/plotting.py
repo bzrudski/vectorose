@@ -380,12 +380,12 @@ class SpherePlotter:
         return theta
 
     @property
-    def face_picking_active(self) -> bool:
+    def cell_picking_active(self) -> bool:
         """Indicate whether interactive cell picking is active."""
         return self._picking_active
 
-    @face_picking_active.setter
-    def face_picking_active(self, active: bool):
+    @cell_picking_active.setter
+    def cell_picking_active(self, active: bool):
         if active:
             self._plotter.enable_element_picking(
                 self._pick_face,
