@@ -347,8 +347,10 @@ def create_symmetric_vectors_from_axes(axes: np.ndarray) -> np.ndarray:
     Parameters
     ----------
     axes
-        Array of shape ``(n, 3)`` containing the axes. All entries in
-        this array should have a positive Z-value.
+        Array of shape ``(n, 3)`` or ``(n, 6)`` containing the axes. All
+        entries in this array should have a positive Z-components. The
+        vector coordinates are assumed to be in the last three columns if
+        spatial coordinates are also present.
 
     Returns
     -------
@@ -364,7 +366,8 @@ def create_symmetric_vectors_from_axes(axes: np.ndarray) -> np.ndarray:
     """
 
     upward_vectors = axes.copy()
-    downward_vectors = -upward_vectors
+    downward_vectors = upward_vectors.copy()
+    downward_vectors[:, -3:] *= -1
 
     vectors = np.concatenate([upward_vectors, downward_vectors], axis=0)
 
