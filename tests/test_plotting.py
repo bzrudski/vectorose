@@ -744,8 +744,8 @@ def test_cell_picking_active(mock_orientation_histogram_mesh_counts):
 def test_picked_cells(mock_orientation_histogram_mesh_counts):
     """Test for picking cells.
 
-    Test for programmatically picking cells through the interactive render
-    interface to test :property:`.SpherePlotter.picked_cells`.
+    Test for programmatically picking cells to test
+    :property:`.SpherePlotter.picked_cells`.
     """
 
     plotter = vr.plotting.SpherePlotter(mock_orientation_histogram_mesh_counts)
@@ -840,8 +840,8 @@ def test_deactivate_cell_picking(mock_orientation_histogram_mesh_counts):
 def test_picked_cells_magnitude(mock_nested_histogram_meshes_counts):
     """Test for picking cells.
 
-    Test for programmatically picking cells through the interactive render
-    interface to test :property:`.SpherePlotter.picked_cells`.
+    Test for programmatically picking cells to test
+    :property:`.SpherePlotter.picked_cells`.
     """
 
     plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes_counts)
@@ -854,10 +854,12 @@ def test_picked_cells_magnitude(mock_nested_histogram_meshes_counts):
     number_of_cells = 100
 
     random_faces = rng.integers(
-        0, mock_nested_histogram_meshes_counts[0].n_cells - 1, number_of_cells
+        0, mock_nested_histogram_meshes_counts[0].n_cells, number_of_cells
     )
 
-    random_shells = rng.integers(0, len(mock_nested_histogram_meshes_counts) - 1, number_of_cells)
+    random_shells = rng.integers(
+        0, len(mock_nested_histogram_meshes_counts), number_of_cells
+    )
 
     for shell, i in zip(random_shells, random_faces):
         cell = mock_nested_histogram_meshes_counts[shell].extract_cells(i)
@@ -870,6 +872,31 @@ def test_picked_cells_magnitude(mock_nested_histogram_meshes_counts):
     cell_ids = plotter_selected_faces["vtkOriginalCellIds"]
 
     assert np.all(cell_ids == random_faces)
+
+
+def test_picked_cells_unpick(mock_orientation_histogram_mesh_counts):
+    """Test for picking and unpicking cells.
+
+    Test for programmatically picking and unpicking cells to test
+    :property:`.SpherePlotter.picked_cells`.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_orientation_histogram_mesh_counts)
+    plotter.produce_plot(add_sliders=False)
+
+    plotter.cell_picking_active = True
+
+    rng = np.random.default_rng(RANDOM_SEED)
+
+    i = rng.integers(0, mock_orientation_histogram_mesh_counts.n_cells)
+
+    cell = mock_orientation_histogram_mesh_counts.extract_cells(i)
+    plotter._pick_face(cell)
+    plotter._pick_face(cell)
+
+    plotter_selected_faces = plotter.picked_cells
+
+    assert len(plotter_selected_faces) == 0
 
 
 def test_produce_1d_scalar_histogram(
