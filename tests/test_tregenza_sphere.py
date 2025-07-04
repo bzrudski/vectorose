@@ -1090,6 +1090,7 @@ def test_convert_vectors_to_cartesian_array_not_normalised_with_locations(
         create_unit_vectors, include_spatial_locations, vectors
     )
 
+
 def test_convert_vectors_to_cartesian_array_not_normalised_ignoring_locations(
     random_vectors_with_locations,
 ):
@@ -1155,3 +1156,142 @@ def test_correct_histogram_by_area(random_vectors):
                 continue
 
             assert np.all(np.logical_or(pd.isna(ratio), np.isclose(ratio, ring_weight)))
+
+
+def test_get_vectors_from_single_cell_no_magnitude(random_vectors_with_locations):
+    """Test extracting all vectors from a single cell.
+
+    Test for extracting vectors from a single histogram mesh cell using
+    the method :meth:`.SphereBase.get_vectors_from_single_cell`. This test
+    does not consider magnitude.
+    """
+
+    # Create the spherical histogram
+    sphere = vr.tregenza_sphere.FineTregenzaSphere(number_of_shells=1)
+    labelled_vectors, magnitude_bins = sphere.assign_histogram_bins(
+        random_vectors_with_locations
+    )
+    orientation_histogram = sphere.construct_marginal_orientation_histogram(
+        labelled_vectors, return_fraction=False
+    )
+
+    histogram_mesh = sphere.create_shell_mesh(orientation_histogram)
+
+    # Randomly select a single face
+    i = np.random.default_rng(RANDOM_SEED).integers(0, histogram_mesh.n_cells)
+
+    # Extract that face
+    random_face = histogram_mesh.extract_cells(i)
+
+    # Get the Series of scalars
+    cell_scalars = pd.DataFrame(dict(random_face.cell_data)).iloc[0]
+
+    # Now, to extract
+    vectors_in_cell = sphere.get_vectors_from_single_cell(
+        labelled_vectors, cell_scalars
+    )
+
+    # Check that the number of vectors corresponds to the cell scalars
+    assert len(vectors_in_cell) == cell_scalars.loc["frequency"]
+
+    # Check that all vectors indeed lie in the selected cell
+    selected_ring = cell_scalars["ring"]
+    selected_bin = cell_scalars["bin"]
+
+    assert np.all(
+        (vectors_in_cell["ring"] == selected_ring)
+        & (vectors_in_cell["bin"] == selected_bin)
+    )
+
+
+def test_get_vectors_from_single_cell_magnitude(random_vectors_with_locations):
+    """Test extracting all vectors from a single cell.
+
+    Test for extracting vectors from a single histogram mesh cell using
+    the method :meth:`.SphereBase.get_vectors_from_single_cell`. This test
+    does consider magnitude.
+    """
+
+    # Create the spherical histogram
+    number_of_shells = 10
+    sphere = vr.tregenza_sphere.FineTregenzaSphere(number_of_shells=number_of_shells)
+    labelled_vectors, magnitude_bins = sphere.assign_histogram_bins(
+        random_vectors_with_locations
+    )
+    orientation_histogram = sphere.construct_histogram(
+        labelled_vectors, return_fraction=False
+    )
+
+    histogram_meshes = sphere.create_histogram_meshes(
+        orientation_histogram, magnitude_bins
+    )
+
+    # Randomly select a single face
+    rng = np.random.default_rng(RANDOM_SEED)
+    shell_number = rng.integers(0, number_of_shells)
+    cell_number = rng.integers(0, histogram_meshes[shell_number].n_cells)
+
+    # Extract that face
+    random_face = histogram_meshes[shell_number].extract_cells(cell_number)
+
+    # Get the Series of scalars
+    cell_scalars = pd.DataFrame(dict(random_face.cell_data)).iloc[0]
+
+    # Now, to extract
+    vectors_in_cell = sphere.get_vectors_from_single_cell(
+        labelled_vectors, cell_scalars
+    )
+
+    # Check that the number of vectors corresponds to the cell scalars
+    assert len(vectors_in_cell) == cell_scalars.loc["frequency"]
+
+    # Check that all vectors indeed lie in the selected cell
+    selected_shell = cell_scalars["shell"]
+    selected_ring = cell_scalars["ring"]
+    selected_bin = cell_scalars["bin"]
+
+    assert np.all(
+        (vectors_in_cell["shell"] == selected_shell)
+        & (vectors_in_cell["ring"] == selected_ring)
+        & (vectors_in_cell["bin"] == selected_bin)
+    )
+
+
+def test_get_vectors_from_many_cells(random_vectors_with_locations):
+    """Test extraction of vectors from multiple faces.
+
+    Test for extracting vectors from a multiple histogram mesh cells using
+    the method :meth:`.SphereBase.get_vectors_from_selected_cells`.
+    """
+
+    number_of_cells = 100
+
+    # Create the spherical histogram
+    sphere = vr.tregenza_sphere.FineTregenzaSphere(number_of_shells=1)
+    labelled_vectors, magnitude_bins = sphere.assign_histogram_bins(
+        random_vectors_with_locations
+    )
+    orientation_histogram = sphere.construct_marginal_orientation_histogram(
+        labelled_vectors, return_fraction=False
+    )
+
+    histogram_mesh = sphere.create_shell_mesh(orientation_histogram)
+
+    # Randomly select a single face
+    random_cell_indices = np.random.default_rng(RANDOM_SEED).integers(
+        0, histogram_mesh.n_cells, number_of_cells
+    )
+
+    # Extract that face
+    random_faces = histogram_mesh.extract_cells(random_cell_indices)
+
+    # Get the Series of scalars
+    cells_scalars = pd.DataFrame(dict(random_faces.cell_data))
+
+    # Now, to extract
+    vectors_in_cells = sphere.get_vectors_from_selected_cells(
+        labelled_vectors, cells_scalars
+    )
+
+    # Check that the number of vectors corresponds to the cell scalars
+    assert len(vectors_in_cells) == cells_scalars["frequency"].sum()
