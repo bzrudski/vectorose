@@ -318,8 +318,8 @@ def convert_vectors_to_axes(vectors: np.ndarray) -> np.ndarray:
     Parameters
     ----------
     vectors
-        Array of shape ``(n, 3)`` or ``(n, 6)`` containing the
-        vectors.
+        Array of shape ``(n, 3)`` or ``(n, 6)`` containing the vectors. The
+        last three columns are assumed to be the vector components.
 
     Returns
     -------
@@ -330,11 +330,10 @@ def convert_vectors_to_axes(vectors: np.ndarray) -> np.ndarray:
 
     # Get the vector components
     axes = vectors.copy()
-    axes_components = axes[:, -3:]
 
     # Invert the vectors with z component below zero
-    indices_to_flip = axes_components[:, -1] < 0
-    axes_components[indices_to_flip] = -axes_components[indices_to_flip]
+    indices_to_flip = axes[:, -1] < 0
+    axes[indices_to_flip, -3:] = -axes[indices_to_flip, -3:]
 
     return axes
 
