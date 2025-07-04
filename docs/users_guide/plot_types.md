@@ -761,9 +761,10 @@ and produces all real numbers as output. Very importantly, the logarithm is
 ```{caution}
 There are currently some issues with plotting histograms that contain faces
 with a value of zero. As part of the plotting process, we currently set all
-zero-valued faces to have a value of `numpy.nan`. This will be corrected in
-a future release. The minimum for the colour bar is automatically set to
-the smallest non-zero value in the dataset.
+zero-valued faces to have a value of {data}`numpy.nan`. This will be
+corrected in a future release. The minimum for the colour bar is
+automatically set to the smallest non-zero value in the dataset. Any faces
+coloured with the `NaN` colour correspond to faces with a value of zero.
 ```
 
 The key step for generating log scale plots is to set
@@ -847,7 +848,6 @@ my_sphere_plotter.produce_rotating_video(
 )
 ```
 
-
 ```{video} ./assets/log_scale/log_scale_count_video.mp4
 :width: 100%
 :autoplay:
@@ -855,7 +855,6 @@ my_sphere_plotter.produce_rotating_video(
 :poster: ./assets/log_scale/log_scale_count_video.png
 :alt: Example video of the histogram with a log scale.
 ```
-
 
 Notice that in both cases, the colour bar automatically adjust to show the
 correct, non-linear scale. The plots also appear more saturated.
