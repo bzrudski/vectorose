@@ -388,7 +388,7 @@ class SpherePlotter:
     def cell_picking_active(self, active: bool):
         if active:
             self._plotter.enable_element_picking(
-                self._pick_face,
+                self._pick_cells,
                 mode=ElementType.CELL,
                 show=False,
                 show_message=False,
@@ -539,7 +539,35 @@ class SpherePlotter:
         if self._point_label_actor is not None:
             self._point_label_actor.SetVisibility(show_axes)
 
-    def _pick_face(self, cell: pv.UnstructuredGrid):
+    def pick_cells(self, cell_indices: pd.Series | pd.DataFrame):
+        """Pick cells in the plotted sphere or spherical shells.
+
+        Parameters
+        ----------
+        cell_indices
+            Either a :class:`pandas.Series` containing the cell indices in
+            the case of purely directed or oriented data, or a
+            :class:`pandas.DataFrame` containing a column ``shell`` for the
+            magnitude shell and ``index`` for the cell index.
+
+        Warnings
+        --------
+        If the same cell is provided an even number of times, it will
+        become deselected. Each selection is a toggle.
+        """
+
+        if isinstance(cell_indices, pd.DataFrame):
+            index_series = cell_indices["index"]
+            magnitude_series = cell_indices["shell"]
+        else:
+            index_series = cell_indices
+            magnitude_series = pd.Series(np.zeros(len(index_series), dtype=int))
+
+        for index, shell in zip(index_series, magnitude_series):
+            cell = self.sphere_meshes[shell].extract_cells(index)
+            self._pick_cells(cell)
+
+    def _pick_cells(self, cell: pv.UnstructuredGrid):
         """Callback when a mesh face is picked."""
 
         # Remove cell if in picked cells
