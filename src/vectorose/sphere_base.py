@@ -725,7 +725,7 @@ class SphereBase(abc.ABC):
         selected_cell
             The scalar values from the selected cell, as rows in a
             :class:`~pandas.Series`. The index should contain at least the
-            entries in :property:`.SphereBase.orientation_cols`.
+            entries in :attr:`.SphereBase.orientation_cols`.
 
         Returns
         -------
@@ -767,7 +767,7 @@ class SphereBase(abc.ABC):
         selected_cells
             The scalar values from the selected cells. The columns in this
             table should contain at least the entries in
-            :property:`.SphereBase.orientation_cols`.
+            :attr:`.SphereBase.orientation_cols`.
 
         Returns
         -------
@@ -816,7 +816,7 @@ class SphereBase(abc.ABC):
 
         See Also
         --------
-        .assign_histogram_bins :
+        .SphereBase.assign_histogram_bins :
             assign specific orientations and magnitudes to histogram bins.
         """
 

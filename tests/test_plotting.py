@@ -715,7 +715,7 @@ def test_rotate_to_view_theta_radians(mock_nested_histogram_meshes):
 def test_cell_picking_not_active(mock_orientation_histogram_mesh_counts):
     """Test that initially cell picking is inactive.
 
-    Test for :property:`.SpherePlotter.face_picking_active` when the
+    Test for :attr:`.SpherePlotter.face_picking_active` when the
     plotter is first created.
     """
 
@@ -729,7 +729,7 @@ def test_cell_picking_not_active(mock_orientation_histogram_mesh_counts):
 def test_cell_picking_active(mock_orientation_histogram_mesh_counts):
     """Test for activation of cell picking.
 
-    Test for :property:`.SpherePlotter.cell_picking_active` when activating
+    Test for :attr:`.SpherePlotter.cell_picking_active` when activating
     cell picking.
     """
 
@@ -746,7 +746,7 @@ def test_picked_cells(mock_orientation_histogram_mesh_counts):
 
     Test for programmatically picking cells with
     :meth:`.SpherePlotter.pick_cells` to test
-    :property:`.SpherePlotter.picked_cells`.
+    :attr:`.SpherePlotter.picked_cells`.
     """
 
     plotter = vr.plotting.SpherePlotter(mock_orientation_histogram_mesh_counts)
@@ -805,7 +805,7 @@ def test_deactivate_cell_picking(mock_orientation_histogram_mesh_counts):
     """Test for deactivating cell picking.
 
     Test for deactivating cell picking by setting
-    :property:`.SpherePlotter.cell_picking_active` to `False`.
+    :attr:`.SpherePlotter.cell_picking_active` to `False`.
     """
 
     plotter = vr.plotting.SpherePlotter(mock_orientation_histogram_mesh_counts)
@@ -837,7 +837,7 @@ def test_picked_cells_magnitude(mock_nested_histogram_meshes_counts):
 
     Test for programmatically picking cells with
     :meth:`.SpherePlotter.pick_cells` to test
-    :property:`.SpherePlotter.picked_cells`.
+    :attr:`.SpherePlotter.picked_cells`.
     """
 
     plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes_counts)
@@ -879,7 +879,7 @@ def test_picked_cells_unpick(mock_orientation_histogram_mesh_counts):
     """Test for picking and unpicking cells.
 
     Test for programmatically picking and unpicking cells to test
-    :property:`.SpherePlotter.picked_cells`.
+    :attr:`.SpherePlotter.picked_cells`.
     """
 
     plotter = vr.plotting.SpherePlotter(mock_orientation_histogram_mesh_counts)
