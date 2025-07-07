@@ -744,7 +744,8 @@ def test_cell_picking_active(mock_orientation_histogram_mesh_counts):
 def test_picked_cells(mock_orientation_histogram_mesh_counts):
     """Test for picking cells.
 
-    Test for programmatically picking cells to test
+    Test for programmatically picking cells with
+    :meth:`.SpherePlotter.pick_cells` to test
     :property:`.SpherePlotter.picked_cells`.
     """
 
@@ -761,9 +762,7 @@ def test_picked_cells(mock_orientation_histogram_mesh_counts):
         0, mock_orientation_histogram_mesh_counts.n_cells, number_of_cells
     )
 
-    for i in random_faces:
-        cell = mock_orientation_histogram_mesh_counts.extract_cells(i)
-        plotter._pick_face(cell)
+    plotter.pick_cells(pd.Series(random_faces))
 
     plotter_selected_faces = plotter.picked_cells
 
@@ -794,9 +793,7 @@ def test_clear_picked_cells(mock_orientation_histogram_mesh_counts):
         0, mock_orientation_histogram_mesh_counts.n_cells, number_of_cells
     )
 
-    for i in random_faces:
-        cell = mock_orientation_histogram_mesh_counts.extract_cells(i)
-        plotter._pick_face(cell)
+    plotter.pick_cells(pd.Series(random_faces))
 
     plotter.clear_picked_cells()
 
@@ -824,9 +821,7 @@ def test_deactivate_cell_picking(mock_orientation_histogram_mesh_counts):
         0, mock_orientation_histogram_mesh_counts.n_cells, number_of_cells
     )
 
-    for i in random_faces:
-        cell = mock_orientation_histogram_mesh_counts.extract_cells(i)
-        plotter._pick_face(cell)
+    plotter.pick_cells(pd.Series(random_faces))
 
     plotter.cell_picking_active = False
 
@@ -840,7 +835,8 @@ def test_deactivate_cell_picking(mock_orientation_histogram_mesh_counts):
 def test_picked_cells_magnitude(mock_nested_histogram_meshes_counts):
     """Test for picking cells.
 
-    Test for programmatically picking cells to test
+    Test for programmatically picking cells with
+    :meth:`.SpherePlotter.pick_cells` to test
     :property:`.SpherePlotter.picked_cells`.
     """
 
@@ -861,9 +857,14 @@ def test_picked_cells_magnitude(mock_nested_histogram_meshes_counts):
         0, len(mock_nested_histogram_meshes_counts), number_of_cells
     )
 
-    for shell, i in zip(random_shells, random_faces):
-        cell = mock_nested_histogram_meshes_counts[shell].extract_cells(i)
-        plotter._pick_face(cell)
+    cells = pd.DataFrame(
+        {
+            "shell": random_shells,
+            "index": random_faces,
+        }
+    )
+
+    plotter.pick_cells(cells)
 
     plotter_selected_faces = plotter.picked_cells
 
@@ -890,9 +891,10 @@ def test_picked_cells_unpick(mock_orientation_histogram_mesh_counts):
 
     i = rng.integers(0, mock_orientation_histogram_mesh_counts.n_cells)
 
-    cell = mock_orientation_histogram_mesh_counts.extract_cells(i)
-    plotter._pick_face(cell)
-    plotter._pick_face(cell)
+    cells = pd.Series(i)
+
+    plotter.pick_cells(cells)
+    plotter.pick_cells(cells)
 
     plotter_selected_faces = plotter.picked_cells
 
