@@ -1423,3 +1423,61 @@ def test_get_vectors_from_many_cells(random_vectors_with_locations):
 
     # Check that the number of vectors corresponds to the cell scalars
     assert len(vectors_in_cells) == cells_scalars["frequency"].sum()
+
+
+def test_get_cell_indices():
+    """Test for getting cell indices from bin data.
+
+    Test for :meth:`.TriangleSphere.get_cell_indices` for getting cell
+    indices from ring and bin data.
+    """
+
+    rng = np.random.default_rng(RANDOM_SEED)
+
+    sphere = vr.triangle_sphere.TriangleSphere()
+    sphere_mesh = sphere.create_mesh()
+
+    cells = {
+        "face": np.sort(rng.integers(0, sphere_mesh.n_cells, 25))
+    }
+
+    cells_df = pd.DataFrame(cells)
+
+    computed_indices = sphere.get_cell_indices(cells_df)
+
+    extracted_cells = sphere_mesh.extract_cells(computed_indices.to_list())
+
+    extracted_faces = extracted_cells.cell_data["face"]
+
+    assert np.all(cells["face"] == extracted_faces)
+
+
+def test_get_cell_indices_with_magnitude():
+    """Test for getting cell indices from bin data with magnitudes.
+
+    Test for :meth:`.FineTregenzaSphere.get_cell_indices` for getting cell
+    indices from ring and bin data.
+    """
+
+
+    rng = np.random.default_rng(RANDOM_SEED)
+
+    sphere = vr.triangle_sphere.TriangleSphere()
+    sphere_mesh = sphere.create_mesh()
+
+    cells = {
+        "face": rng.integers(0, sphere_mesh.n_cells, 25),
+        "shell": rng.integers(0, 10, 25)
+    }
+
+    cells_df = pd.DataFrame(cells)
+
+    cells_df.sort_values("face", inplace=True)
+
+    computed_indices = sphere.get_cell_indices(cells_df)
+
+    extracted_cells = sphere_mesh.extract_cells(computed_indices.to_list())
+
+    extracted_faces = extracted_cells.cell_data["face"]
+
+    assert np.all(cells_df["face"].to_numpy() == extracted_faces)

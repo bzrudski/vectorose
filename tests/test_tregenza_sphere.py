@@ -1295,3 +1295,85 @@ def test_get_vectors_from_many_cells(random_vectors_with_locations):
 
     # Check that the number of vectors corresponds to the cell scalars
     assert len(vectors_in_cells) == cells_scalars["frequency"].sum()
+
+
+def test_get_cell_indices():
+    """Test for getting cell indices from bin data.
+
+    Test for :meth:`.FineTregenzaSphere.get_cell_indices` for getting cell
+    indices from ring and bin data.
+    """
+
+    rng = np.random.default_rng(RANDOM_SEED)
+
+    sphere = vr.tregenza_sphere.FineTregenzaSphere()
+    sphere_mesh = sphere.create_mesh()
+    sphere_df = sphere.to_dataframe()
+
+    rings = rng.integers(0, sphere.number_of_rings, 25)
+    bins = np.zeros(25, dtype=int)
+
+    for i, r in enumerate(rings):
+        max_bin = sphere_df.loc[r, "bins"]
+        bins[i] = rng.integers(0, max_bin)
+
+    cells = {
+        "ring": rings,
+        "bin": bins,
+    }
+
+    cells_df = pd.DataFrame(cells)
+
+    cells_df.sort_values(["ring", "bin"], inplace=True)
+
+    computed_indices = sphere.get_cell_indices(cells_df)
+
+    extracted_cells = sphere_mesh.extract_cells(computed_indices.to_list())
+
+    extracted_rings = extracted_cells.cell_data["ring"]
+    extracted_bins = extracted_cells.cell_data["bin"]
+
+    assert np.all(cells_df["ring"] == extracted_rings)
+    assert np.all(cells_df["bin"] == extracted_bins)
+
+
+def test_get_cell_indices_with_magnitude():
+    """Test for getting cell indices from bin data with magnitudes.
+
+    Test for :meth:`.FineTregenzaSphere.get_cell_indices` for getting cell
+    indices from ring and bin data.
+    """
+
+    rng = np.random.default_rng(RANDOM_SEED)
+
+    sphere = vr.tregenza_sphere.FineTregenzaSphere()
+    sphere_mesh = sphere.create_mesh()
+    sphere_df = sphere.to_dataframe()
+
+    rings = rng.integers(0, sphere.number_of_rings, 25)
+    bins = np.zeros(25, dtype=int)
+    shells = rng.integers(0, 10, 25)
+
+    for i, r in enumerate(rings):
+        max_bin = sphere_df.loc[r, "bins"]
+        bins[i] = rng.integers(0, max_bin)
+
+    cells = {
+        "ring": rings,
+        "bin": bins,
+        "shell": shells,
+    }
+
+    cells_df = pd.DataFrame(cells)
+
+    cells_df.sort_values(["ring", "bin", "shell"], inplace=True)
+
+    computed_indices = sphere.get_cell_indices(cells_df)
+
+    extracted_cells = sphere_mesh.extract_cells(computed_indices.to_list())
+
+    extracted_rings = extracted_cells.cell_data["ring"]
+    extracted_bins = extracted_cells.cell_data["bin"]
+
+    assert np.all(cells_df["ring"] == extracted_rings)
+    assert np.all(cells_df["bin"] == extracted_bins)
