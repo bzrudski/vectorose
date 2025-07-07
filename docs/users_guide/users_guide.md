@@ -31,6 +31,7 @@ plot_types.md
 advanced_histograms.md
 statistics.md
 animations.md
+vector_filtering.md
 rotated_layers.md
 references.md
 ```

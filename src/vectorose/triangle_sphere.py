@@ -141,7 +141,7 @@ class TriangleSphere(SphereBase):
         sphere_mesh = pv.PolyData(points, complete_faces)
 
         # And now, just to be sure, let's put in the face scalars
-        sphere_mesh.cell_data["face-index"] = range(number_of_faces)
+        sphere_mesh.cell_data["face"] = range(number_of_faces)
 
         return sphere_mesh
 
@@ -175,3 +175,8 @@ class TriangleSphere(SphereBase):
             )
 
         return cartesian_vectors
+
+    def get_cell_indices(self, bins: pd.DataFrame) -> pd.Series:
+        # Here, everything is already contained in the face column.
+        return bins["face"]
+

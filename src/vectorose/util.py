@@ -82,6 +82,9 @@ def convert_vectors_to_data_frame(vectors: np.ndarray) -> pd.DataFrame:
         columns are labelled ``vx, vy, vz``.
     """
 
+    # Make the vector list 2D in case only a single vector is present.
+    vectors = np.atleast_2d(vectors)
+
     number_of_columns = vectors.shape[-1]
 
     columns = ["vx", "vy", "vz"]
@@ -128,10 +131,12 @@ def compute_vector_magnitudes(vectors: np.ndarray) -> np.ndarray:
 
     """
 
-    if vectors.ndim > 1:
-        n = len(vectors)
-    else:
+    is_flat_vector = vectors.ndim == 1
+
+    if is_flat_vector:
         n = 1
+    else:
+        n = len(vectors)
 
     three_dimensional_magnitude = np.linalg.norm(vectors, axis=-1)
     in_plane_magnitude = np.linalg.norm(vectors[..., :2], axis=-1)
@@ -141,7 +146,7 @@ def compute_vector_magnitudes(vectors: np.ndarray) -> np.ndarray:
     magnitudes_array[:, MagnitudeType.THREE_DIMENSIONAL] = three_dimensional_magnitude
 
     # Squeeze out single dimensions, if only a single vector is passed in.
-    if n == 1:
+    if is_flat_vector:
         magnitudes_array = np.squeeze(magnitudes_array, axis=0)
 
     return magnitudes_array
@@ -507,10 +512,12 @@ def compute_vector_orientation_angles(
     ``0 <= theta < 2 * pi`` radians.
     """
 
-    if vectors.ndim > 1:
-        n = len(vectors)
-    else:
+    is_flat_vector = vectors.ndim == 1
+
+    if is_flat_vector:
         n = 1
+    else:
+        n = len(vectors)
 
     x: np.ndarray = vectors[..., 0]
     y: np.ndarray = vectors[..., 1]
@@ -533,7 +540,7 @@ def compute_vector_orientation_angles(
     angular_coordinates[..., AngularIndex.THETA] = theta
 
     # If there is only one vector, squeeze out the extra axis
-    if n == 1:
+    if is_flat_vector:
         angular_coordinates = np.squeeze(angular_coordinates)
 
     return angular_coordinates
@@ -575,10 +582,7 @@ def compute_spherical_coordinates(
     """
 
     # Get the number of vectors
-    if vectors.ndim > 1:
-        n = len(vectors)
-    else:
-        n = 1
+    is_flat_vector = vectors.ndim == 1
 
     # Compute the orientation angles
     orientations = compute_vector_orientation_angles(vectors, use_degrees)
@@ -586,7 +590,7 @@ def compute_spherical_coordinates(
     # Compute the magnitudes
     magnitudes = np.atleast_1d(np.linalg.norm(vectors, axis=-1))[:, None]
 
-    if n == 1:
+    if is_flat_vector:
         magnitudes = np.squeeze(magnitudes, axis=0)
 
     # Combine everything

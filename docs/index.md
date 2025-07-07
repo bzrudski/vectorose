@@ -299,7 +299,7 @@ print(f"The Watson distribution has shape parameter {girdle_woodcock_parameters.
 
 
 Additional statistical operations are provided in the VectoRose API and are
-described in the **{doc}`User's Guide <users_guide/users_guide>`**.
+described in the **{doc}`Users' Guide <users_guide/users_guide>`**.
 
 ## Citation
 

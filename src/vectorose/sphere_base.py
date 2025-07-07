@@ -3,7 +3,9 @@
 This module contains basic tools for different representations of
 optionally-nested spherical histograms.
 """
+
 import abc
+from functools import partial
 from typing import List, Optional, Tuple
 
 import numpy as np
@@ -653,6 +655,9 @@ class SphereBase(abc.ABC):
 
             shell = self.create_shell_mesh(shell_histogram, shell_radius)
 
+            shell_index_array = np.ones(shell.n_cells, dtype=int) * i
+            shell.cell_data["shell"] = shell_index_array
+
             shell_list.append(shell)
 
         return shell_list
@@ -700,4 +705,121 @@ class SphereBase(abc.ABC):
 
         raise NotImplementedError(
             "This abstract method must be implemented in subclasses."
+        )
+
+    def get_vectors_from_single_cell(
+        self, labelled_vectors: pd.DataFrame, selected_cell: pd.Series
+    ) -> pd.DataFrame:
+        """Extract vectors from a single selected cell.
+
+        Isolate the vectors contained in a single mesh cell to filter based
+        on either pure orientation, or a combination of magnitude and
+        orientation.
+
+        Parameters
+        ----------
+        labelled_vectors
+            The set of labelled ``n`` labelled vectors in ``d`` dimensions,
+            in the same format as produced by
+            :meth:`SphereBase.assign_histogram_bins`.
+        selected_cell
+            The scalar values from the selected cell, as rows in a
+            :class:`~pandas.Series`. The index should contain at least the
+            entries in :attr:`.SphereBase.orientation_cols`.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The set of labelled vectors falling in the selected cell. This
+            :class:`~pandas.DataFrame` has the same format as
+            `labelled_vectors`, but fewer entries.
+        """
+        # Determine if the filtering will be only based on orientation
+        if all(col in selected_cell for col in self.magnitude_shell_cols):
+            cols = self.hist_group_cols
+        else:
+            cols = self.orientation_cols
+
+        # Perform indexing to isolate the vectors of interest
+        vectors_in_cell = labelled_vectors.loc[
+            np.all(
+                selected_cell[cols] == labelled_vectors[cols],
+                axis=1,
+            )
+        ]
+
+        return vectors_in_cell
+
+    def get_vectors_from_selected_cells(
+        self, labelled_vectors: pd.DataFrame, selected_cells: pd.DataFrame
+    ) -> pd.DataFrame:
+        """Extract vectors from selected cells.
+
+        Isolate the vectors contained in specified shells and cells in
+        order to filter the vector collection by magnitude and orientation.
+
+        Parameters
+        ----------
+        labelled_vectors
+            The set of labelled ``n`` labelled vectors in ``d`` dimensions,
+            in the same format as produced by
+            :meth:`SphereBase.assign_histogram_bins`.
+        selected_cells
+            The scalar values from the selected cells. The columns in this
+            table should contain at least the entries in
+            :attr:`.SphereBase.orientation_cols`.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The set of labelled vectors falling in the selected cells. This
+            :class:`~pandas.DataFrame` has the same format as
+            `labelled_vectors`, but fewer entries.
+
+        Warnings
+        --------
+        If the vectors were duplicated for the purpose of visualisation,
+        that duplication is **not** preserved here.
+
+        See Also
+        --------
+        .get_vectors_from_single_cell : Extract vectors from one cell.
+        """
+
+        # Apply the filtering to all the selected cells
+        filtering_func = partial(self.get_vectors_from_single_cell, labelled_vectors)
+
+        selected_vectors_series = selected_cells.apply(filtering_func, axis="columns")
+
+        # Applying returns a Series of DataFrames, so we must concatenate!
+        selected_vectors = pd.concat(selected_vectors_series.to_list())
+
+        return selected_vectors
+
+    @abc.abstractmethod
+    def get_cell_indices(self, bins: pd.DataFrame) -> pd.Series:
+        """Get cell indices for specific bins.
+
+        Get the mesh cell index for specified orientation bins.
+
+        Parameters
+        ----------
+        bins
+            DataFrame containing the implementation-specific orientation
+            bin information for the desired cells
+
+        Returns
+        -------
+        Series
+            Indices of the mesh cells corresponding to the desired
+            orientation bin.
+
+        See Also
+        --------
+        .SphereBase.assign_histogram_bins :
+            assign specific orientations and magnitudes to histogram bins.
+        """
+
+        raise NotImplementedError(
+            "Subclasses must implement this abstract method."
         )

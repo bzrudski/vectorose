@@ -7,6 +7,7 @@ This test module is structured to first test the methods in the
 :class:`.SpherePlotter` class, and then the assorted functions for plotting
 using Matplotlib.
 """
+
 import os
 
 import matplotlib as mpl
@@ -104,7 +105,7 @@ def label_vectors_polar(vectors):
 @pytest.fixture
 def mock_nested_histogram_meshes(
     setup_pyvista_environment,
-    label_vectors: tuple[pd.DataFrame, np.ndarray, vr.tregenza_sphere.TregenzaSphere]
+    label_vectors: tuple[pd.DataFrame, np.ndarray, vr.tregenza_sphere.TregenzaSphere],
 ) -> list[pv.PolyData]:
     """Generate several nested dummy meshes for testing."""
 
@@ -114,10 +115,11 @@ def mock_nested_histogram_meshes(
 
     return sphere_meshes
 
+
 @pytest.fixture
 def mock_nested_histogram_meshes_counts(
     setup_pyvista_environment,
-    label_vectors: tuple[pd.DataFrame, np.ndarray, vr.tregenza_sphere.TregenzaSphere]
+    label_vectors: tuple[pd.DataFrame, np.ndarray, vr.tregenza_sphere.TregenzaSphere],
 ) -> list[pv.PolyData]:
     """Generate several nested dummy meshes for testing."""
 
@@ -126,6 +128,22 @@ def mock_nested_histogram_meshes_counts(
     sphere_meshes = sphere.create_histogram_meshes(hist, magnitude_bins)
 
     return sphere_meshes
+
+
+@pytest.fixture
+def mock_orientation_histogram_mesh_counts(
+    setup_pyvista_environment,
+    label_vectors: tuple[pd.DataFrame, np.ndarray, vr.tregenza_sphere.TregenzaSphere],
+) -> pv.PolyData:
+    """Generate several nested dummy meshes for testing."""
+
+    labelled_vectors, magnitude_bins, sphere = label_vectors
+    hist = sphere.construct_marginal_orientation_histogram(
+        labelled_vectors, return_fraction=False
+    )
+    sphere_mesh = sphere.create_shell_mesh(hist)
+
+    return sphere_mesh
 
 
 def test_sphere_plotter_initialisation_one_mesh(dummy_mesh):
@@ -692,6 +710,195 @@ def test_rotate_to_view_theta_radians(mock_nested_histogram_meshes):
     plotter.rotate_to_view(theta=theta_value, use_degrees=use_degrees)
 
     assert np.isclose(plotter.current_theta, np.degrees(theta_value))
+
+
+def test_cell_picking_not_active(mock_orientation_histogram_mesh_counts):
+    """Test that initially cell picking is inactive.
+
+    Test for :attr:`.SpherePlotter.face_picking_active` when the
+    plotter is first created.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_orientation_histogram_mesh_counts)
+    plotter.produce_plot()
+
+    assert not plotter.cell_picking_active
+    assert len(plotter.picked_cells) == 0
+
+
+def test_cell_picking_active(mock_orientation_histogram_mesh_counts):
+    """Test for activation of cell picking.
+
+    Test for :attr:`.SpherePlotter.cell_picking_active` when activating
+    cell picking.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_orientation_histogram_mesh_counts)
+    plotter.produce_plot()
+
+    plotter.cell_picking_active = True
+
+    assert plotter.cell_picking_active
+
+
+def test_picked_cells(mock_orientation_histogram_mesh_counts):
+    """Test for picking cells.
+
+    Test for programmatically picking cells with
+    :meth:`.SpherePlotter.pick_cells` to test
+    :attr:`.SpherePlotter.picked_cells`.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_orientation_histogram_mesh_counts)
+    plotter.produce_plot(add_sliders=False)
+
+    plotter.cell_picking_active = True
+
+    rng = np.random.default_rng(RANDOM_SEED)
+
+    number_of_cells = 10
+
+    random_faces = rng.integers(
+        0, mock_orientation_histogram_mesh_counts.n_cells, number_of_cells
+    )
+
+    plotter.pick_cells(pd.Series(random_faces))
+
+    plotter_selected_faces = plotter.picked_cells
+
+    assert len(plotter_selected_faces) == number_of_cells
+
+    cell_ids = plotter_selected_faces["vtkOriginalCellIds"]
+
+    assert np.all(cell_ids == random_faces)
+
+
+def test_clear_picked_cells(mock_orientation_histogram_mesh_counts):
+    """Test clearing of picked cells.
+
+    Test for programmatically clearing picked cells using
+    :meth:`.SpherePlotter.clear_picked_cells`.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_orientation_histogram_mesh_counts)
+    plotter.produce_plot(add_sliders=False)
+
+    plotter.cell_picking_active = True
+
+    rng = np.random.default_rng(RANDOM_SEED)
+
+    number_of_cells = 10
+
+    random_faces = rng.integers(
+        0, mock_orientation_histogram_mesh_counts.n_cells, number_of_cells
+    )
+
+    plotter.pick_cells(pd.Series(random_faces))
+
+    plotter.clear_picked_cells()
+
+    assert len(plotter.picked_cells) == 0
+    assert plotter.cell_picking_active
+
+
+def test_deactivate_cell_picking(mock_orientation_histogram_mesh_counts):
+    """Test for deactivating cell picking.
+
+    Test for deactivating cell picking by setting
+    :attr:`.SpherePlotter.cell_picking_active` to `False`.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_orientation_histogram_mesh_counts)
+    plotter.produce_plot(add_sliders=False)
+
+    plotter.cell_picking_active = True
+
+    rng = np.random.default_rng(RANDOM_SEED)
+
+    number_of_cells = 10
+
+    random_faces = rng.integers(
+        0, mock_orientation_histogram_mesh_counts.n_cells, number_of_cells
+    )
+
+    plotter.pick_cells(pd.Series(random_faces))
+
+    plotter.cell_picking_active = False
+
+    # Check that picking is inactive
+    assert not plotter.cell_picking_active
+
+    # Check that all the picked cells have been cleared
+    assert len(plotter.picked_cells) == 0
+
+
+def test_picked_cells_magnitude(mock_nested_histogram_meshes_counts):
+    """Test for picking cells.
+
+    Test for programmatically picking cells with
+    :meth:`.SpherePlotter.pick_cells` to test
+    :attr:`.SpherePlotter.picked_cells`.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes_counts)
+    plotter.produce_plot(add_sliders=False)
+
+    plotter.cell_picking_active = True
+
+    rng = np.random.default_rng(RANDOM_SEED)
+
+    number_of_cells = 100
+
+    random_faces = rng.integers(
+        0, mock_nested_histogram_meshes_counts[0].n_cells, number_of_cells
+    )
+
+    random_shells = rng.integers(
+        0, len(mock_nested_histogram_meshes_counts), number_of_cells
+    )
+
+    cells = pd.DataFrame(
+        {
+            "shell": random_shells,
+            "index": random_faces,
+        }
+    )
+
+    plotter.pick_cells(cells)
+
+    plotter_selected_faces = plotter.picked_cells
+
+    assert len(plotter_selected_faces) == number_of_cells
+
+    cell_ids = plotter_selected_faces["vtkOriginalCellIds"]
+
+    assert np.all(cell_ids == random_faces)
+
+
+def test_picked_cells_unpick(mock_orientation_histogram_mesh_counts):
+    """Test for picking and unpicking cells.
+
+    Test for programmatically picking and unpicking cells to test
+    :attr:`.SpherePlotter.picked_cells`.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_orientation_histogram_mesh_counts)
+    plotter.produce_plot(add_sliders=False)
+
+    plotter.cell_picking_active = True
+
+    rng = np.random.default_rng(RANDOM_SEED)
+
+    i = rng.integers(0, mock_orientation_histogram_mesh_counts.n_cells)
+
+    cells = pd.Series(i)
+
+    plotter.pick_cells(cells)
+    plotter.pick_cells(cells)
+
+    plotter_selected_faces = plotter.picked_cells
+
+    assert len(plotter_selected_faces) == 0
 
 
 def test_produce_1d_scalar_histogram(

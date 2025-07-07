@@ -12,7 +12,7 @@ present in :mod:`.tregenza_sphere`, :mod:`.triangle_sphere` and
 
 import enum
 import functools
-from typing import Any, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 import imageio_ffmpeg
 import matplotlib.animation
@@ -28,6 +28,7 @@ import numpy as np
 import pandas as pd
 import vtk
 import pyvista as pv
+from pyvista.plotting.opts import ElementType
 from scipy.spatial.transform import Rotation
 
 from .triangle_sphere import TriangleSphere
@@ -228,6 +229,15 @@ class SpherePlotter:
     _point_label_actor: Optional[vtk.vtkActor2D]
     """The actor controlling the point labels."""
 
+    _picked_cells: List[pv.UnstructuredGrid]
+    """List of picked cells."""
+
+    _picked_cell_actors: Dict[int, pv.Actor]
+    """Actors for picked faces."""
+
+    _picking_active: bool
+    """Indicate whether cell picking is active."""
+
     cmap: str
     """The colour map to use when visualising the data."""
 
@@ -370,6 +380,56 @@ class SpherePlotter:
         return theta
 
     @property
+    def cell_picking_active(self) -> bool:
+        """Indicate whether interactive cell picking is active."""
+        return self._picking_active
+
+    @cell_picking_active.setter
+    def cell_picking_active(self, active: bool):
+        if active:
+            self._plotter.enable_element_picking(
+                self._pick_cells,
+                mode=ElementType.CELL,
+                show=False,
+                show_message=False,
+                left_clicking=False,
+            )
+        else:
+            self.clear_picked_cells()
+            self._plotter.disable_picking()
+
+        self._picking_active = active
+
+    @property
+    def picked_cells(self) -> pd.DataFrame:
+        """Get picked face scalar data.
+
+        Returns
+        -------
+        pandas.DataFrame
+            All cell scalar data for the picked mesh cells. These values
+            can then be used by the :class:`.SphereBase` sphere to extract
+            vectors from the picked cells. If no cells are picked, an
+            empty :class:`pandas.DataFrame` is produced.
+        """
+        scalar_data_table = pd.DataFrame()
+
+        for face_index in self._picked_cell_actors.keys():
+            cell = self._picked_cells[face_index]
+
+            scalar_data = cell.cell_data
+
+            column_names = scalar_data.keys()
+            row_values = np.stack(scalar_data.values(), axis=-1)
+
+            cell_df = pd.DataFrame(columns=column_names, data=row_values)
+            scalar_data_table = pd.concat(
+                [scalar_data_table, cell_df], ignore_index=True
+            )
+
+        return scalar_data_table
+
+    @property
     def has_movie_open(self) -> bool:
         """Indicate whether a movie is currently being manually written."""
         return self._has_movie_open
@@ -410,6 +470,11 @@ class SpherePlotter:
 
         # We don't have a movie open when creating the plotter
         self._has_movie_open = False
+
+        # Configure the face selection
+        self._picking_active = False
+        self._picked_cells = []
+        self._picked_cell_actors = {}
 
     def _get_spherical_coordinates_from_camera(self) -> np.ndarray:
         """Get the spherical coordinates for the camera location.
@@ -474,6 +539,62 @@ class SpherePlotter:
         if self._point_label_actor is not None:
             self._point_label_actor.SetVisibility(show_axes)
 
+    def pick_cells(self, cell_indices: pd.Series | pd.DataFrame):
+        """Pick cells in the plotted sphere or spherical shells.
+
+        Parameters
+        ----------
+        cell_indices
+            Either a :class:`pandas.Series` containing the cell indices in
+            the case of purely directed or oriented data, or a
+            :class:`pandas.DataFrame` containing a column ``shell`` for the
+            magnitude shell and ``index`` for the cell index.
+
+        Warnings
+        --------
+        If the same cell is provided an even number of times, it will
+        become deselected. Each selection is a toggle.
+        """
+
+        if isinstance(cell_indices, pd.DataFrame):
+            index_series = cell_indices["index"]
+            magnitude_series = cell_indices["shell"]
+        else:
+            index_series = cell_indices
+            magnitude_series = pd.Series(np.zeros(len(index_series), dtype=int))
+
+        for index, shell in zip(index_series, magnitude_series):
+            cell = self.sphere_meshes[shell].extract_cells(index)
+            self._pick_cells(cell)
+
+    def _pick_cells(self, cell: pv.UnstructuredGrid):
+        """Callback when a mesh face is picked."""
+
+        # Remove cell if in picked cells
+        if not cell in self._picked_cells:
+            self._picked_cells.append(cell)
+            i = len(self._picked_cells) - 1
+        else:
+            i = self._picked_cells.index(cell)
+
+        if i in self._picked_cell_actors:
+            actor = self._picked_cell_actors.pop(i)
+            self._plotter.remove_actor(actor)
+        else:
+            new_cell = cell.copy()
+            actor = self._plotter.add_mesh(
+                new_cell,
+                line_width=10,
+                color="aa00aa",
+                edge_color="aa00aa",
+                style="wireframe",
+                render_lines_as_tubes=True,
+                pickable=False,
+                show_scalar_bar=False,
+            )
+            self._picked_cells.append(cell)
+            self._picked_cell_actors[i] = actor
+
     # TODO: Create a new class to encapsulate the spherical axes.
     def add_spherical_axes(
         self,
@@ -515,7 +636,11 @@ class SpherePlotter:
 
         if plot_theta:
             theta_axis = pv.Disc(inner=inner_radius, outer=outer_radius, c_res=36)
-            self._theta_axis_actor = self._plotter.add_mesh(theta_axis, show_edges=True)
+            self._theta_axis_actor = self._plotter.add_mesh(
+                theta_axis,
+                show_edges=True,
+                pickable=False,
+            )
         else:
             self._theta_axis_actor = None
 
@@ -527,7 +652,11 @@ class SpherePlotter:
                 normal=(0, 1, 0),
             ).clip(normal="-x")
 
-            self._phi_axis_actor = self._plotter.add_mesh(phi_axis, show_edges=True)
+            self._phi_axis_actor = self._plotter.add_mesh(
+                phi_axis,
+                show_edges=True,
+                pickable=False,
+            )
         else:
             self._phi_axis_actor = None
 
@@ -603,6 +732,13 @@ class SpherePlotter:
         self.clear_axes()
 
         self._plotter.clear()
+
+    def clear_picked_cells(self):
+        """Clear the picked cells."""
+        self._picked_cells.clear()
+        for actor in self._picked_cell_actors.values():
+            self._plotter.remove_actor(actor)
+        self._picked_cell_actors.clear()
 
     def produce_plot(
         self,
@@ -681,7 +817,7 @@ class SpherePlotter:
                 scalar_bar_args={
                     "title": series_name.title(),
                     "nan_annotation": True,
-                }
+                },
             )
             actor.visibility = i in self._visible_shells
             self._sphere_actors.append(actor)
@@ -1350,7 +1486,7 @@ def produce_polar_histogram_plot(
     colour: str = "C0",
     max_angle: Optional[float] = None,
     r_min: float = 0,
-    r_max: Optional[float] = None
+    r_max: Optional[float] = None,
 ) -> matplotlib.projections.polar.PolarAxes:
     """Produce a 1D polar histogram plot.
 
@@ -1772,12 +1908,12 @@ def produce_labelled_3d_plot(
         theta_position_for_phi_labels = np.ones(number_of_phi_labels) * np.pi / 2
 
         spherical_coordinates_of_phi_labels = np.zeros((number_of_phi_labels, 2))
-        spherical_coordinates_of_phi_labels[
-            :, util.AngularIndex.PHI
-        ] = phi_label_positions
-        spherical_coordinates_of_phi_labels[
-            :, util.AngularIndex.THETA
-        ] = theta_position_for_phi_labels
+        spherical_coordinates_of_phi_labels[:, util.AngularIndex.PHI] = (
+            phi_label_positions
+        )
+        spherical_coordinates_of_phi_labels[:, util.AngularIndex.THETA] = (
+            theta_position_for_phi_labels
+        )
 
         phi_label_positions_cartesian = util.convert_spherical_to_cartesian_coordinates(
             angular_coordinates=spherical_coordinates_of_phi_labels,
@@ -1822,13 +1958,13 @@ def produce_labelled_3d_plot(
 
         spherical_coordinates_of_theta_labels = np.zeros((number_of_theta_labels, 2))
 
-        spherical_coordinates_of_theta_labels[
-            :, util.AngularIndex.THETA
-        ] = theta_label_positions
+        spherical_coordinates_of_theta_labels[:, util.AngularIndex.THETA] = (
+            theta_label_positions
+        )
 
-        spherical_coordinates_of_theta_labels[
-            :, util.AngularIndex.PHI
-        ] = phi_position_for_theta_labels
+        spherical_coordinates_of_theta_labels[:, util.AngularIndex.PHI] = (
+            phi_position_for_theta_labels
+        )
 
         theta_label_positions_cartesian = (
             util.convert_spherical_to_cartesian_coordinates(
