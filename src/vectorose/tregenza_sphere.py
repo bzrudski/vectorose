@@ -598,6 +598,39 @@ class TregenzaSphere(SphereBase):
 
         return cartesian_coordinates
 
+    def _get_cell_index(self, orientation_bin: pd.Series) -> int:
+        """Get the cell index for a single orientation bin.
+
+        Parameters
+        ----------
+        orientation_bin
+            Series containing index keys ``ring`` and ``bin`` indicating
+            the desired orientation to be studied.
+
+        Returns
+        -------
+        int
+            The cell index for the desired orientation.
+
+        Notes
+        -----
+        The cell index is found by adding the number of bins in all prior
+        rings, and then adding the number of bins.
+        """
+
+        ring_index = orientation_bin["ring"]
+        bin_index = orientation_bin["bin"]
+
+        cell_index = self._rings.loc[:ring_index - 1, "bins"].sum() + bin_index
+
+        return cell_index
+
+    def get_cell_indices(self, bins: pd.DataFrame) -> pd.Series:
+        # Here's the idea: add the number of bins in all rings below, plus
+        # whatever bin you're on. For example, in the top, it's zero.
+        # The next row starts at index 1, etc.
+        return bins.apply(self._get_cell_index, axis="columns")
+
 
 class CoarseTregenzaSphere(TregenzaSphere):
     """Coarse representation of the Tregenza sphere.

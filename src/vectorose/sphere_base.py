@@ -796,3 +796,30 @@ class SphereBase(abc.ABC):
 
         return selected_vectors
 
+    @abc.abstractmethod
+    def get_cell_indices(self, bins: pd.DataFrame) -> pd.Series:
+        """Get cell indices for specific bins.
+
+        Get the mesh cell index for specified orientation bins.
+
+        Parameters
+        ----------
+        bins
+            DataFrame containing the implementation-specific orientation
+            bin information for the desired cells
+
+        Returns
+        -------
+        Series
+            Indices of the mesh cells corresponding to the desired
+            orientation bin.
+
+        See Also
+        --------
+        .assign_histogram_bins :
+            assign specific orientations and magnitudes to histogram bins.
+        """
+
+        raise NotImplementedError(
+            "Subclasses must implement this abstract method."
+        )

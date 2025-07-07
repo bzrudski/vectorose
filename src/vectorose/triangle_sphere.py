@@ -175,3 +175,8 @@ class TriangleSphere(SphereBase):
             )
 
         return cartesian_vectors
+
+    def get_cell_indices(self, bins: pd.DataFrame) -> pd.Series:
+        # Here, everything is already contained in the face column.
+        return bins["face"]
+
