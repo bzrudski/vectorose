@@ -8,51 +8,69 @@ _This release is published under the MIT License._
 
 ### Bug Fixes
 
-- Change picked cells to have a consistent magenta colour. ([`a6ef9ab`](https://github.com/bzrudski/vectorose/commit/a6ef9ab5fe8ed45f54e97a9b53a8dd7fa2d8a2dd))
+- Change picked cells to have a consistent magenta colour.
+  ([`a6ef9ab`](https://github.com/bzrudski/vectorose/commit/a6ef9ab5fe8ed45f54e97a9b53a8dd7fa2d8a2dd))
 
-- Fix bugs related to using single vectors in `util` functions. ([`8037e49`](https://github.com/bzrudski/vectorose/commit/8037e49669939820caff3c68fbb278e70c1d3b54))
+- Fix bugs related to using single vectors in `util` functions.
+  ([`8037e49`](https://github.com/bzrudski/vectorose/commit/8037e49669939820caff3c68fbb278e70c1d3b54))
 
-- Rename the scalar fields for the `TregenzaSphere` and `TriangleSphere`. ([`285a90e`](https://github.com/bzrudski/vectorose/commit/285a90e3ddb6f121921672fda57eab109cc12648))
+- Rename the scalar fields for the `TregenzaSphere` and `TriangleSphere`.
+  ([`285a90e`](https://github.com/bzrudski/vectorose/commit/285a90e3ddb6f121921672fda57eab109cc12648))
 
-- Switch clicking to right mouse button for simplicity. ([`464fd37`](https://github.com/bzrudski/vectorose/commit/464fd374ec75a64d3b94823bcff5bcfcae570f48))
+- Switch clicking to right mouse button for simplicity.
+  ([`464fd37`](https://github.com/bzrudski/vectorose/commit/464fd374ec75a64d3b94823bcff5bcfcae570f48))
 
 ### Code Style
 
-- Minor code reformatting using `black`. ([`947431d`](https://github.com/bzrudski/vectorose/commit/947431d53a61073df26db80881d1c907c5cf63f7))
+- Minor code reformatting using `black`.
+  ([`947431d`](https://github.com/bzrudski/vectorose/commit/947431d53a61073df26db80881d1c907c5cf63f7))
 
 ### Documentation
 
-- Add new page to users' guide describing vector filtering. ([`0c358f0`](https://github.com/bzrudski/vectorose/commit/0c358f0ab366a712bd4bb2e26edeca5ba89783b3))
+- Add new page to users' guide describing vector filtering.
+  ([`0c358f0`](https://github.com/bzrudski/vectorose/commit/0c358f0ab366a712bd4bb2e26edeca5ba89783b3))
 
-- Fix a typo in the main landing page. ([`0abeb3e`](https://github.com/bzrudski/vectorose/commit/0abeb3e47a9082708e339e1b68a6b00ef575ad35))
+- Fix a typo in the main landing page.
+  ([`0abeb3e`](https://github.com/bzrudski/vectorose/commit/0abeb3e47a9082708e339e1b68a6b00ef575ad35))
 
-- Replace `property` role with `attr` and fix ambiguous reference. ([`19e1571`](https://github.com/bzrudski/vectorose/commit/19e1571f921272d719d325c9c6976e828ea1723d))
+- Replace `property` role with `attr` and fix ambiguous reference.
+  ([`19e1571`](https://github.com/bzrudski/vectorose/commit/19e1571f921272d719d325c9c6976e828ea1723d))
 
 ### Features
 
-- Add method for converting orientation bins into cell mesh indices. ([`b85a14d`](https://github.com/bzrudski/vectorose/commit/b85a14de242b99d63749b874cd02a753fb5ea731))
+- Add method for converting orientation bins into cell mesh indices.
+  ([`b85a14d`](https://github.com/bzrudski/vectorose/commit/b85a14de242b99d63749b874cd02a753fb5ea731))
 
-- Add public interface to programmatically select cells. ([`e55b2d1`](https://github.com/bzrudski/vectorose/commit/e55b2d184d911bc87150b641dfea6cdf7ea7244c))
+- Add public interface to programmatically select cells.
+  ([`e55b2d1`](https://github.com/bzrudski/vectorose/commit/e55b2d184d911bc87150b641dfea6cdf7ea7244c))
 
-- Add support for picking mesh cells in `SpherePlotter`. ([`7b04b2a`](https://github.com/bzrudski/vectorose/commit/7b04b2a208bc5603b0243aec5afcf334f910e887))
+- Add support for picking mesh cells in `SpherePlotter`.
+  ([`7b04b2a`](https://github.com/bzrudski/vectorose/commit/7b04b2a208bc5603b0243aec5afcf334f910e887))
 
-- Add the ability to filter the vectors from selected histogram cells. ([`1c54f59`](https://github.com/bzrudski/vectorose/commit/1c54f592498a3a05bae615c4168bb2298caa0b6f))
+- Add the ability to filter the vectors from selected histogram cells.
+  ([`1c54f59`](https://github.com/bzrudski/vectorose/commit/1c54f592498a3a05bae615c4168bb2298caa0b6f))
 
 ### Refactoring
 
-- Rename functions using cell instead of face. ([`eded369`](https://github.com/bzrudski/vectorose/commit/eded369ec7dc65206ce66780f07e055eca43df6d))
+- Rename functions using cell instead of face.
+  ([`eded369`](https://github.com/bzrudski/vectorose/commit/eded369ec7dc65206ce66780f07e055eca43df6d))
 
 ### Testing
 
-- Add test for deselecting cell in `SpherePlotter`. ([`1f93ead`](https://github.com/bzrudski/vectorose/commit/1f93ead6e96e43336af5eab8a453ab20fc061406))
+- Add test for deselecting cell in `SpherePlotter`.
+  ([`1f93ead`](https://github.com/bzrudski/vectorose/commit/1f93ead6e96e43336af5eab8a453ab20fc061406))
 
-- Add tests for cell picking in the `SpherePlotter`. ([`fa86e67`](https://github.com/bzrudski/vectorose/commit/fa86e67573989d68134151c180150ecab2e9844b))
+- Add tests for cell picking in the `SpherePlotter`.
+  ([`fa86e67`](https://github.com/bzrudski/vectorose/commit/fa86e67573989d68134151c180150ecab2e9844b))
 
-- Add tests for getting vectors from selected faces. ([`04ce117`](https://github.com/bzrudski/vectorose/commit/04ce1173211a292b9e6bda6d169ebc6be02e8aba))
+- Add tests for getting vectors from selected faces.
+  ([`04ce117`](https://github.com/bzrudski/vectorose/commit/04ce1173211a292b9e6bda6d169ebc6be02e8aba))
 
-- Add unit tests for index calculation. ([`abd34d9`](https://github.com/bzrudski/vectorose/commit/abd34d94c70c2a41ce654cb72f2d6d62b2c6ad09))
+- Add unit tests for index calculation.
+  ([`abd34d9`](https://github.com/bzrudski/vectorose/commit/abd34d94c70c2a41ce654cb72f2d6d62b2c6ad09))
 
-- Integrate new picking interface into unit tests. ([`c002dc4`](https://github.com/bzrudski/vectorose/commit/c002dc48bfbbc7c4e9e515e9859b2f3433991b1f))
+- Integrate new picking interface into unit tests.
+  ([`c002dc4`](https://github.com/bzrudski/vectorose/commit/c002dc48bfbbc7c4e9e515e9859b2f3433991b1f))
 
 
 ## v1.3.1 (2025-07-04)
@@ -61,13 +79,16 @@ _This release is published under the MIT License._
 
 ### Bug Fixes
 
-- Fix bug that flipped spatial coordinates when converting to axial data. ([`244437f`](https://github.com/bzrudski/vectorose/commit/244437f1a94619010c3f65395b605720f135f348))
+- Fix bug that flipped spatial coordinates when converting to axial data.
+  ([`244437f`](https://github.com/bzrudski/vectorose/commit/244437f1a94619010c3f65395b605720f135f348))
 
-- Fix bug that flipped spatial coordinates when creating symmetric vectors. ([`e6f9cd3`](https://github.com/bzrudski/vectorose/commit/e6f9cd3075954faaf80ee0d3667e272b19bb1312))
+- Fix bug that flipped spatial coordinates when creating symmetric vectors.
+  ([`e6f9cd3`](https://github.com/bzrudski/vectorose/commit/e6f9cd3075954faaf80ee0d3667e272b19bb1312))
 
 ### Documentation
 
-- Add `NaN` clarification for log scale plotting. ([`53e9c05`](https://github.com/bzrudski/vectorose/commit/53e9c058df0d6812c329a710006e9b0c30f6b506))
+- Add `NaN` clarification for log scale plotting.
+  ([`53e9c05`](https://github.com/bzrudski/vectorose/commit/53e9c058df0d6812c329a710006e9b0c30f6b506))
 
 
 ## v1.3.0 (2025-06-29)
@@ -76,29 +97,37 @@ _This release is published under the MIT License._
 
 ### Bug Fixes
 
-- Add NaN annotation to the scalar bar. ([`3de4453`](https://github.com/bzrudski/vectorose/commit/3de445329937d2fb05bc0e3a62d1d89e55f9476f))
+- Add NaN annotation to the scalar bar.
+  ([`3de4453`](https://github.com/bzrudski/vectorose/commit/3de445329937d2fb05bc0e3a62d1d89e55f9476f))
 
-- Fix bug that didn't correctly show the scalars with NaNs. ([`7274faa`](https://github.com/bzrudski/vectorose/commit/7274faa967d83e0f8a3f680bf8a543c77d4da935))
+- Fix bug that didn't correctly show the scalars with NaNs.
+  ([`7274faa`](https://github.com/bzrudski/vectorose/commit/7274faa967d83e0f8a3f680bf8a543c77d4da935))
 
-- Loosen some restrictions for log scale plotting. ([`8f8118a`](https://github.com/bzrudski/vectorose/commit/8f8118a574a646db6248fa26d1b90f395e9fa5c0))
+- Loosen some restrictions for log scale plotting.
+  ([`8f8118a`](https://github.com/bzrudski/vectorose/commit/8f8118a574a646db6248fa26d1b90f395e9fa5c0))
 
-- Set dynamic minimum value for log scale plotting if no minimum is set. ([`1bd1633`](https://github.com/bzrudski/vectorose/commit/1bd1633f6e38e2f8bdb08950b774cf8cdfd4df89))
+- Set dynamic minimum value for log scale plotting if no minimum is set.
+  ([`1bd1633`](https://github.com/bzrudski/vectorose/commit/1bd1633f6e38e2f8bdb08950b774cf8cdfd4df89))
 
 ### Build System
 
-- Per Codecov documentation, add code to upload test results. ([`cf32a02`](https://github.com/bzrudski/vectorose/commit/cf32a0201a323a954c98fe0c4d7faa015e994e73))
+- Per Codecov documentation, add code to upload test results.
+  ([`cf32a02`](https://github.com/bzrudski/vectorose/commit/cf32a0201a323a954c98fe0c4d7faa015e994e73))
 
 ### Documentation
 
-- Add log scale example to the documentation. ([`c166015`](https://github.com/bzrudski/vectorose/commit/c16601560dd4122109327df919e24cf414afdd21))
+- Add log scale example to the documentation.
+  ([`c166015`](https://github.com/bzrudski/vectorose/commit/c16601560dd4122109327df919e24cf414afdd21))
 
 ### Features
 
-- Add ability to colour spherical plots using a log scale. ([`cc3b224`](https://github.com/bzrudski/vectorose/commit/cc3b224a3156656148f2145182d76a8b43300a62))
+- Add ability to colour spherical plots using a log scale.
+  ([`cc3b224`](https://github.com/bzrudski/vectorose/commit/cc3b224a3156656148f2145182d76a8b43300a62))
 
 ### Testing
 
-- Add unit test for log scale plotting on spherical histograms. ([`079d219`](https://github.com/bzrudski/vectorose/commit/079d21927960c5e27e75e72f80b548d54cc9fbfc))
+- Add unit test for log scale plotting on spherical histograms.
+  ([`079d219`](https://github.com/bzrudski/vectorose/commit/079d21927960c5e27e75e72f80b548d54cc9fbfc))
 
 
 ## v1.2.0 (2025-06-27)
@@ -107,21 +136,26 @@ _This release is published under the MIT License._
 
 ### Build System
 
-- Explicitly set the changelog settings. ([`d65c9d8`](https://github.com/bzrudski/vectorose/commit/d65c9d89fd662ddfdb5960998ed0732940b0358d))
+- Explicitly set the changelog settings.
+  ([`d65c9d8`](https://github.com/bzrudski/vectorose/commit/d65c9d89fd662ddfdb5960998ed0732940b0358d))
 
 ### Documentation
 
-- Improve documentation for the sample data loader. ([`ff1ec20`](https://github.com/bzrudski/vectorose/commit/ff1ec2059ef2d4cee36fa42c39a664fb7f3c599d))
+- Improve documentation for the sample data loader.
+  ([`ff1ec20`](https://github.com/bzrudski/vectorose/commit/ff1ec2059ef2d4cee36fa42c39a664fb7f3c599d))
 
-- Integrate sample data interface into the documentation examples. ([`93a1516`](https://github.com/bzrudski/vectorose/commit/93a1516bccfdc31d5f7b5b981495305a22822274))
+- Integrate sample data interface into the documentation examples.
+  ([`93a1516`](https://github.com/bzrudski/vectorose/commit/93a1516bccfdc31d5f7b5b981495305a22822274))
 
 ### Features
 
-- Add sample data in importable module. ([`68ea1fe`](https://github.com/bzrudski/vectorose/commit/68ea1fe4128702c59003e56c1e262e65d9e2c6b2))
+- Add sample data in importable module.
+  ([`68ea1fe`](https://github.com/bzrudski/vectorose/commit/68ea1fe4128702c59003e56c1e262e65d9e2c6b2))
 
 ### Testing
 
-- Add tests for loading sample data. ([`e3e6652`](https://github.com/bzrudski/vectorose/commit/e3e6652e5e50fabed6ed97dd11ecd97def89b2c8))
+- Add tests for loading sample data.
+  ([`e3e6652`](https://github.com/bzrudski/vectorose/commit/e3e6652e5e50fabed6ed97dd11ecd97def89b2c8))
 
 
 ## v1.1.0 (2025-06-25)
@@ -130,11 +164,13 @@ _This release is published under the MIT License._
 
 ### Build System
 
-- **ci-cd**: Revert to token-based publishing on PyPI and Test PyPI. ([`81817a7`](https://github.com/bzrudski/vectorose/commit/81817a7c6bb3d60b47966d96eac7d313818e6490))
+- **ci-cd**: Revert to token-based publishing on PyPI and Test PyPI.
+  ([`81817a7`](https://github.com/bzrudski/vectorose/commit/81817a7c6bb3d60b47966d96eac7d313818e6490))
 
 ### Features
 
-- Add ability to alter the radial axis bounds of polar plot. ([`6c5d886`](https://github.com/bzrudski/vectorose/commit/6c5d8869f146fe49829141d65e43868462ae3789))
+- Add ability to alter the radial axis bounds of polar plot.
+  ([`6c5d886`](https://github.com/bzrudski/vectorose/commit/6c5d8869f146fe49829141d65e43868462ae3789))
 
 
 ## v1.0.0 (2025-05-26)
@@ -143,9 +179,11 @@ _This release is published under the MIT License._
 
 ### Build System
 
-- Update dependencies in lockfile. ([`d86ae0d`](https://github.com/bzrudski/vectorose/commit/d86ae0df9967276f5ccf69227da319bb57e6cbb0))
+- Update dependencies in lockfile.
+  ([`d86ae0d`](https://github.com/bzrudski/vectorose/commit/d86ae0df9967276f5ccf69227da319bb57e6cbb0))
 
-- **deps**: Bump tornado in the pip group across 1 directory ([`24da049`](https://github.com/bzrudski/vectorose/commit/24da0499386f23655a39c5a20db1fea8f7ea1979))
+- **deps**: Bump tornado in the pip group across 1 directory
+  ([`24da049`](https://github.com/bzrudski/vectorose/commit/24da0499386f23655a39c5a20db1fea8f7ea1979))
 
 
 ## v0.2.5 (2025-05-02)
