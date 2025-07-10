@@ -19,14 +19,17 @@ authors:
     affiliation: 2
   - name: Natalie Reznikov
     orcid: 0000-0001-5293-4647
-    affiliation: "1, 2, 3"
+    affiliation: "2, 3, 4"
 affiliations:
-  - name: Department of Quantitative Life Sciences, McGill University, Canada
+  - name: Quantitative Life Sciences, McGill University, Canada
     index: 1
   - name: Faculty of Dental Medicine and Oral Health Sciences, McGill University, Canada
     index: 2
   - name: Department of Bioengineering, Faculty of Engineering, McGill University, Canada
     index: 3
+  - name: Department of Anatomy and Cell Biology, School of Biomedical Sciences, Faculty of Medicine and Health 
+          Sciences, McGill University, Canada
+    index: 4
 date: 21 April 2025
 bibliography: paper.bib
 ---
