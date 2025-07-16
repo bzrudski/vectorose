@@ -119,7 +119,7 @@ Now, for some concrete examples. The wind discussed above is an example of
 **vectorial** data {cite:p}`{see}klinkComplementaryUseScalar1998`. Wind
 blowing east is quite different from wind blowing west.
 
-Meanwhile, cardiac fibre orientation {cite:p}`lombaertHumanAtlasCardiac2012b,
+Meanwhile, cardiac fibre orientation {cite:p}`lombaertHumanAtlasCardiac2012,
 dileepCardiomyocyteOrientationRecovery2023` and bone trabecular anisotropy
 {cite:p}`reznikovTechnicalNoteMapping2022` are both examples of **axial**
 data. These structures are aligned in a certain spatial orientation, but
