@@ -667,7 +667,7 @@ class SphereBase(abc.ABC):
         self,
         labelled_vectors: pd.DataFrame,
         create_unit_vectors: bool = False,
-        include_spatial_locations: bool = False,
+        include_spatial_coordinates: bool = False,
     ) -> np.ndarray:
         """Convert a set of labelled vectors into Cartesian coordinates.
 
@@ -686,7 +686,7 @@ class SphereBase(abc.ABC):
             Depending on the implementation, this may either remove an
             extraneous normalisation step later, or add an extra
             normalisation step now.
-        include_spatial_locations
+        include_spatial_coordinates
             Indicate whether to include spatial coordinates in the new
             array. This option may only be called if the vectors have
             spatial coordinates.
