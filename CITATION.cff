@@ -1,0 +1,44 @@
+cff-version: "1.2.0"
+authors:
+- family-names: Rudski
+  given-names: Benjamin Z.
+  orcid: "https://orcid.org/0009-0000-3423-0662"
+- family-names: Deering
+  given-names: Joseph
+  orcid: "https://orcid.org/0000-0003-2868-0944"
+- family-names: Reznikov
+  given-names: Natalie
+  orcid: "https://orcid.org/0000-0001-5293-4647"
+contact:
+- family-names: Rudski
+  given-names: Benjamin Z.
+  orcid: "https://orcid.org/0009-0000-3423-0662"
+doi: 10.5281/zenodo.15857821
+message: If you use this software, please cite our article in the
+  Journal of Open Source Software.
+preferred-citation:
+  authors:
+  - family-names: Rudski
+    given-names: Benjamin Z.
+    orcid: "https://orcid.org/0009-0000-3423-0662"
+  - family-names: Deering
+    given-names: Joseph
+    orcid: "https://orcid.org/0000-0003-2868-0944"
+  - family-names: Reznikov
+    given-names: Natalie
+    orcid: "https://orcid.org/0000-0001-5293-4647"
+  date-published: 2025-07-18
+  doi: 10.21105/joss.08369
+  issn: 2475-9066
+  issue: 111
+  journal: Journal of Open Source Software
+  publisher:
+    name: Open Journals
+  start: 8369
+  title: "VectoRose: A new package for analysing and visualising 3D
+    non-unit vectors in Python"
+  type: article
+  url: "https://joss.theoj.org/papers/10.21105/joss.08369"
+  volume: 10
+title: "VectoRose: A new package for analysing and visualising 3D
+  non-unit vectors in Python"
