@@ -2,6 +2,57 @@
 
 <!-- version list -->
 
+## v1.4.1 (2025-07-18)
+
+### Bug Fixes
+
+- Rename `include_spatial_locations` to match subclass implementations.
+  ([`9049d45`](https://github.com/bzrudski/vectorose/commit/9049d450ff8c6816570714d21af8244e50d05a3f))
+
+### Build System
+
+- Add version placeholder to CHANGELOG.md.
+  ([`a74262d`](https://github.com/bzrudski/vectorose/commit/a74262d6785fc12be6a833a6c36624cbdb456317))
+
+- Update `poetry.lock`.
+  ([`c267e2c`](https://github.com/bzrudski/vectorose/commit/c267e2c6465645c96ba219ce382a63479dbd4993))
+
+- Update `poetry.lock`.
+  ([`28e840b`](https://github.com/bzrudski/vectorose/commit/28e840bf98e5b18b22d6daf46018540848d5c7f9))
+
+- **deps**: Bump aiohttp in the pip group across 1 directory
+  ([`94e422e`](https://github.com/bzrudski/vectorose/commit/94e422ed05d7fd7524284ed07f9579113ce6e4f6))
+
+- **deps**: Bump pillow in the pip group across 1 directory
+  ([`b7ed875`](https://github.com/bzrudski/vectorose/commit/b7ed875e196ce06941ae73cb98505acb87547730))
+
+### Documentation
+
+- Add citation file.
+  ([`f630ce9`](https://github.com/bzrudski/vectorose/commit/f630ce9535ffe2d582bc58a3ab04cc8ad1907939))
+
+- Add citations to JOSS paper.
+  ([`3a06716`](https://github.com/bzrudski/vectorose/commit/3a067163b95e800f406ac2140c031cd244e61b36))
+
+- Add DOI badge.
+  ([`754075a`](https://github.com/bzrudski/vectorose/commit/754075a3790e3552f0b7a6a7a079645bd63b4b28))
+
+- Add screen recording for cell picking.
+  ([`fcfaf44`](https://github.com/bzrudski/vectorose/commit/fcfaf44815f7ba09610a3a15d63379f179547ca1))
+
+- Fix line breaks in CHANGELOG.md.
+  ([`a2d99ee`](https://github.com/bzrudski/vectorose/commit/a2d99eec5eb6bb91501fa398f27a3e48038d8477))
+
+- Fix reference `lombaertHumanAtlasCardiac2012`.
+  ([`5753c36`](https://github.com/bzrudski/vectorose/commit/5753c365e764ee8b6963056ad972495bf0b910af))
+
+- Manually update CHANGELOG.md.
+  ([`4b1054a`](https://github.com/bzrudski/vectorose/commit/4b1054a12efad594583341e5140fdcc9b65ddf47))
+
+- Update README example image.
+  ([`fb5e8f0`](https://github.com/bzrudski/vectorose/commit/fb5e8f0f5140de3e0bed94f672a818494eafe8c8))
+
+
 ## v1.4.0 (2025-07-07)
 
 _This release is published under the MIT License._
