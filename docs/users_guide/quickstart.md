@@ -47,7 +47,8 @@ In this example, we'll see how to generate and plot each of these.
 Yes! VectoRose is open-source and licensed under the **MIT License**.
 Anyone can use VectoRose for any purpose and even modify and further
 develop it. The only requirement is that you attribute us as the original
-authors. We also request that you cite us if you publish any articles that
+authors. We also request that you cite
+{cite:p}`rudskiVectoRoseNewPackage2025` if you publish any articles that
 use our tool.
 
 ```{note}

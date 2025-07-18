@@ -219,8 +219,19 @@ described in the **User's Guide**.
 If you've found VectoRose helpful for your research, please cite our
 publication:
 
-```
-TBA
+```tex
+@article{Rudski2025,
+  doi = {10.21105/joss.08369},
+  url = {https://doi.org/10.21105/joss.08369},
+  year = {2025},
+  publisher = {The Open Journal},
+  volume = {10},
+  number = {111},
+  pages = {8369},
+  author = {Rudski, Benjamin Z. and Deering, Joseph and Reznikov, Natalie},
+  title = {VectoRose: A new package for analysing and visualising 3D non-unit vectors in Python},
+  journal = {Journal of Open Source Software}
+}
 ```
 
 If you've modelled your analysis based on our sample case studies, please
