@@ -38,6 +38,7 @@ Spherical and polar histogram plotting for non-unit vectorial and axial
 data.
 
 [![PyPI - Version](https://img.shields.io/pypi/v/vectorose)](https://pypi.org/project/vectorose/)
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.08369/status.svg)](https://doi.org/10.21105/joss.08369)
 [![codecov](https://codecov.io/github/bzrudski/vectorose/graph/badge.svg)](https://codecov.io/github/bzrudski/vectorose)
 [![docs](https://app.readthedocs.org/projects/vectorose/badge/)](https://vectorose.readthedocs.io/en/latest/)
 [![CI/CD](https://github.com/bzrudski/vectorose/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/bzrudski/vectorose/actions/workflows/ci-cd.yml)
