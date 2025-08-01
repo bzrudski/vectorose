@@ -22,6 +22,7 @@ dependencies = [
     "imageio[ffmpeg, pyav]>=2.27.0",
     "trame (>=3.6.5, <4)",
     "ipywidgets (>=8.1.5, <9)",
+    "tables (>=3.10.1,<4.0.0)",
 ]
 
 [project.urls]
@@ -46,6 +47,7 @@ sphinxcontrib-video = "^0.3.1"
 sphinx-design = "^0.6.1"
 sphinx-copybutton = "^0.5.2"
 python-semantic-release = "^9.21.1"
+jupyterlab-spellchecker = "^0.8.4"
 
 [tool.semantic_release]
 version_toml = [
