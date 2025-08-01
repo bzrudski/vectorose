@@ -9,6 +9,11 @@ Mock vector data creator.
 
 This module provides tools to create artificial vectors for testing.
 
+Warnings
+--------
+This module does not exist as an automatic top-level import in vectorose,
+and must therefore be explicitly imported.
+
 References
 ----------
 .. [#fisher-lewis-embleton] Fisher, N. I., Lewis, T., & Embleton, B. J.
