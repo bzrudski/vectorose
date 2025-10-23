@@ -2,6 +2,32 @@
 
 <!-- version list -->
 
+## v1.4.2 (2025-10-23)
+
+### Bug Fixes
+
+- Change keys for converting picked cells to `DataFrame`.
+  ([`779fc65`](https://github.com/bzrudski/vectorose/commit/779fc653e6bedcdfacaf120406f1631582941bdf))
+
+### Build System
+
+- Add PyTables as dependency to allow exporting HDF5 files.
+  ([`041c0e5`](https://github.com/bzrudski/vectorose/commit/041c0e5d1504baa47f902d7c59eba19c6427280f))
+
+### Documentation
+
+- Add access date for Lombaert et al. (2012).
+  ([`c2ee240`](https://github.com/bzrudski/vectorose/commit/c2ee24040e011e3f726906f5d74408902ddad53c))
+
+- Add warning to mock_data.py about needing to explicity import.
+  ([`18174c7`](https://github.com/bzrudski/vectorose/commit/18174c7625d19f54bf5bad97a1ded06594a829f2))
+
+### Testing
+
+- Add unit test of re-picking previously picked cells.
+  ([`455d712`](https://github.com/bzrudski/vectorose/commit/455d7129d74ab1c5d67001b4c5aa8ab21d4cea3a))
+
+
 ## v1.4.1 (2025-07-18)
 
 ### Bug Fixes
