@@ -410,7 +410,23 @@ class SpherePlotter:
             All cell scalar data for the picked mesh cells. These values
             can then be used by the :class:`.SphereBase` sphere to extract
             vectors from the picked cells. If no cells are picked, an
-            empty :class:`pandas.DataFrame` is produced.
+            empty :class:`pandas.DataFrame` is produced. See **Notes** for
+            full details on the format.
+
+        Notes
+        -----
+        The return :class:`pandas.DataFrame` always contains at least the
+        following keys:
+
+        * ``index`` -  the cell index within the sphere mesh
+        * orientation bin information - sphere-dependent keys providing the
+          orientation bin
+        * ``frequency`` - the frequency value associated with the face
+        * ``shell`` - if multiple shells are present in the data, the shell
+          corresponding to the selected cell (absent if only one shell)
+
+        Other keys may be present, but these are the ones most important
+        for VectoRose.
         """
         scalar_data_table = pd.DataFrame()
 
@@ -425,6 +441,14 @@ class SpherePlotter:
             cell_df = pd.DataFrame(columns=column_names, data=row_values)
             scalar_data_table = pd.concat(
                 [scalar_data_table, cell_df], ignore_index=True
+            )
+
+        if len(self._picked_cell_actors) > 0:
+            scalar_data_table["index"] = scalar_data_table["vtkOriginalCellIds"].astype(int)
+
+            # Drop redundant columns
+            scalar_data_table = scalar_data_table.drop(
+                ["vtkOriginalCellIds", "Data"], axis="columns"
             )
 
         return scalar_data_table
@@ -558,7 +582,10 @@ class SpherePlotter:
 
         if isinstance(cell_indices, pd.DataFrame):
             index_series = cell_indices["index"]
-            magnitude_series = cell_indices["shell"]
+            if "shell" in cell_indices.keys():
+                magnitude_series = cell_indices["shell"]
+            else:
+                magnitude_series = pd.Series(np.zeros_like(index_series))
         else:
             index_series = cell_indices
             magnitude_series = pd.Series(np.zeros(len(index_series), dtype=int))
