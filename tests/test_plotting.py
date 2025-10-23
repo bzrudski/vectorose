@@ -768,7 +768,7 @@ def test_picked_cells(mock_orientation_histogram_mesh_counts):
 
     assert len(plotter_selected_faces) == number_of_cells
 
-    cell_ids = plotter_selected_faces["vtkOriginalCellIds"]
+    cell_ids = plotter_selected_faces["index"]
 
     assert np.all(cell_ids == random_faces)
 
@@ -870,7 +870,7 @@ def test_picked_cells_magnitude(mock_nested_histogram_meshes_counts):
 
     assert len(plotter_selected_faces) == number_of_cells
 
-    cell_ids = plotter_selected_faces["vtkOriginalCellIds"]
+    cell_ids = plotter_selected_faces["index"]
 
     assert np.all(cell_ids == random_faces)
 
@@ -899,6 +899,41 @@ def test_picked_cells_unpick(mock_orientation_histogram_mesh_counts):
     plotter_selected_faces = plotter.picked_cells
 
     assert len(plotter_selected_faces) == 0
+
+
+def test_repick_cells(mock_orientation_histogram_mesh_counts):
+    """Test for repicking cells.
+
+    Test for programmatically picking cells with
+    :meth:`.SpherePlotter.pick_cells` to test
+    :attr:`.SpherePlotter.picked_cells`, and then repicking cells
+    programmatically from the created :class:`pandas.DataFrame`.
+    """
+
+    plotter = vr.plotting.SpherePlotter(mock_orientation_histogram_mesh_counts)
+    plotter.produce_plot(add_sliders=False)
+
+    plotter.cell_picking_active = True
+
+    rng = np.random.default_rng(RANDOM_SEED)
+
+    number_of_cells = 10
+
+    random_faces = rng.integers(
+        0, mock_orientation_histogram_mesh_counts.n_cells, number_of_cells
+    )
+
+    plotter.pick_cells(pd.Series(random_faces))
+
+    plotter_selected_faces = plotter.picked_cells
+
+    plotter.clear_picked_cells()
+
+    plotter.pick_cells(plotter_selected_faces)
+
+    repicked_cells = plotter.picked_cells
+
+    assert np.all(repicked_cells == plotter_selected_faces)
 
 
 def test_produce_1d_scalar_histogram(
