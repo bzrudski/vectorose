@@ -26,6 +26,7 @@ import mpl_toolkits.mplot3d.art3d
 import mpl_toolkits.mplot3d.axes3d
 import numpy as np
 import pandas as pd
+import scipy as sp
 import vtk
 import pyvista as pv
 from pyvista.plotting.opts import ElementType
@@ -378,6 +379,80 @@ class SpherePlotter:
         theta = spherical_coordinates[util.AngularIndex.THETA]
 
         return theta
+
+    @property
+    def current_azimuth(self) -> float:
+        """Get the current azimuth in degrees between 0 and 360.
+
+        Notes
+        -----
+        This value is *related* to the :attr:`~.current_theta`, but not
+        identical, as it is measured clockwise from the `+x` axis. This
+        value is 90° offset of the :math:`\\theta` as defined in
+        **mathematical spherical coordinates**.
+        """
+
+        spherical_coordinates = self._get_spherical_coordinates_from_camera()[:-1]
+
+        math_spherical_coordinates = util.convert_to_math_spherical_coordinates(
+            spherical_coordinates, use_degrees=True
+        )
+
+        azimuth = math_spherical_coordinates[0] + 90
+
+        return azimuth
+
+    @property
+    def current_elevation(self) -> float:
+        """Get the current elevation in degrees between 0 and 180.
+
+        Notes
+        -----
+        This value is **the same as** that returned by
+        :attr:`~.current_phi`.
+        """
+
+        spherical_coordinates = self._get_spherical_coordinates_from_camera()
+
+        elevation = spherical_coordinates[util.AngularIndex.PHI]
+
+        return elevation
+
+    @property
+    def current_roll(self) -> float:
+        """Get the current roll in degrees, measured between 0 and 360.
+
+        Notes
+        -----
+        This value is computed by undoing the azimuth and elevation and
+        then measuring the angle that transformed vector and the original
+        camera up vector ``[0, 1, 0]``.
+        """
+
+        original_up_vector = np.array([0, 1, 0])
+        azimuth = self.current_azimuth
+        elevation = self.current_elevation
+
+        up_vector_rotation = sp.spatial.transform.Rotation.from_euler(
+            "ZX", [azimuth, elevation], degrees=True
+        )
+
+        actual_up_vector = np.array(self._plotter.camera.up)
+
+        inverse_transformed_up_vector = up_vector_rotation.apply(
+            actual_up_vector, inverse=True
+        )
+
+        roll = np.degrees(
+            np.arccos(np.dot(inverse_transformed_up_vector, original_up_vector))
+        )
+
+        cross_product = np.linalg.cross(inverse_transformed_up_vector, original_up_vector)
+
+        if cross_product[-1] > 0:
+            roll *= -1
+
+        return roll % 360
 
     @property
     def cell_picking_active(self) -> bool:
@@ -1025,6 +1100,73 @@ class SpherePlotter:
 
         if self._plotter.iren.initialized:
             self._plotter.update()
+
+    def rotate_camera_euler(
+        self, azimuth: float, elevation: float, roll: float, use_degrees: bool = True
+    ):
+        """Rotate the camera using specified intrinsic Euler angles.
+
+        Parameters
+        ----------
+        azimuth
+            Angular rotation about the global `Z`-axis, measured
+            counter-clockwise from the positive `X`-axis.
+        elevation
+            Angular tilt about the transformed `X`-axis, measured
+            counter-clockwise from the positive `Z`-axis down.
+        roll
+            Camera rotation about the transformed `Z`-axis, measured
+            counter-clockwise.
+        use_degrees
+            Indicate whether angles should be considered in degrees.
+
+        Warnings
+        --------
+        Note the definitions of the angles! These don't correspond to the
+        angles :math:`\\phi` and :math:`\\theta` defined elsewhere.
+
+        Also, the :attr:`~.current_roll`, :attr:`~.current_azimuth` and
+        :attr:`~.current_elevation` may not match the values passed here
+        due to redundancy.
+
+        Notes
+        -----
+        Before rotating, the view is aligned with the `XY` plane to ensure
+        reproducible behaviour.
+
+        The camera rotation is applied in the sequence `ZXZ`. First the
+        camera is rotated about the local `Z` axis to set the azimuth.
+        Then, the camera is rotated about the new local `X`-axis to set the
+        correct elevation. Then, the camera is rolled along the new local
+        `Z` axis.
+
+        Additional information about Euler angles can be found at
+        https://en.wikipedia.org/wiki/Euler_angles.
+        """
+
+        self._plotter.view_xy()
+
+        camera_position_rotation = sp.spatial.transform.Rotation.from_euler(
+            "ZX", [azimuth, elevation], degrees=use_degrees
+        )
+
+        camera_up_vector_rotation = sp.spatial.transform.Rotation.from_euler(
+            "ZXZ", [azimuth, elevation, roll], degrees=use_degrees
+        )
+
+        camera_position = np.array(self._plotter.camera.position)
+        focal_point = np.array(self._plotter.camera.focal_point)
+        up_vector = np.array(self._plotter.camera.up)
+
+        new_camera_position = camera_position_rotation.apply(camera_position)
+        new_focal_point = camera_position_rotation.apply(focal_point)
+        new_up_vector = camera_up_vector_rotation.apply(up_vector)
+
+        self._plotter.camera_position = [
+            new_camera_position,
+            new_focal_point,
+            new_up_vector,
+        ]
 
     def open_movie_file(
         self,
