@@ -820,6 +820,72 @@ def test_rotate_camera_euler_radians(mock_nested_histogram_meshes):
     assert np.isclose(theta, expected_theta)
 
 
+def test_current_azimuth(mock_nested_histogram_meshes):
+    """Test for getting the azimuth programmatically.
+
+    Test for :attr:`.SpherePlotter.current_azimuth`.
+    """
+
+    elevation = 125
+    azimuth = -135
+    roll = -60
+
+    use_degrees = True
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    # Rotate to the desired position
+    plotter.rotate_camera_euler(azimuth, elevation, roll, use_degrees)
+
+    computed_azimuth = plotter.current_azimuth
+    assert np.isclose(azimuth % 360, computed_azimuth)
+
+
+def test_current_elevation(mock_nested_histogram_meshes):
+    """Test for getting the elevation programmatically.
+
+    Test for :attr:`.SpherePlotter.current_elevation`.
+    """
+
+    elevation = 125
+    azimuth = -135
+    roll = -60
+
+    use_degrees = True
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    # Rotate to the desired position
+    plotter.rotate_camera_euler(azimuth, elevation, roll, use_degrees)
+
+    computed_elevation = plotter.current_elevation
+    assert np.isclose(elevation % 360, computed_elevation)
+
+
+def test_current_roll(mock_nested_histogram_meshes):
+    """Test for getting the roll programmatically.
+
+    Test for :attr:`.SpherePlotter.current_roll`.
+    """
+
+    elevation = 125
+    azimuth = -135
+    roll = 270
+
+    use_degrees = True
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    # Rotate to the desired position
+    plotter.rotate_camera_euler(azimuth, elevation, roll, use_degrees)
+
+    computed_roll = plotter.current_roll
+    assert np.isclose(roll % 360, computed_roll)
+
+
 def test_cell_picking_not_active(mock_orientation_histogram_mesh_counts):
     """Test that initially cell picking is inactive.
 
