@@ -1168,6 +1168,9 @@ class SpherePlotter:
             new_up_vector,
         ]
 
+        if self._plotter.iren.initialized:
+            self._plotter.update()
+
     def open_movie_file(
         self,
         filename: str,
