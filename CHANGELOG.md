@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.5.1 (2025-10-28)
+
+### Bug Fixes
+
+- Update plotter window after rotating camera.
+  ([`dbef186`](https://github.com/bzrudski/vectorose/commit/dbef1867290082bdd658bb181ccad0c8218eab06))
+
+### Code Style
+
+- Reformat code with black.
+  ([`b2d7cc8`](https://github.com/bzrudski/vectorose/commit/b2d7cc80b97a048cfde79e4518a4af12c7a86062))
+
+
 ## v1.5.0 (2025-10-28)
 
 ### Bug Fixes
