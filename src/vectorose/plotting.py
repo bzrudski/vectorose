@@ -26,6 +26,7 @@ import mpl_toolkits.mplot3d.art3d
 import mpl_toolkits.mplot3d.axes3d
 import numpy as np
 import pandas as pd
+import scipy as sp
 import vtk
 import pyvista as pv
 from pyvista.plotting.opts import ElementType
@@ -1025,6 +1026,73 @@ class SpherePlotter:
 
         if self._plotter.iren.initialized:
             self._plotter.update()
+
+    def rotate_camera_euler(
+        self,
+        elevation: float,
+        azimuth: float,
+        roll: float,
+        use_degrees: bool = True,
+    ):
+        """Rotate the camera using specified Euler angles.
+
+        Parameters
+        ----------
+        elevation
+            Angular tilt about the global `X`-axis, measured
+            counter-clockwise from the positive `Z`-axis down.
+        azimuth
+            Angular rotation about the global `Z`-axis, measured
+            counter-clockwise from the positive `X`-axis.
+        roll
+            Camera rotation about the transformed `Z`-axis, measured
+            counter-clockwise.
+        use_degrees
+            Indicate whether angles should be considered in degrees.
+
+        Warnings
+        --------
+        Note the definitions of the angles! These don't correspond to the
+        angles :math:`\\phi` and :math:`\\theta` defined elsewhere.
+
+        Notes
+        -----
+        Before rotating, the view is aligned with the `XY` plane to ensure
+        reproducible behaviour.
+
+        The camera rotation is applied in the sequence `ZXZ`. First the
+        camera is rotated about the local `Z` axis to set the azimuth.
+        Then, the camera is rotated about the new local `X`-axis to set the
+        correct elevation. Then, the camera is rolled along the new local
+        `Z` axis.
+
+        Additional information about Euler angles can be found at
+        https://en.wikipedia.org/wiki/Euler_angles.
+        """
+
+        self._plotter.view_xy()
+
+        camera_position_rotation = sp.spatial.transform.Rotation.from_euler(
+            "ZX", [azimuth, elevation], degrees=use_degrees
+        )
+
+        camera_up_vector_rotation = sp.spatial.transform.Rotation.from_euler(
+            "ZXZ", [azimuth, elevation, roll], degrees=use_degrees
+        )
+
+        camera_position = np.array(self._plotter.camera.position)
+        focal_point = np.array(self._plotter.camera.focal_point)
+        up_vector = np.array(self._plotter.camera.up)
+
+        new_camera_position = camera_position_rotation.apply(camera_position)
+        new_focal_point = camera_position_rotation.apply(focal_point)
+        new_up_vector = camera_up_vector_rotation.apply(up_vector)
+
+        self._plotter.camera_position = [
+            new_camera_position,
+            new_focal_point,
+            new_up_vector,
+        ]
 
     def open_movie_file(
         self,
