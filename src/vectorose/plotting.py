@@ -381,6 +381,80 @@ class SpherePlotter:
         return theta
 
     @property
+    def current_azimuth(self) -> float:
+        """Get the current azimuth in degrees between 0 and 360.
+
+        Notes
+        -----
+        This value is *related* to the :attr:`~.current_theta`, but not
+        identical, as it is measured clockwise from the `+x` axis. This
+        value is 90° offset of the :math:`\\theta` as defined in
+        **mathematical spherical coordinates**.
+        """
+
+        spherical_coordinates = self._get_spherical_coordinates_from_camera()[:-1]
+
+        math_spherical_coordinates = util.convert_to_math_spherical_coordinates(
+            spherical_coordinates, use_degrees=True
+        )
+
+        azimuth = math_spherical_coordinates[0] + 90
+
+        return azimuth
+
+    @property
+    def current_elevation(self) -> float:
+        """Get the current elevation in degrees between 0 and 180.
+
+        Notes
+        -----
+        This value is **the same as** that returned by
+        :attr:`~.current_phi`.
+        """
+
+        spherical_coordinates = self._get_spherical_coordinates_from_camera()
+
+        elevation = spherical_coordinates[util.AngularIndex.PHI]
+
+        return elevation
+
+    @property
+    def current_roll(self) -> float:
+        """Get the current roll in degrees, measured between 0 and 360.
+
+        Notes
+        -----
+        This value is computed by undoing the azimuth and elevation and
+        then measuring the angle that transformed vector and the original
+        camera up vector ``[0, 1, 0]``.
+        """
+
+        original_up_vector = np.array([0, 1, 0])
+        azimuth = self.current_azimuth
+        elevation = self.current_elevation
+
+        up_vector_rotation = sp.spatial.transform.Rotation.from_euler(
+            "ZX", [azimuth, elevation], degrees=True
+        )
+
+        actual_up_vector = np.array(self._plotter.camera.up)
+
+        inverse_transformed_up_vector = up_vector_rotation.apply(
+            actual_up_vector, inverse=True
+        )
+
+        roll = np.degrees(
+            np.arccos(np.dot(inverse_transformed_up_vector, original_up_vector))
+        )
+
+        cross_product = np.linalg.cross(inverse_transformed_up_vector, original_up_vector)
+
+        if cross_product[-1] > 0:
+            roll *= -1
+
+        return roll % 360
+
+    @property
     def cell_picking_active(self) -> bool:
         """Indicate whether interactive cell picking is active."""
         return self._picking_active
@@ -1050,6 +1124,10 @@ class SpherePlotter:
         --------
         Note the definitions of the angles! These don't correspond to the
         angles :math:`\\phi` and :math:`\\theta` defined elsewhere.
+
+        Also, the :attr:`~.current_roll`, :attr:`~.current_azimuth` and
+        :attr:`~.current_elevation` may not match the values passed here
+        due to redundancy.
 
         Notes
         -----
