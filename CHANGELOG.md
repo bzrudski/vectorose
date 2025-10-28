@@ -2,6 +2,38 @@
 
 <!-- version list -->
 
+## v1.5.0 (2025-10-28)
+
+### Bug Fixes
+
+- Correct documentation and change parameter order.
+  ([`16cfcb8`](https://github.com/bzrudski/vectorose/commit/16cfcb8aa1003f837c58acab5871e39249d7e2ac))
+
+### Build System
+
+- **deps-dev**: Bump jupyterlab in the pip group across 1 directory
+  ([`17911f8`](https://github.com/bzrudski/vectorose/commit/17911f8d35366d8ebf40a613e4c488ffc539a199))
+
+### Features
+
+- Add ability to position camera using Euler angles.
+  ([`af93b46`](https://github.com/bzrudski/vectorose/commit/af93b46fb898baa572ba70e8cb3d9fd844e242f6))
+
+- Add getters for the azimuth, elevation and roll.
+  ([`4e7f2f6`](https://github.com/bzrudski/vectorose/commit/4e7f2f6f586ff3a41972a98d0c0df229d4726336))
+
+- Add tests for the azimuth, elevation and roll getters.
+  ([`57f7651`](https://github.com/bzrudski/vectorose/commit/57f765109e6c146dc755e5aa472cdc0f9ef828ff))
+
+### Testing
+
+- Add tests for the azimuth, elevation and roll getters.
+  ([`309d870`](https://github.com/bzrudski/vectorose/commit/309d870718cdf13ee88793bf99fe9fc753fccbc5))
+
+- Add unit tests for the Euler angles (roll not yet tested).
+  ([`c858a03`](https://github.com/bzrudski/vectorose/commit/c858a0364f57f565cd450b295a9928bdcd7ed449))
+
+
 ## v1.4.2 (2025-10-23)
 
 ### Bug Fixes
