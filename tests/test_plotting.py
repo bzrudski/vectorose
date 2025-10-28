@@ -712,6 +712,114 @@ def test_rotate_to_view_theta_radians(mock_nested_histogram_meshes):
     assert np.isclose(plotter.current_theta, np.degrees(theta_value))
 
 
+def test_rotate_camera_euler_zero(mock_nested_histogram_meshes):
+    """Test for programmatically rotating the view using Euler angles.
+
+    Test for :meth:`.SpherePlotter.rotate_camera_euler` for angles
+    expressed in degrees.
+    """
+
+    elevation = 0
+    azimuth = 0
+    roll = 0
+    use_degrees = True
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    # Rotate to specified angles
+    plotter.rotate_camera_euler(elevation, azimuth, roll, use_degrees)
+
+    # Test to make sure we are indeed at the pole
+    assert np.isclose(plotter.current_phi, 0, atol=1e-3)
+
+
+def test_rotate_camera_euler_degrees(mock_nested_histogram_meshes):
+    """Test for programmatically rotating the view using Euler angles.
+
+    Test for :meth:`.SpherePlotter.rotate_camera_euler` for angles
+    expressed in degrees.
+
+    Notes
+    -----
+    An adjustment is made to theta since the pitch is rotated relative to
+    the `x`-axis, not the `y`-axis (which we use to define theta).
+    """
+
+    elevation = 125
+    azimuth = -135
+    roll = -60
+
+    use_degrees = True
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    # Rotate to the desired position
+    plotter.rotate_camera_euler(elevation, azimuth, roll, use_degrees)
+
+    # Find the expected phi and theta
+    math_spherical_coords = np.array([azimuth, elevation])
+    spherical_coords = vr.util.convert_math_spherical_coordinates_to_vr_coordinates(
+        math_spherical_coords, use_degrees
+    )
+
+    # Note: adjust for theta because of offset of 90 in axis of rotation
+    expected_phi = spherical_coords[vr.util.AngularIndex.PHI]
+    expected_theta = (spherical_coords[vr.util.AngularIndex.THETA] + 90) % 360
+
+    # Get the current phi and theta
+    phi = plotter.current_phi
+    theta = plotter.current_theta
+
+    # Check that the values are close
+    assert np.isclose(phi, expected_phi)
+    assert np.isclose(theta, expected_theta)
+
+
+def test_rotate_camera_euler_radians(mock_nested_histogram_meshes):
+    """Test for programmatically rotating the view using Euler angles.
+
+    Test for :meth:`.SpherePlotter.rotate_camera_euler` for angles
+    expressed in degrees.
+
+    Notes
+    -----
+    An adjustment is made to theta since the pitch is rotated relative to
+    the `x`-axis, not the `y`-axis (which we use to define theta).
+    """
+
+    elevation = np.radians(125)
+    azimuth = np.radians(-225)
+    roll = np.radians(-30)
+
+    use_degrees = False
+
+    plotter = vr.plotting.SpherePlotter(mock_nested_histogram_meshes)
+    plotter.produce_plot()
+
+    # Rotate to the desired position
+    plotter.rotate_camera_euler(elevation, azimuth, roll, use_degrees)
+
+    # Find the expected phi and theta
+    math_spherical_coords = np.array([azimuth, elevation])
+    spherical_coords = vr.util.convert_math_spherical_coordinates_to_vr_coordinates(
+        math_spherical_coords, use_degrees
+    )
+
+    # Note: adjust for theta because of offset of pi/2 in axis of rotation
+    expected_phi = spherical_coords[vr.util.AngularIndex.PHI]
+    expected_theta = (spherical_coords[vr.util.AngularIndex.THETA] + np.pi / 2) % (2 * np.pi)
+
+    # Get the current phi and theta
+    phi = np.radians(plotter.current_phi)
+    theta = np.radians(plotter.current_theta)
+
+    # Check that the values are close
+    assert np.isclose(phi, expected_phi)
+    assert np.isclose(theta, expected_theta)
+
+
 def test_cell_picking_not_active(mock_orientation_histogram_mesh_counts):
     """Test that initially cell picking is inactive.
 
