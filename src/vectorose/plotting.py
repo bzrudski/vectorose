@@ -1028,22 +1028,18 @@ class SpherePlotter:
             self._plotter.update()
 
     def rotate_camera_euler(
-        self,
-        elevation: float,
-        azimuth: float,
-        roll: float,
-        use_degrees: bool = True,
+        self, azimuth: float, elevation: float, roll: float, use_degrees: bool = True
     ):
-        """Rotate the camera using specified Euler angles.
+        """Rotate the camera using specified intrinsic Euler angles.
 
         Parameters
         ----------
-        elevation
-            Angular tilt about the global `X`-axis, measured
-            counter-clockwise from the positive `Z`-axis down.
         azimuth
             Angular rotation about the global `Z`-axis, measured
             counter-clockwise from the positive `X`-axis.
+        elevation
+            Angular tilt about the transformed `X`-axis, measured
+            counter-clockwise from the positive `Z`-axis down.
         roll
             Camera rotation about the transformed `Z`-axis, measured
             counter-clockwise.

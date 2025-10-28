@@ -728,7 +728,7 @@ def test_rotate_camera_euler_zero(mock_nested_histogram_meshes):
     plotter.produce_plot()
 
     # Rotate to specified angles
-    plotter.rotate_camera_euler(elevation, azimuth, roll, use_degrees)
+    plotter.rotate_camera_euler(azimuth, elevation, roll, use_degrees)
 
     # Test to make sure we are indeed at the pole
     assert np.isclose(plotter.current_phi, 0, atol=1e-3)
@@ -756,7 +756,7 @@ def test_rotate_camera_euler_degrees(mock_nested_histogram_meshes):
     plotter.produce_plot()
 
     # Rotate to the desired position
-    plotter.rotate_camera_euler(elevation, azimuth, roll, use_degrees)
+    plotter.rotate_camera_euler(azimuth, elevation, roll, use_degrees)
 
     # Find the expected phi and theta
     math_spherical_coords = np.array([azimuth, elevation])
@@ -799,7 +799,7 @@ def test_rotate_camera_euler_radians(mock_nested_histogram_meshes):
     plotter.produce_plot()
 
     # Rotate to the desired position
-    plotter.rotate_camera_euler(elevation, azimuth, roll, use_degrees)
+    plotter.rotate_camera_euler(azimuth, elevation, roll, use_degrees)
 
     # Find the expected phi and theta
     math_spherical_coords = np.array([azimuth, elevation])
