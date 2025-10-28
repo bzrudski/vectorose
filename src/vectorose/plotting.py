@@ -447,7 +447,9 @@ class SpherePlotter:
             np.arccos(np.dot(inverse_transformed_up_vector, original_up_vector))
         )
 
-        cross_product = np.linalg.cross(inverse_transformed_up_vector, original_up_vector)
+        cross_product = np.linalg.cross(
+            inverse_transformed_up_vector, original_up_vector
+        )
 
         if cross_product[-1] > 0:
             roll *= -1
@@ -519,7 +521,9 @@ class SpherePlotter:
             )
 
         if len(self._picked_cell_actors) > 0:
-            scalar_data_table["index"] = scalar_data_table["vtkOriginalCellIds"].astype(int)
+            scalar_data_table["index"] = scalar_data_table["vtkOriginalCellIds"].astype(
+                int
+            )
 
             # Drop redundant columns
             scalar_data_table = scalar_data_table.drop(
