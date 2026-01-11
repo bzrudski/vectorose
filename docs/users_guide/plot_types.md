@@ -21,11 +21,6 @@ import pandas as pd
 import platform
 import pyvista as pv
 
-try:
-    pv.start_xvfb()
-except OSError:
-    pass
-
 pv.set_jupyter_backend("html")
 pv.global_theme.font.fmt = "%.6g"
 # pv.global_theme.window_size = [1024, 1024]
