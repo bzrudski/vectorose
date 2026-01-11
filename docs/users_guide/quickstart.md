@@ -98,21 +98,6 @@ import platform
 pv.set_jupyter_backend("html")
 ```
 
-```{attention}
-The line `pv.start_xvfb()`{l=python} is only required if running under the
-X Window System (common on Linux, may also be installed on macOS). As the 
-Windows operating system does **not** use the X Window System, this step is
-not required when running on Windows (and will, in fact, produce an error).
-
-If you are **absolutely sure** that your computer uses the X Window System,
-make sure to include the line `pv.start_xvfb()`{l=python}. Likewise, if you
-are **absolutely sure** that your system does not use it, omit the line.
-
-If you are **unsure**, do what we did above, and wrap the line in a
-`try-except` block. That way, if an error does occur, your code will
-continue to run.
-```
-
 We can also change how our data tables produced using Pandas appear using
 [`pandas.options`](https://pandas.pydata.org/docs/user_guide/options.html).
 We'll just control the number of rows that appear, but there are many other
