@@ -45,13 +45,6 @@ visualise results interactively. Make sure that you have `jupyter` and
 work, add the following to the first cell in your notebook:
 
 ```python
-import pyvista as pv
-
-try:
-    pv.start_xvfb()
-except OSError:
-    pass
-
 pv.set_jupyter_backend("trame")
 ```
 

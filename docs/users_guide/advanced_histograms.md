@@ -23,11 +23,6 @@ import pandas as pd
 import pyvista as pv
 import platform
 
-try:
-    pv.start_xvfb()
-except OSError:
-    pass
-
 pv.set_jupyter_backend("html")
 pv.global_theme.font.fmt = "%.6g"
 
