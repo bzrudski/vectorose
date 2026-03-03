@@ -214,15 +214,15 @@ class TregenzaSphere(SphereBase):
         The :class:`pandas.DataFrame` contains as index the ring number.
         For each row, the following columns are present:
 
-            * ``bins`` -- the number of bins in each ring;
-            * ``start`` -- the starting phi value for each ring;
-            * ``end`` -- the ending phi angle of each ring;
-            * ``theta_inc`` -- the theta increment within each ring;
-            * ``face_area`` -- the area of the faces in each ring;
-            * ``weight`` -- the correction weight for the faces in each
-                ring;
-            * ``regular`` -- an indication of whether the ring has a
-                regular almucantar spacing or not.
+        * ``bins`` -- the number of bins in each ring;
+        * ``start`` -- the starting phi value for each ring;
+        * ``end`` -- the ending phi angle of each ring;
+        * ``theta_inc`` -- the theta increment within each ring;
+        * ``face_area`` -- the area of the faces in each ring;
+        * ``weight`` -- the correction weight for the faces in each
+          ring;
+        * ``regular`` -- an indication of whether the ring has a
+          regular almucantar spacing or not.
         """
 
         return self._rings.copy()
