@@ -296,7 +296,10 @@ def normalise_vectors(vectors: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     non_zero_rows_stacked = ~np.all(vector_components == 0, axis=-1)[:, None]
 
     normalised_components = np.true_divide(
-        vector_components, stacked_magnitudes, where=non_zero_rows_stacked
+        vector_components,
+        stacked_magnitudes,
+        where=non_zero_rows_stacked,
+        out=None,
     )
 
     # Create a new array with the modified components if necessary
