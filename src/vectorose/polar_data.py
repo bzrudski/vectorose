@@ -256,7 +256,7 @@ class PolarDiscretiser:
             bins = self._theta_bins
 
         # Count the vectors in each bin
-        counts = labelled_vectors.groupby(bin_assignment_column).apply(len)
+        counts = labelled_vectors.groupby(bin_assignment_column).apply(len, include_groups=False)
         counts.name = "count"
 
         # Normalise to get the frequencies
