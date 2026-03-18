@@ -1507,7 +1507,11 @@ class SpherePlotter:
             self.hide_scalar_bars()
 
         self._plotter.screenshot(
-            filename, transparent_background, False, window_size, scale
+            filename,
+            transparent_background=transparent_background,
+            return_img=False,
+            window_size=window_size,
+            scale=scale,
         )
 
         if hide_sliders:
@@ -1578,7 +1582,12 @@ class SpherePlotter:
         if scale is not None:
             self._plotter.scale = scale
 
-        self._plotter.save_graphic(filename, title, raster, painter)
+        self._plotter.save_graphic(
+            filename,
+            title=title,
+            raster=raster,
+            painter=painter,
+        )
 
         # Reset the parameters
         self._plotter.window_size = old_window_size
