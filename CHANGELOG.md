@@ -2,6 +2,54 @@
 
 <!-- version list -->
 
+## v1.5.2 (2026-03-18)
+
+### Bug Fixes
+
+- Add missing `include_groups` argument in polar discretisation.
+  ([`2921c06`](https://github.com/bzrudski/vectorose/commit/2921c065dc5774da23bb2c6252b22a509c43624f))
+
+- Add missing `out` argument in vector normalisation.
+  ([`542c9db`](https://github.com/bzrudski/vectorose/commit/542c9db8b0d425bf06a4cce4657ef2e04f4d0fe3))
+
+- Update keyword arguments.
+  ([`a582a5f`](https://github.com/bzrudski/vectorose/commit/a582a5f2dd73115678b8f5276cf6517bdb6c4e36))
+
+### Build System
+
+- Update lock file.
+  ([`3c84439`](https://github.com/bzrudski/vectorose/commit/3c844391b3208954abb7c7197681640cfa3addfa))
+
+- **deps**: Bump aiohttp in the pip group across 1 directory
+  ([`6fd775f`](https://github.com/bzrudski/vectorose/commit/6fd775ff39f3ae542a2bc13d08981d37e45f2055))
+
+- **deps**: Bump fonttools in the pip group across 1 directory
+  ([`fd00708`](https://github.com/bzrudski/vectorose/commit/fd0070862270aac089e89b06f68416b2933129d5))
+
+- **deps**: Bump nbconvert in the pip group across 1 directory
+  ([`28ea5a2`](https://github.com/bzrudski/vectorose/commit/28ea5a2a4b5f35e25163c622c231d49d372e9979))
+
+- **deps**: Bump pillow in the pip group across 1 directory
+  ([`1bb0c18`](https://github.com/bzrudski/vectorose/commit/1bb0c186bf8212a6205cb1784f224eb5db396a1e))
+
+- **deps**: Bump tornado in the pip group across 1 directory
+  ([`1cf4dee`](https://github.com/bzrudski/vectorose/commit/1cf4dee7ed08c328c0e77d603db78af74881a382))
+
+- **deps**: Bump urllib3 in the pip group across 1 directory
+  ([`8f1f001`](https://github.com/bzrudski/vectorose/commit/8f1f001729c51373aceb89cb22d068ca39f6148c))
+
+### Documentation
+
+- Fix formatting for Tregenza dataframe.
+  ([`9322c79`](https://github.com/bzrudski/vectorose/commit/9322c792c540c71af37a34a2a787783c547be3dd))
+
+- Remove references to XVFB in docs.
+  ([`0519d99`](https://github.com/bzrudski/vectorose/commit/0519d99316946285acbd5e0ff397641946408cb4))
+
+- Remove xvfb calls.
+  ([`170646d`](https://github.com/bzrudski/vectorose/commit/170646dc53150a59441518f57d503bef15e18982))
+
+
 ## v1.5.1 (2025-10-28)
 
 ### Bug Fixes
