@@ -10,6 +10,9 @@ env:
 
 jobs:
   ci:
+    permissions:
+      contents: read
+
     # Set up operating system
     runs-on: windows-latest
     defaults:
