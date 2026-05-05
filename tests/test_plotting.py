@@ -22,6 +22,8 @@ import vectorose.mock_data
 
 RANDOM_SEED = 20241220
 
+mpl.use("Agg")
+
 
 @pytest.fixture
 def setup_pyvista_environment():
