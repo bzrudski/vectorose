@@ -3032,8 +3032,7 @@ def create_pointcloud(
 
     pc = pv.PolyData(locations)
 
-    magnitudes = np.linalg.norm(components, axis=-1)
-    directions = components / magnitudes[:, None]
+    directions, magnitudes = util.normalise_vectors(components)
 
     colours = get_orientation_rgb(directions)
 
