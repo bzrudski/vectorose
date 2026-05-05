@@ -2974,7 +2974,7 @@ def get_orientation_rgb(vectors: np.ndarray) -> np.ndarray:
     .. [#reznikov2022] Reznikov, N., Liang, H., McKee, M. D., & Piché, N.
         (2022). Technical note: Mapping of trabecular bone anisotropy and
         volume fraction in 3D using μCT images of the human calcaneus.
-        *American Journal of Biological Anthropology*, *177*\ (3), 566–580.
+        *American Journal of Biological Anthropology*, *177* (3), 566–580.
         https://doi.org/10.1002/ajpa.24474
 
     """
