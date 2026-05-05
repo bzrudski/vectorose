@@ -2941,7 +2941,9 @@ def get_orientation_rgb(vectors: np.ndarray) -> np.ndarray:
     -------
     numpy.ndarray
         Array of shape ``(n, 3)`` containing the RGB colour values
-        corresponding to the orientations provided in `vectors`.
+        corresponding to the orientations provided in `vectors`. These
+        values are **floating-point** representations, with each entry in
+        the range ``[0, 1]``.
 
     Warnings
     --------
