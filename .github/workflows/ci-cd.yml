@@ -13,6 +13,9 @@ env:
 
 jobs:
   ci:
+    permissions:
+      contents: read
+
     # Set up operating system
     runs-on: ubuntu-latest
 
@@ -39,16 +42,10 @@ jobs:
         run: poetry run pytest tests/ --cov=vectorose --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
       - name: Use Codecov to track coverage
-        uses: codecov/codecov-action@v5.4.2
+        uses: codecov/codecov-action@v5
         with:
             files: ./coverage.xml # Coverage report
             token: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Build documentation
         run: poetry run make html --directory docs/
