@@ -1570,3 +1570,111 @@ def test_produce_3d_confidence_cone_plot(tmp_path):
 
     # Check that everything is plotted properly (n patches + 1 for sphere)
     assert len(ax.collections) == len(confidence_cone_patches) + 1
+
+
+def test_orientation_rgb():
+    """Test for getting the RGB values from vector orientation."""
+
+    vectors = np.array(
+        [
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+            [1 / np.sqrt(2), 1 / np.sqrt(2), 0],
+            [1 / np.sqrt(2), -1 / np.sqrt(2), 0],
+            [-1, 0, 0],
+            [0, -1, 0],
+            [1 / np.sqrt(3), -1 / np.sqrt(3), -1 / np.sqrt(3)],
+        ]
+    )
+
+    expected_colours = np.array(
+        [
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+            [1, 1, 0],
+            [1, 1, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [1, 1, 1],
+        ]
+    )
+
+    colours = vr.plotting.get_orientation_rgb(vectors)
+
+    # Check the array shape
+    assert colours.shape == vectors.shape
+
+    # Check that the maximum in each row is 1
+    max_row_entries = colours.max(axis=-1)
+
+    assert np.all(np.isclose(max_row_entries, 1))
+
+    # Check the contents
+    assert np.all(np.isclose(colours, expected_colours))
+
+
+def test_create_pointcloud_no_keys(vectors):
+    """Test for creating point clouds."""
+
+    locations = np.random.default_rng(RANDOM_SEED).uniform(
+        low=0,
+        high=300,
+        size=vectors.shape,
+    )
+
+    vector_array = np.concatenate([locations, vectors], axis=-1)
+
+    expected_points = len(vector_array)
+
+    directions, magnitudes = vr.util.normalise_vectors(vector_array)
+
+    pc = vr.plotting.create_pointcloud(vector_array)
+
+    assert pc.n_points == expected_points
+
+    assert "magnitude" in pc.point_data.keys()
+    assert "orientation" in pc.point_data.keys()
+    assert "colour" in pc.point_data.keys()
+
+    # Check the magnitudes
+    assert np.all(np.isclose(pc.point_data["magnitude"], magnitudes))
+    assert np.all(np.isclose(pc.point_data["orientation"], directions[:, 3:]))
+
+
+def test_create_pointcloud_custom_keys(vectors):
+    """Test for creating point clouds with custom keys."""
+
+    locations = np.random.default_rng(RANDOM_SEED).uniform(
+        low=0,
+        high=300,
+        size=vectors.shape,
+    )
+
+    vector_array = np.concatenate([locations, vectors], axis=-1)
+
+    expected_points = len(vector_array)
+
+    magnitude_key = "length"
+    orientation_key = "dir"
+    colour_key = "col"
+
+    directions, magnitudes = vr.util.normalise_vectors(vector_array)
+
+    pc = vr.plotting.create_pointcloud(
+        vector_array,
+        magnitude_key=magnitude_key,
+        direction_key=orientation_key,
+        colour_key=colour_key,
+    )
+
+    assert pc.n_points == expected_points
+
+    assert magnitude_key in pc.point_data.keys()
+    assert orientation_key in pc.point_data.keys()
+    assert colour_key in pc.point_data.keys()
+
+    # Check the magnitudes
+    assert np.all(np.isclose(pc.point_data[magnitude_key], magnitudes))
+    assert np.all(np.isclose(pc.point_data[orientation_key], directions[:, 3:]))

@@ -2924,3 +2924,120 @@ def produce_3d_confidence_cone_plot(
     ax.set_aspect("equal")
 
     return ax
+
+
+def get_orientation_rgb(vectors: np.ndarray) -> np.ndarray:
+    """Get RGB colours corresponding to orientations.
+
+    Compute the RGB colour values reflecting the ``X,Y,Z`` components of
+    vector orientation, respectively. See **Notes** for additional details.
+
+    Parameters
+    ----------
+    vectors
+        Array of shape ``(n, 3)`` containing ``n`` **unit vectors** in 3D.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array of shape ``(n, 3)`` containing the RGB colour values
+        corresponding to the orientations provided in `vectors`. These
+        values are **floating-point** representations, with each entry in
+        the range ``[0, 1]``.
+
+    Warnings
+    --------
+    The `vectors` must be normalised to unit length.
+
+    Colour is not unique! Vectors with very different directions, and even
+    different orientations may be assigned the same colour.
+
+    Notes
+    -----
+    The colour reflects the orientation of the provided vectors. The red,
+    green and blue channels reflect the strength of the vector in the
+    ``X``, ``Y`` and ``Z`` directions, respectively. The colour is **not**
+    a direct mapping of the vector components to these colour channels. Nor
+    is it a direct mapping of the absolute values of the components.
+    Otherwise, we would get unexpected results. For example, if a vector is
+    oriented in the ``XY`` plane at a 45\u00b0 angle, we would expect the
+    vector to appear as yellow. However, it would actually appear as a
+    darker mustard. To achieve the desired vibrant colours, we normalise
+    the absolute values of the components with respect to the largest
+    component.
+
+    This orientation representation is inspired by the visualisations in
+    the work by Reznikov et al. [#reznikov2022]_
+
+    References
+    ----------
+    .. [#reznikov2022] Reznikov, N., Liang, H., McKee, M. D., & Piché, N.
+        (2022). Technical note: Mapping of trabecular bone anisotropy and
+        volume fraction in 3D using μCT images of the human calcaneus.
+        *American Journal of Biological Anthropology*, *177* (3), 566–580.
+        https://doi.org/10.1002/ajpa.24474
+
+    """
+
+    abs_vectors = np.abs(vectors)
+    vector_max = abs_vectors.max(axis=-1)
+
+    colours = abs_vectors / vector_max[:, None]
+
+    return colours
+
+
+def create_pointcloud(
+        vectors: np.ndarray,
+        magnitude_key: str = "magnitude",
+        direction_key: str = "orientation",
+        colour_key: str = "colour",
+) -> pv.PolyData:
+    """Convert a vector field to a point cloud.
+
+    Using the provided vectors, produce a point cloud that can be
+    visualised in third-party software.
+
+    Parameters
+    ----------
+    vectors
+        Array of shape ``(n, 6)`` containing the vectors from which to
+        construct a point cloud. The first three columns are considered the
+        spatial locations, ordered ``XYZ``, and the last three columns are
+        considered the vector components, ordered ``XYZ``.
+    magnitude_key
+        Name to give the scalar slot containing the vector magnitudes.
+    direction_key
+        Name to give the vector slot containing the vector directions.
+    colour_key
+        Name to give the vector slot containing the RGB representation of the
+        direction.
+
+    Returns
+    -------
+    pyvista.PolyData
+        Point cloud containing ``n`` points, with point data containing the
+        vector magnitudes and unit direction vectors in the respective keys
+        passed to `magnitude_key` and `direction_key`. The RGB values
+        reflecting the direction are stored in point data with `colour_key`.
+
+    Warnings
+    --------
+    Zero-vectors should be excluded **before** calling this function.
+
+    """
+
+    locations = vectors[:, :3]
+    components = vectors[:, 3:]
+
+    pc = pv.PolyData(locations)
+
+    directions, magnitudes = util.normalise_vectors(components)
+
+    colours = get_orientation_rgb(directions)
+
+    pc.point_data[magnitude_key] = magnitudes
+    pc.point_data[direction_key] = directions
+    pc.point_data[colour_key] = colours
+
+    return pc
