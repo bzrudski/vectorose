@@ -2,6 +2,106 @@
 
 <!-- version list -->
 
+## v1.6.0 (2026-06-30)
+
+### Bug Fixes
+
+- Use built-in normalisation to get magnitude and direction.
+  ([`e645bbb`](https://github.com/bzrudski/vectorose/commit/e645bbb91c2f1e5f1c07e6b3a035a300b1374442))
+
+### Build System
+
+- Remove unnecessary codecov step in CI/CD.
+  ([`c0336a6`](https://github.com/bzrudski/vectorose/commit/c0336a66e687671f02787e2835f5a54a7987fce8))
+
+- Restrict permissions for token in CI on Win.
+  ([`fd48658`](https://github.com/bzrudski/vectorose/commit/fd486580ff8e3c28f199d0cb533359e948b46cb0))
+
+- Restrict permissions for token in CI.
+  ([`eef90e8`](https://github.com/bzrudski/vectorose/commit/eef90e84b603e524bd2543403207b3c12cb86e7d))
+
+- Update gitpython and add cmcrameri.
+  ([`2e9df1e`](https://github.com/bzrudski/vectorose/commit/2e9df1e8db6ba55317482481cdaa736ea9145311))
+
+- Update GitPython based on dependabot alert.
+  ([`b0fb4b4`](https://github.com/bzrudski/vectorose/commit/b0fb4b4d6bffd364ac7f1ff0cc4282e9433810bb))
+
+- Update openpxyl version.
+  ([`93362f8`](https://github.com/bzrudski/vectorose/commit/93362f894b804da6618474459dc8f4a59d7937aa))
+
+- Update pillow version.
+  ([`7a626d5`](https://github.com/bzrudski/vectorose/commit/7a626d516f18368856fe55b0d8f1a1e3c851869f))
+
+- Update pygments version.
+  ([`14c6e37`](https://github.com/bzrudski/vectorose/commit/14c6e37532a5460e2da3f7c9612b82445a01cba6))
+
+- Update pytest to address dependabot alert.
+  ([`2f595c6`](https://github.com/bzrudski/vectorose/commit/2f595c664510c4ac9e86dfc9a0c109b43012bbc8))
+
+- **deps**: Bump aiohttp in the pip group across 1 directory
+  ([`6a11daa`](https://github.com/bzrudski/vectorose/commit/6a11daa8fbd3429e576f7f1b90e4c1cc29fe0829))
+
+- **deps**: Bump aiohttp in the pip group across 1 directory
+  ([`dab6e80`](https://github.com/bzrudski/vectorose/commit/dab6e805c7cf899177ecdd5db18b3dd77ac0d78a))
+
+- **deps**: Bump idna in the pip group across 1 directory
+  ([`edbe1d0`](https://github.com/bzrudski/vectorose/commit/edbe1d06ff913eacfe49355a90b224644eb531a9))
+
+- **deps**: Bump jupyter-server in the pip group across 1 directory
+  ([`5ba35b9`](https://github.com/bzrudski/vectorose/commit/5ba35b987f738ace1284b48039abc28707ec2e99))
+
+- **deps**: Bump lxml in the pip group across 1 directory
+  ([`793822b`](https://github.com/bzrudski/vectorose/commit/793822b46425a5c6a86f01d21881b278e8768c62))
+
+- **deps**: Bump mistune in the pip group across 1 directory
+  ([`43c9134`](https://github.com/bzrudski/vectorose/commit/43c91348b212dddd87267f09888fd0abb6bf930a))
+
+- **deps**: Bump nbconvert in the pip group across 1 directory
+  ([`c9bd2dd`](https://github.com/bzrudski/vectorose/commit/c9bd2dd68a897aee6c27fc705af0b632112a8b79))
+
+- **deps**: Bump requests in the pip group across 1 directory
+  ([`302f003`](https://github.com/bzrudski/vectorose/commit/302f00353addcfdc720ea4fb2bd9ef62f14ba107))
+
+- **deps**: Bump the pip group across 1 directory with 3 updates
+  ([`4c3e24c`](https://github.com/bzrudski/vectorose/commit/4c3e24c6e02b29b9076a1cadbad55823481cd78b))
+
+- **deps**: Bump tornado in the pip group across 1 directory
+  ([`3169c05`](https://github.com/bzrudski/vectorose/commit/3169c05cee431bdee71d2df2250d8a342bdd37ce))
+
+- **deps**: Bump urllib3 in the pip group across 1 directory
+  ([`f7f9c08`](https://github.com/bzrudski/vectorose/commit/f7f9c08c2771b17ec3d4eecdd69c359b354b484f))
+
+- **deps-dev**: Bump black in the pip group across 1 directory
+  ([`b35b059`](https://github.com/bzrudski/vectorose/commit/b35b0599f8d0f68dcc74f6a6e9f0735227d74ef8))
+
+- **deps-dev**: Bump jupyterlab in the pip group across 1 directory
+  ([`6cdeabe`](https://github.com/bzrudski/vectorose/commit/6cdeabe21788c4e73a62a36c1b9867c49bd341e1))
+
+- **deps-dev**: Bump notebook in the pip group across 1 directory
+  ([`260df67`](https://github.com/bzrudski/vectorose/commit/260df67121cfaf76ddd7d22af546d20e4ad63289))
+
+### Documentation
+
+- Clarify colour representation in the returned array.
+  ([`e638621`](https://github.com/bzrudski/vectorose/commit/e6386216c0a1df051b8877ff8f69c0e939e55dd7))
+
+- Remove invalid escape sequence `\ `.
+  ([`52f424e`](https://github.com/bzrudski/vectorose/commit/52f424e18676aa8eb97a8cc9398987329feb3e09))
+
+### Features
+
+- Add function to create point cloud from vectors.
+  ([`ef71f51`](https://github.com/bzrudski/vectorose/commit/ef71f51cb2eaea32b0b520e612daa12e13381623))
+
+### Testing
+
+- Add tests for the point cloud construction.
+  ([`9643dd9`](https://github.com/bzrudski/vectorose/commit/9643dd97f41b3c3d769d590aa510d629b0a3e9f0))
+
+- Switch to `Agg` backend for plotting during tests.
+  ([`d06fedb`](https://github.com/bzrudski/vectorose/commit/d06fedbd65a88654a4d7ec663d2e3eaf4ed8de94))
+
+
 ## v1.5.2 (2026-03-18)
 
 ### Bug Fixes
