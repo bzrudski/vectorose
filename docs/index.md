@@ -320,7 +320,7 @@ publication:
 If you've modelled your analysis based on our sample case studies, please
 also cite the following:
 
-```
+```tex
 @article{rudskiStatisticalAnalysesFeature2026,
 	title = {Statistical analyses of feature orientation in {3D} reticulate biological assemblies},
 	volume = {31},
