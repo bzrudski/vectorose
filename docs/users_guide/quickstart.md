@@ -56,6 +56,13 @@ Interested in modifying and extending VectoRose? Check out our
 {doc}`Contributing <../contributing>` guide to get started.
 ```
 
+## Where can I see examples of research using VectoRose?
+
+If you want to see some examples of how we've used VectoRose to study
+reticulated biological structures, including bay leaf veins, 3D lichens,
+eggshell membrane fibres and trabecular bone, check out our case study
+paper {cite:p}`rudskiStatisticalAnalysesFeature2026`.
+
 ## Installing VectoRose
 
 Installing VectoRose is very straightforward. The only requirement is that
