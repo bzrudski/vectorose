@@ -321,7 +321,20 @@ If you've modelled your analysis based on our sample case studies, please
 also cite the following:
 
 ```
-TBA
+@article{rudskiStatisticalAnalysesFeature2026,
+	title = {Statistical analyses of feature orientation in {3D} reticulate biological assemblies},
+	volume = {31},
+	issn = {25900498},
+	url = {https://linkinghub.elsevier.com/retrieve/pii/S2590049826001840},
+	doi = {10.1016/j.mtadv.2026.100869},
+	language = {en},
+	urldate = {2026-07-01},
+	journal = {Materials Today Advances},
+	author = {Rudski, Benjamin Z. and Deering, Joseph and McKee, Marc D. and Reznikov, Natalie},
+	month = aug,
+	year = {2026},
+	pages = {100869},
+}
 ```
 
 ## Contributing
