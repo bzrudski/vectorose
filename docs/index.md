@@ -303,12 +303,13 @@ If you've found VectoRose helpful for your research, please cite our
 publication:
 
 ```tex
-@article{Rudski2025,
+@article{rudskiVectoRoseNewPackage2025,
   doi = {10.21105/joss.08369},
   url = {https://doi.org/10.21105/joss.08369},
   year = {2025},
   publisher = {The Open Journal},
   volume = {10},
+  issn = {24759066},
   number = {111},
   pages = {8369},
   author = {Rudski, Benjamin Z. and Deering, Joseph and Reznikov, Natalie},
@@ -320,8 +321,19 @@ publication:
 If you've modelled your analysis based on our sample case studies, please
 also cite the following:
 
-```
-TBA
+```tex
+@article{rudskiStatisticalAnalysesFeature2026,
+  doi = {10.1016/j.mtadv.2026.100869},
+  url = {https://linkinghub.elsevier.com/retrieve/pii/S2590049826001840},
+  year = {2026},
+  month = aug,
+  volume = {31},
+  issn = {25900498},
+  pages = {100869},
+  author = {Rudski, Benjamin Z. and Deering, Joseph and McKee, Marc D. and Reznikov, Natalie},
+  title = {Statistical analyses of feature orientation in {3D} reticulate biological assemblies},
+  journal = {Materials Today Advances}
+}
 ```
 
 ## Contributing
