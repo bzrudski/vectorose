@@ -2,6 +2,80 @@
 
 <!-- version list -->
 
+## v1.6.1 (2026-09-01)
+
+### Bug Fixes
+
+- Fix `slider_widgets` access to address deprecation warning.
+  ([`aae5b13`](https://github.com/bzrudski/vectorose/commit/aae5b13660c25f38a0b2261f0a9b5e42ee7c001e))
+
+- Remove `None` return in `import_vector_field`.
+  ([`f7fbdab`](https://github.com/bzrudski/vectorose/commit/f7fbdabb3093e9c66593039cfcdd5425dba94751))
+
+### Build System
+
+- Update pyvista.
+  ([`129bfe2`](https://github.com/bzrudski/vectorose/commit/129bfe20b7e0df681d37a5378d7ed94791ba3ddf))
+
+- **deps**: Bump aiohttp in the pip group across 1 directory
+  ([`1bac1c2`](https://github.com/bzrudski/vectorose/commit/1bac1c28b46d5820920c8c142903812e84086d68))
+
+- **deps**: Bump GitPython to version 3.1.57.
+  ([`1fb917a`](https://github.com/bzrudski/vectorose/commit/1fb917a9d757df1c86ece366459d22fd6ae35d81))
+
+- **deps**: Bump mistune in the pip group across 1 directory
+  ([`0fd2a29`](https://github.com/bzrudski/vectorose/commit/0fd2a29000c98659842f291aff3d05f2d08070e2))
+
+- **deps**: Bump msgpack in the pip group across 1 directory
+  ([`86f462b`](https://github.com/bzrudski/vectorose/commit/86f462bba0e7fe52fbe6f1789b376b0f9f7732ef))
+
+- **deps**: Bump pillow in the pip group across 1 directory
+  ([`699d297`](https://github.com/bzrudski/vectorose/commit/699d297bbf1b18fa135e44ef3034bd295b40d7af))
+
+- **deps**: Bump soupsieve in the pip group across 1 directory
+  ([`37a3420`](https://github.com/bzrudski/vectorose/commit/37a3420f8a15483ea2e27d45e2223a65af4cb09d))
+
+- **deps-dev**: Bump jupyterlab in the pip group across 1 directory
+  ([`42ee9e9`](https://github.com/bzrudski/vectorose/commit/42ee9e9399b5ed006b477193df15abd1be7f6445))
+
+- **deps-dev**: Bump the pip group across 1 directory with 2 updates
+  ([`c3aafe3`](https://github.com/bzrudski/vectorose/commit/c3aafe3ca2fb80e2d564689250d5046a2601ef1e))
+
+### Documentation
+
+- Add case study citation to index.md.
+  ([`27ce606`](https://github.com/bzrudski/vectorose/commit/27ce606a425d442c968077e2c8fa21bd46766d77))
+
+- Add case study citation to README.md.
+  ([`94c64c5`](https://github.com/bzrudski/vectorose/commit/94c64c56c6ae4dea50f3d8a14074daf8d2996feb))
+
+- Add case study reference to `refs.bib`.
+  ([`1c26596`](https://github.com/bzrudski/vectorose/commit/1c26596b694376fba2f5b3629276f5c513c8bbe8))
+
+- Add issn for JOSS.
+  ([`0423be6`](https://github.com/bzrudski/vectorose/commit/0423be66cc67c0e44bfa8f154291103cea344268))
+
+- Correct syntax highlighting for new citation.
+  ([`b36c3fe`](https://github.com/bzrudski/vectorose/commit/b36c3fe3f9c5c50f519e7158f0680409b1a6c31a))
+
+- Fix indents and commas in new citation.
+  ([`5a4ef21`](https://github.com/bzrudski/vectorose/commit/5a4ef2143210e28b595f12a53461671a4de1ebd6))
+
+- Improve consistency across citations.
+  ([`77490bc`](https://github.com/bzrudski/vectorose/commit/77490bc258cf4811c3ce8a3247fb0c44b0a63001))
+
+- Refer to case studies in quick start guide.
+  ([`b243df2`](https://github.com/bzrudski/vectorose/commit/b243df25da86d00d19e30c0b28eec870122a4f5e))
+
+- Remove optional type for importing vector fields.
+  ([`612c5e0`](https://github.com/bzrudski/vectorose/commit/612c5e09e0984ecfbb9376f254b57217d3e99a28))
+
+### Testing
+
+- Add test case where file type can't be inferred.
+  ([`20c4d9e`](https://github.com/bzrudski/vectorose/commit/20c4d9e5f1ef8ca8d0f26962fc8b117d4d1e2746))
+
+
 ## v1.6.0 (2026-06-30)
 
 ### Bug Fixes
