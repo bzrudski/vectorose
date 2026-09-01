@@ -200,6 +200,34 @@ def test_vector_import_csv_comma_spatial_locations(tmp_path, random_vectors_flat
     assert np.all(np.isclose(my_loaded_vectors, random_vectors_flat))
 
 
+def test_vector_import_csv_comma_spatial_locations_txt_extension(tmp_path, random_vectors_flat):
+    """Test loading a vector field from a CSV file with locations."""
+
+    # Create a data frame with the vectors
+    my_vector_data = pd.DataFrame(
+        random_vectors_flat, columns=["x", "y", "z", "vx", "vy", "vz"]
+    )
+
+    # Save the random vectors
+    vector_path = os.path.join(tmp_path, "my_vectors.txt")
+    my_vector_data.to_csv(
+        vector_path, sep=",", index=True, columns=["vy", "vz", "vx", "z", "x", "y"]
+    )
+
+    # Load the vectors
+    my_loaded_vectors = vr.io.import_vector_field(
+        vector_path,
+        default_file_type=vr.io.VectorFileType.CSV,
+        location_columns=[5, 6, 4],
+        component_columns=[3, 1, 2],
+        separator=",",
+    )
+
+    # Check the shape
+    assert my_loaded_vectors.shape == random_vectors_flat.shape
+    assert np.all(np.isclose(my_loaded_vectors, random_vectors_flat))
+
+
 def test_vector_import_csv_comma_spatial_locations_nan(tmp_path, random_vectors_flat_nan):
     """Test loading from a CSV file with locations and NaN."""
 
