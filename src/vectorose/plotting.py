@@ -279,7 +279,7 @@ class SpherePlotter:
         `False`.
         """
 
-        sliders = self._plotter.slider_widgets
+        sliders = self._plotter.widgets.slider_widgets
 
         if len(sliders) == 0:
             return False
@@ -1429,13 +1429,13 @@ class SpherePlotter:
     def hide_sliders(self):
         """Hide the plotter's slider widgets."""
 
-        for slider in self._plotter.slider_widgets:
+        for slider in self._plotter.widgets.slider_widgets:
             slider.SetEnabled(False)
 
     def show_sliders(self):
         """Show the plotter's slider widgets."""
 
-        for slider in self._plotter.slider_widgets:
+        for slider in self._plotter.widgets.slider_widgets:
             slider.SetEnabled(True)
 
     def hide_scalar_bars(self):
