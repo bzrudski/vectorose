@@ -236,8 +236,7 @@ def import_vector_field(
     Load a vector field from a file into a NumPy array. For available
     file formats, see :class:`VectorFileType`. The file type is inferred
     from the filename. If it cannot be inferred, the ``default_file_type``
-    is tried. If the vector field is not valid, then :class:`None` is
-    returned.
+    is tried.
 
     Parameters
     ----------
@@ -269,13 +268,12 @@ def import_vector_field(
 
     Returns
     -------
-    numpy.ndarray or None
+    numpy.ndarray
         NumPy array containing the vectors. The array has shape
         ``(n, 3)`` or ``(n, 6)``, depending on whether the locations
         are included. The columns correspond to ``(x,y,z)`` coordinates
         of the location (if available), followed by ``(vx, vy, vz)``
-        components. If the filetype cannot be properly inferred,
-        a value of ``None`` is returned instead.
+        components.
 
     Raises
     ------
@@ -318,16 +316,15 @@ def import_vector_field(
     else:
         header_row: Optional[int] = 0 if contains_headers else None
         # Reading function depends on whether CSV or Excel
-        if filetype is VectorFileType.CSV:
-            vector_field_dataframe = pd.read_csv(
-                filepath, header=header_row, sep=separator
-            )
-        elif filetype is VectorFileType.EXCEL:
+        if filetype is VectorFileType.EXCEL:
             vector_field_dataframe = pd.read_excel(
                 filepath, sheet_name=sheet, header=header_row
             )
         else:
-            return None
+            # Infer that the file is a CSV
+            vector_field_dataframe = pd.read_csv(
+                filepath, header=header_row, sep=separator
+            )
 
         # Remove NaN values
         vector_field = vector_field_dataframe.dropna().to_numpy()
