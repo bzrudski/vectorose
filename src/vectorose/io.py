@@ -230,7 +230,7 @@ def import_vector_field(
     component_columns: Sequence[int] = DEFAULT_COMPONENT_COLUMNS,
     component_axis: int = -1,
     separator: str = "\t",
-) -> Optional[np.ndarray]:
+) -> np.ndarray:
     """Import a vector field.
 
     Load a vector field from a file into a NumPy array. For available
